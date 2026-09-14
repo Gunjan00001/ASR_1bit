@@ -1,16 +1,25 @@
-compute_profile: local
-model: facebook/wav2vec2-conformer-rope-large-960h-ft
+# Phase 8/9/10: which Linear categories to binarize (PTQ) and which stay FP.
+#
+# Keys are taxonomy categories from onebit_asr.models.conformer_utils.CATEGORIES
+# (verified against the real checkpoint in results/model_inspection.json):
+#   attention_q/k/v/output -> self_attn.linear_q/k/v/out  (1024 -> 1024)
+#   ffn_in                 -> ffn{1,2}.intermediate_dense  (1024 -> 4096)
+#   ffn_out                -> ffn{1,2}.output_dense        (4096 -> 1024)
+#   feature_projection     -> feature_projection.projection (512 -> 1024)
+#   ctc_head               -> lm_head                       (1024 -> 32)
+extends: baseline.yaml
 
-# Phase 8/9: which Linear categories to binarize (PTQ).
 layers:
   attention_q: true
   attention_k: true
   attention_v: true
   attention_output: true
-  ffn: true
+  ffn_in: true
+  ffn_out: true
   feature_projection: false
   ctc_head: false
 
 quantization:
-  scale: per_tensor_mean_abs   # alpha = mean(|W|)
-  ste: pass_through
+  scale: per_tensor_mean_abs   # alpha = mean(|W|), recomputed each forward
+  ste: pass_through            # straight-through, no gradient clipping
+  ste_clip: null               # set a float to enable clipped STE

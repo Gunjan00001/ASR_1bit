@@ -1,0 +1,24 @@
+{
+  "scale_mode": "per_tensor_mean_abs",
+  "n_bitlinear_layers": 192,
+  "quantized_weight_count": 503316480,
+  "non_quantized_param_count": 90060448,
+  "theoretical_payload_bytes_1bit": 62914560,
+  "naive_binary_bytes": 503316480,
+  "packed_payload_bytes": 62914560,
+  "fp_scale_bytes": 768,
+  "non_quantized_fp_param_bytes": 360241792,
+  "fp_master_bytes_excluded_from_artifact": 2013265920,
+  "packed_artifact_bytes_measured": 423289296,
+  "container_overhead_bytes": 132176,
+  "packed_artifact_components_bytes": 423157120,
+  "checkpoint_bytes_safetensors": 2373821388,
+  "checkpoint_bytes_full_download": 4747815835,
+  "safetensors_files": [
+    "model.safetensors"
+  ],
+  "all_weight_files": [
+    "model.safetensors",
+    "pytorch_model.bin"
+  ]
+}

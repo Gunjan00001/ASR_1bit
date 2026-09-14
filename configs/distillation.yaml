@@ -1,9 +1,15 @@
-compute_profile: cloud-gpu
-teacher: facebook/wav2vec2-conformer-rope-large-960h-ft  # frozen FP32
-student: 1-bit model from qat.yaml config
+# Knowledge distillation config (Phase 13, cloud-gpu profile).
+#
+# NOT EXECUTED in this checkpoint. Inherits layer selection + quantization
+# from qat.yaml (which extends binary.yaml).
+extends: qat.yaml
 
-# L = lambda_ctc * CTC(student, y) + lambda_kd * T^2 * KL(student/T || teacher/T)
-lambda_ctc: 0.5
-lambda_kd: 0.5
-temperature: 2.0
-precompute_teacher_logits: true  # compute once per training subset
+compute_profile: cloud-gpu
+distillation:
+  student: binarized wav2vec2-conformer (qat.yaml layer selection)
+  teacher: facebook/wav2vec2-conformer-rope-large-960h-ft  # frozen FP32
+  # L = lambda_ctc * CTC(student, y) + lambda_kd * T^2 * KL(student/T || teacher/T)
+  lambda_ctc: 0.5
+  lambda_kd: 0.5
+  temperature: 2.0
+  precompute_teacher_logits: true  # compute once per training subset

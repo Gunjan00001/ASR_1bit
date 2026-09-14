@@ -4,7 +4,12 @@ Loads the pretrained Wav2Vec2-Conformer CTC checkpoint and prints:
 - architecture summary, total/trainable parameters, dtype, size
 - every nn.Linear with input/output dims and parameter count
 - parameter counts grouped by category
-  (attention_q/k/v/output, ffn, feature_projection, ctc_head, other)
+  (attention_q/k/v/output, ffn_in, ffn_out, feature_projection, ctc_head,
+   attention_other, other)
+
+Categorization uses the shared taxonomy in
+``onebit_asr.models.conformer_utils`` (single source of truth, also used by
+Phase 8 layer replacement).
 
 Also saves a machine-readable map to results/model_inspection.json
 for use by the Phase 8 layer-replacement config.
@@ -12,44 +17,22 @@ for use by the Phase 8 layer-replacement config.
 
 import argparse
 import json
-import re
 from pathlib import Path
 
 import torch
 from torch import nn
 from transformers import Wav2Vec2ConformerForCTC
 
+from onebit_asr.models.conformer_utils import categorize
+
 RESULTS = Path(__file__).resolve().parent.parent / "results"
-
-
-def categorize(name: str) -> str:
-    n = name.lower()
-    if "lm_head" in n or n.endswith("ctc_head") or "ctc_head" in n:
-        return "ctc_head"
-    if "feature_projection" in n:
-        return "feature_projection"
-    if "attention" in n or "self_attn" in n or "attn" in n:
-        if "q_proj" in n or "linear_q" in n or n.endswith(".query") or ".query." in n:
-            return "attention_q"
-        if "k_proj" in n or "linear_k" in n or n.endswith(".key") or ".key." in n:
-            return "attention_k"
-        if "v_proj" in n or "linear_v" in n or n.endswith(".value") or ".value." in n:
-            return "attention_v"
-        if "out_proj" in n or "linear_out" in n or "output" in n:
-            return "attention_output"
-        return "attention_other"
-    if "linear1" in n or "intermediate_dense" in n or "intermediate" in n:
-        return "ffn_in"
-    if "linear2" in n or "output_dense" in n:
-        return "ffn_out"
-    return "other"
 
 
 def encoder_depth(model: nn.Module) -> str:
     for _, module in model.named_modules():
         if isinstance(module, nn.ModuleList) and len(module) > 4:
             first = type(module[0]).__name__
-            if "EncoderLayer" in first or "ConformerLayer" in first and "Norm" not in first:
+            if ("EncoderLayer" in first or "ConformerLayer" in first) and "Norm" not in first:
                 return f"{len(module)} x {first}"
     return "unknown"
 

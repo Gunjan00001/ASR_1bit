@@ -1,0 +1,54 @@
+{
+  "purpose": "verify the Phase 10 PTQ collapse is caused by binarization, not a pipeline bug",
+  "protocol": "same replace_linears + evaluate_model code path as scripts/quantize.py",
+  "n_utterances": 16,
+  "seed": 42,
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "scale_mode": "per_tensor_mean_abs",
+  "sample_ids": [
+    "1988-24833-0026",
+    "2428-83699-0039",
+    "6345-93302-0010",
+    "2078-142845-0048",
+    "2035-152373-0007",
+    "2902-9006-0017",
+    "5694-64029-0000",
+    "251-137823-0017",
+    "1988-147956-0008",
+    "1462-170142-0024",
+    "652-130737-0011",
+    "3081-166546-0008",
+    "652-130737-0010",
+    "1993-147149-0022",
+    "7976-110124-0015",
+    "1988-24833-0001"
+  ],
+  "variants": {
+    "none": {
+      "n_replaced": 0,
+      "wer": 0.025559105431309903,
+      "non_empty_hypotheses": 16,
+      "agreement_with_fp32": 1.0
+    },
+    "attention_only": {
+      "n_replaced": 96,
+      "wer": 0.4440894568690096,
+      "non_empty_hypotheses": 16,
+      "agreement_with_fp32": 0.125
+    },
+    "ffn_only": {
+      "n_replaced": 96,
+      "wer": 1.0,
+      "non_empty_hypotheses": 0,
+      "agreement_with_fp32": 0.0
+    },
+    "full": {
+      "n_replaced": 192,
+      "wer": 1.0,
+      "non_empty_hypotheses": 0,
+      "agreement_with_fp32": 0.0
+    }
+  },
+  "control_reproduces_fp32_baseline": true,
+  "verdict": "code path sound; collapse tracks binarization (FFN-sensitive)"
+}

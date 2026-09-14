@@ -1,0 +1,9 @@
+compute_profile: cloud-gpu
+teacher: facebook/wav2vec2-conformer-rope-large-960h-ft  # frozen FP32
+student: 1-bit model from qat.yaml config
+
+# L = lambda_ctc * CTC(student, y) + lambda_kd * T^2 * KL(student/T || teacher/T)
+lambda_ctc: 0.5
+lambda_kd: 0.5
+temperature: 2.0
+precompute_teacher_logits: true  # compute once per training subset

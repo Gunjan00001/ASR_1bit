@@ -1,0 +1,9 @@
+compute_profile: local  # local | cloud-gpu
+model: facebook/wav2vec2-conformer-rope-large-960h-ft
+
+eval:
+  split: validation          # librispeech_asr "clean" validation for dev
+  subset_size: 256
+  seed: 42
+  decoding: greedy           # greedy CTC only (no LM)
+  normalize_text: true       # lowercase + strip punctuation

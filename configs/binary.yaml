@@ -1,0 +1,16 @@
+compute_profile: local
+model: facebook/wav2vec2-conformer-rope-large-960h-ft
+
+# Phase 8/9: which Linear categories to binarize (PTQ).
+layers:
+  attention_q: true
+  attention_k: true
+  attention_v: true
+  attention_output: true
+  ffn: true
+  feature_projection: false
+  ctc_head: false
+
+quantization:
+  scale: per_tensor_mean_abs   # alpha = mean(|W|)
+  ste: pass_through

@@ -1,0 +1,1600 @@
+{
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "model_class": "Wav2Vec2ConformerForCTC",
+  "total_params": 593376928,
+  "trainable_params": 593376928,
+  "dtypes": [
+    "torch.float32"
+  ],
+  "size_mb": 2373.507712,
+  "encoder": "24 x Wav2Vec2ConformerEncoderLayer",
+  "linears": [
+    {
+      "name": "wav2vec2_conformer.feature_projection.projection",
+      "in_features": 512,
+      "out_features": 1024,
+      "bias": true,
+      "params": 525312,
+      "category": "feature_projection"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn1.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn1.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.self_attn.linear_q",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_q"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.self_attn.linear_k",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_k"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.self_attn.linear_v",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_v"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.self_attn.linear_out",
+      "in_features": 1024,
+      "out_features": 1024,
+      "bias": true,
+      "params": 1049600,
+      "category": "attention_output"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn2.intermediate_dense",
+      "in_features": 1024,
+      "out_features": 4096,
+      "bias": true,
+      "params": 4198400,
+      "category": "ffn_in"
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn2.output_dense",
+      "in_features": 4096,
+      "out_features": 1024,
+      "bias": true,
+      "params": 4195328,
+      "category": "ffn_out"
+    },
+    {
+      "name": "lm_head",
+      "in_features": 1024,
+      "out_features": 32,
+      "bias": true,
+      "params": 32800,
+      "category": "ctc_head"
+    }
+  ],
+  "by_category": {
+    "feature_projection": {
+      "count": 1,
+      "params": 525312
+    },
+    "ffn_in": {
+      "count": 48,
+      "params": 201523200
+    },
+    "ffn_out": {
+      "count": 48,
+      "params": 201375744
+    },
+    "attention_q": {
+      "count": 24,
+      "params": 25190400
+    },
+    "attention_k": {
+      "count": 24,
+      "params": 25190400
+    },
+    "attention_v": {
+      "count": 24,
+      "params": 25190400
+    },
+    "attention_output": {
+      "count": 24,
+      "params": 25190400
+    },
+    "ctc_head": {
+      "count": 1,
+      "params": 32800
+    }
+  },
+  "linear_params_total": 504218656
+}

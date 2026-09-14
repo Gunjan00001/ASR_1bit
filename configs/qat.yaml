@@ -1,0 +1,9 @@
+compute_profile: cloud-gpu  # QAT trains on the cloud-gpu profile
+model: facebook/wav2vec2-conformer-rope-large-960h-ft
+
+freeze_feature_extractor: true
+learning_rate: 2.0e-05
+epochs: null                 # set per experiment
+train_subset: null           # fixed subset id, recorded in results
+
+# Reuse binary.yaml layer selection + quantization settings.

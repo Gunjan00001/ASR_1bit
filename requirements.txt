@@ -10,4 +10,5 @@ numpy==2.5.3
 soundfile==0.14.0
 pyyaml==6.0.3
 pytest==9.1.1
+psutil==7.2.2  # peak-RSS measurement in eval/benchmark scripts
 torchcodec==0.16.0  # required by datasets audio decoding (see README for FFmpeg DLL setup)

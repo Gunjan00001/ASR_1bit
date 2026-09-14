@@ -26,11 +26,22 @@ REQUIRED = [
 ]
 
 
+DIST_NAMES = {"yaml": "pyyaml"}  # module -> distribution name
+
+
+def dist_version(name: str) -> str:
+    from importlib.metadata import version
+
+    try:
+        return version(DIST_NAMES.get(name, name))
+    except Exception:  # noqa: BLE001
+        return "unknown"
+
+
 def try_import(name):
     try:
-        mod = importlib.import_module(name)
-        version = getattr(mod, "__version__", "unknown")
-        return {"ok": True, "version": str(version)}
+        importlib.import_module(name)
+        return {"ok": True, "version": dist_version(name)}
     except Exception as exc:  # noqa: BLE001 - diagnostic must not crash
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
 

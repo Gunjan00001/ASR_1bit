@@ -15,7 +15,25 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 - [x] Phase 0 — environment (`.venv`, pinned `requirements.txt`, `scripts/check_env.py` → PASS, `results/env.json`)
 - [x] Phase 1 — model inspection (`scripts/inspect_model.py` → `results/model_inspection.json`, see findings below)
 - [x] Phase 2 — inference smoke test (`scripts/infer.py --demo` → exact-match transcription on a LibriSpeech sample)
-- [ ] Phase 3+ — see `one_bit_asr_implementation_plan.md` (everything beyond Phase 2 is scaffolded as placeholders)
+- [x] Phase 3 — FP32 baseline (`scripts/eval_baseline.py` → `results/baseline.json`, see below)
+- [ ] Phase 4+ — see `one_bit_asr_implementation_plan.md` (everything beyond Phase 3 is scaffolded as placeholders)
+
+## FP32 baseline (Phase 3, `local` CPU profile)
+
+Fixed 256-utterance subset of LibriSpeech clean `validation` (seed 42, IDs in
+`results/baseline.json`), greedy CTC, normalized text:
+
+| Metric | Value |
+|---|---|
+| WER | 0.0202 (2.02%) |
+| CER | 0.0049 (0.49%) |
+| RTF | 0.284 |
+| Latency p50 / p95 | 1.60s / 5.02s |
+| Peak RSS | 3.5 GB |
+| Checkpoint on disk | 4.75 GB (`model.safetensors` + duplicate `pytorch_model.bin`) |
+
+WER matches the model-card reference (1.96 test-clean) — the baseline is sane
+and is now the reference for all 1-bit experiments.
 
 ## Key findings (Phase 1)
 

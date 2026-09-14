@@ -10,6 +10,22 @@ smaller using 1-bit weights while retaining competitive accuracy?
 
 See `one_bit_asr_implementation_plan.md` for the full plan.
 
+## Versioning
+
+Releases follow `major.minor.patch` (semantic versioning) and are pushed as
+annotated git tags `vX.Y.Z`:
+
+- **major** — breaking changes (config format, results schema, CLI behavior)
+- **minor** — new phases/features (BitLinear, QAT, distillation, benchmarks)
+- **patch** — bug fixes, doc updates, pins
+
+`pyproject.toml` carries the current version. Tag a release with:
+
+```powershell
+git tag -a vX.Y.Z -m "Release vX.Y.Z: <summary>"
+git push origin main vX.Y.Z
+```
+
 ## Status
 
 - [x] Phase 0 — environment (`.venv`, pinned `requirements.txt`, `scripts/check_env.py` → PASS, `results/env.json`)

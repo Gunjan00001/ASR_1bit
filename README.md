@@ -4,10 +4,11 @@ Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
 
-**Current checkpoint:** `v1.1.0` — CPU-safe work complete through **Phase 10
-(1-bit post-training quantization)**. The FP32 baseline and the 1-bit PTQ model
-are both measured under an identical pinned protocol. Results are real
-measurements; nothing in this README is estimated.
+**Current checkpoint:** `v1.2.0` — CPU-safe work complete through **Phase 11
+QAT infrastructure + tests + CPU smoke/dry run**. The FP32 baseline, the 1-bit
+PTQ model, and the QAT pipeline are all measured/validated under the same
+pinned protocol. The **real cloud-GPU QAT training has NOT been run** (gated;
+see §31). Results are real measurements; nothing in this README is estimated.
 
 > This README is written for an engineer joining at this checkpoint. It states
 > what exists, what was measured, and — just as importantly — what has **not**
@@ -45,7 +46,8 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
-| 11 | QAT | ⛔ not started (needs GPU) |
+| 11 | QAT (infrastructure + tests + CPU smoke) | ✅ done (local) |
+| 11 | QAT (real cloud-GPU training run) | ⛔ not run (gated) |
 | 12 | QAT evaluation | ⛔ not started |
 | 13 | Knowledge distillation | ⛔ not started |
 | 14–19 | Controlled experiments, sensitivity, packing, benchmarks, streaming | ⛔ not started |
@@ -404,53 +406,116 @@ parameters and removing FP master weights from deployment state are future work.
 
 ## 25. What has NOT been implemented yet
 
-- **No QAT** (Phase 11) — binarization here is post-training only.
+- **No trained 1-bit QAT model.** QAT *infrastructure* + a CPU smoke run exist
+  (§27), but the real cloud-GPU QAT training has not been run, so **no accuracy
+  recovery is claimed**.
 - **No knowledge distillation** (Phase 13).
 - **No CUDA kernels / custom bitwise ops** (Phases 17–18).
 - **No actual binary hardware acceleration** — inference expands weights back
   to FP (`alpha·sign(W)`) before `F.linear`; the model is *smaller on disk*,
   not *faster to run* (it measured slower).
-- **No GPU training** of any kind.
-- No streaming ASR (Phase 19), no trained/fine-tuned 1-bit checkpoint.
+- **No GPU training** of any kind has been executed.
+- No streaming ASR (Phase 19).
 - `evaluate` is pinned but unused (metrics are computed with `jiwer`);
-  `data/collator.py`, `features/audio.py`, `decoding/decode.py`,
-  `evaluation/latency.py`, `evaluation/benchmark.py`, `training/*`, and
-  several `scripts/*` remain intentional placeholders.
+  `features/audio.py`, `decoding/decode.py`, `evaluation/latency.py`,
+  `evaluation/benchmark.py`, `training/train.py`, `training/distillation.py`,
+  and several `scripts/*` remain intentional placeholders.
 
 ## 26. Honest claims policy
 
 Reused vs. ours, measured vs. theoretical vs. planned:
 
 - **Reused (upstream):** HF `Wav2Vec2ConformerForCTC`, `Wav2Vec2Processor`,
-  LibriSpeech tooling (`datasets`), CTC loss, tokenizer/vocab, the pretrained
-  checkpoint itself.
+  HF `Trainer`, LibriSpeech tooling (`datasets`), CTC loss, tokenizer/vocab,
+  the pretrained checkpoint itself.
 - **Our implementation:** `BitLinear`, binarization, scaling, STE, layer
   replacement + taxonomy, PTQ pipeline, evaluation runner, size/packing
-  accounting, tests.
+  accounting, QAT assembly (freeze/probe/trainer wiring/checkpoint), tests.
 - **Measured (real numbers in `results/`):** baseline WER/CER/RTF, PTQ
-  WER/CER, replacement counts, packed artifact size, latency/RSS.
+  WER/CER, replacement counts, packed artifact size, latency/RSS, QAT smoke
+  gradient-flow/freeze/master-update checks and smoke WER.
 - **Theoretical (labeled as such):** 1-bit payload = 62,914,560 B; FP32 weight
   bytes = params × 4.
-- **Planned (not implemented):** QAT, distillation, binary compute kernels,
-  hardware acceleration, streaming.
+- **Planned (not implemented):** the real cloud-GPU QAT run, distillation,
+  binary compute kernels, hardware acceleration, streaming.
 
 No performance claim in this README is unsupported by a file in `results/`.
 
-## 27. Next planned phase — Phase 11 QAT
+## 27. Phase 11 — QAT infrastructure (implemented) and smoke run (measured)
 
-Quantization-aware training on the `cloud-gpu` profile, reusing
-`configs/qat.yaml` (which `extends: binary.yaml`, so layer selection and
-quantization settings are inherited, not duplicated):
+> The real QAT training run is **cloud-GPU work and has not been executed**.
+> See §31 for the gated procedure.
 
-```
-FP master weights -> binary quantization -> 1-bit forward -> CTC loss
-                  -> STE backward -> update FP master weights
-```
+### Design (preserves every approved decision)
 
-Requirements already satisfied by this checkpoint: quantization happens inside
-`BitLinear.forward()` (so the stock HF `Trainer` works unmodified) and FP master
-weights are retained. Phase 10 establishes the baseline damage that QAT must
-recover.
+- **Student:** `Wav2Vec2ConformerForCTC` from the fine-tuned FP32 checkpoint,
+  then `replace_linears` with the exact Phase 9/10 selection
+  (attention_q/k/v/output + ffn_in/ffn_out → `BitLinear`; `feature_projection`
+  and `ctc_head` stay FP). Master weights = the fine-tuned FP32 weights.
+- **Quantization:** the same `BitLinear` — FP masters, quantization inside
+  `forward()`, `per_tensor_mean_abs` (`alpha = mean(|W|)`), pass-through STE.
+  No new quantization method.
+- **Freezing:** only the CNN feature extractor (`wav2vec2_conformer.feature_extractor`)
+  is frozen. Everything else — BitLinear masters, biases, LayerNorms,
+  `feature_projection`, `ctc_head`/`lm_head` — stays trainable.
+- **Trainer:** stock Hugging Face `Trainer`, unmodified (a `TrainerCallback`
+  records loss; the data collator is custom).
+- **Data:** `train.100` only, never the validation split (a leakage guard
+  raises if the configured split is `validation`/`test`).
+- **Gradient checkpointing:** explicit, configurable
+  (`qat.training.gradient_checkpointing`, default `false`), passed straight to
+  `TrainingArguments` — never hard-coded.
+
+### Files
+
+- `src/onebit_asr/training/qat.py` — `setup_qat_model`,
+  `freeze_feature_extractor`, `freeze_report`, `probe_gradient_flow`,
+  `master_weight_snapshot`/`master_weight_delta`, `build_training_arguments`,
+  `build_trainer`, `save_qat_checkpoint`/`load_qat_checkpoint`.
+- `src/onebit_asr/data/collator.py` — `DataCollatorCTCWithPadding` (−100 labels).
+- `src/onebit_asr/data/dataset.py` — `load_train_subset` (leakage-guarded),
+  `prepare_ctc_features`.
+- `scripts/train_qat.py` — `--smoke` (CPU dry run) / full (cloud-gpu) modes.
+- `tests/test_qat.py`, `tests/test_evaluate.py` — 16 new tests.
+
+### Two honest measurement notes
+
+1. **Gradient flow is measured by a pre-training probe.** `Trainer` zeroes
+   gradients after the final step, so inspecting grads after `train()` is
+   meaningless (it reports 0). `probe_gradient_flow` runs one forward/backward
+   on a batch and reports the real numbers.
+2. **Evaluation forces eval mode.** `evaluate_model` guarantees
+   `model.eval()` during measurement (and restores the previous mode), so the
+   pinned protocol is not polluted by training-mode dropout.
+
+### Measured smoke result (`results/qat_smoke.json`)
+
+16 `train.100` utterances, batch 1, grad-accum 2, 8 steps, AdamW lr 2e-5,
+local CPU, 8 dev utterances for eval:
+
+| Check | Result |
+|---|---|
+| BitLinear masters receiving gradients | **192 / 192** |
+| Frozen feature-extractor gradient | **zero** (frozen verified) |
+| Master weights updated by optimizer | **yes** (digest changed, |W| sum +302.4) |
+| Master weights remain FP (not binary) | **yes** (fraction exactly ±1 = 0.0) |
+| Makeup of the trained params | 589,166,752 trainable / 4,210,176 frozen |
+| Train loss (step 1 → 8) | 907.30 → 1137.07 |
+| Smoke WER / CER (8 utts) | 1.0000 / 1.0000 |
+| Checkpoint save/load verified | **yes** (identical logits) |
+| Checkpoint is 1-bit packed | **no** (`fp32_master_weights`) |
+
+The smoke run **does not** (and is not intended to) recover accuracy: 8 steps
+at lr 2e-5 on 16 utterances cannot undo the PTQ collapse. It validates the
+pipeline (gradients, freezing, optimizer updates, save/load, evaluation) so the
+real cloud run is trustworthy. The measured smoke WER is reported as-is.
+
+### What QAT has and has not demonstrated
+
+- Demonstrated: the QAT machinery is correct and produces trainable 1-bit
+  students with intact FP masters.
+- Not demonstrated: any accuracy recovery. That requires the real cloud-GPU
+  run in §31. **No QAT WER claim is made here.**
 
 ## 28. Reproducibility instructions
 
@@ -463,12 +528,13 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 40 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 56 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
 .venv\Scripts\python.exe scripts\eval_baseline.py      # Phase 3 (writes baseline.json)
 .venv\Scripts\python.exe scripts\quantize.py           # Phases 9/10 (writes ptq_binary.json, size_report.json)
+.venv\Scripts\python.exe scripts\train_qat.py --config configs/qat.yaml --smoke   # Phase 11 CPU dry run
 ```
 
 Note: re-running `eval_baseline.py` overwrites `results/baseline.json`. The
@@ -482,25 +548,33 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 40 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 56 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
 .venv\Scripts\python.exe scripts\diagnose_ptq_collapse.py --n 16 # control agrees 1.000
-.venv\Scripts\python.exe -m pytest tests/ -q                     # re-run after Phase 8
+.venv\Scripts\python.exe scripts\train_qat.py --config configs/qat.yaml --smoke
+                                                                 # 192/192 grads, freeze ok, save/load ok
 ```
 
 ## 30. Known limitations / issues
 
 - **WER collapse under PTQ** (expected; §23). QAT is the intended remedy.
+- **QAT accuracy recovery is NOT yet measured** — only the smoke pipeline is;
+  the real cloud-GPU run is gated (§31).
+- **Smoke-run loss rose** (907 → 1137 over 8 steps): expected on 16 utterances
+  at lr 2e-5 against an already-collapsed model; it is a pipeline check, not an
+  accuracy experiment.
 - **FFN sensitivity:** binarizing FFN alone already destroys output; the
   shipped config quantizes the whole candidate pool. Per-layer/per-component
   sensitivity is Phase 15.
 - **Binarized inference is slower on CPU**, not faster (§22, §25).
-- **Master weights dominate memory:** the PTQ model keeps ~2.01 GB of FP master
-  weights that are not needed for pure inference; deployment-state accounting
-  excludes them, but an in-memory PTQ model still holds them.
-- **`/n` environment:** training-scale work cannot run locally.
+- **Master weights dominate memory:** the PTQ/QAT model keeps ~2.01 GB of FP
+  master weights that are not needed for pure inference; deployment-state
+  accounting excludes them, but an in-memory model still holds them. QAT
+  training peak RSS measured ~7.5 GB locally (optimizer state).
+- **Local training is not viable at scale:** `local` CPU profile is for smoke
+  runs only.
 - **`results/baseline.json` uses the pre-`v1.1.0` size schema** (single
   `checkpoint_bytes` = full download, 4.75 GB). It is intentionally immutable;
   treat `checkpoint_bytes_safetensors` in newer files as canonical.
@@ -509,6 +583,26 @@ pinned dependencies, recorded provenance in every results JSON.
 - No LM decoding; WER figures are greedy-only and therefore not directly
   comparable to LM-assisted ASR leaderboards.
 
+## 31. Gated next step — real cloud-GPU QAT (NOT run)
+
+Requires GPU access **and** explicit approval. Not executed by this checkpoint.
+
+```powershell
+# On a cloud GPU machine, from a clean checkout of v1.2.0:
+.venv\Scripts\python.exe scripts\train_qat.py --config configs/qat.yaml `
+    --output results/qat.json --checkpoint-dir checkpoints/qat
+# if VRAM is tight, first set qat.training.gradient_checkpointing: true in configs/qat.yaml
+```
+
+- Full mode uses the config's `training.*` block: `train.100`, `subset_size`
+  1000 (raise for a stronger run), lr 2e-5, 3 epochs, then evaluates on the
+  full pinned 256-utterance dev subset.
+- Outputs: `results/qat.json` (bring it back and commit) and
+  `checkpoints/qat/` (FP32 masters + manifest; git-ignored).
+- Then and only then: Phase 12 (QAT evaluation) / Phase 13 (distillation).
+- **Acceptance for that run is a measured WER**, not a target. The 1-bit QAT
+  WER will be reported exactly as measured, however it turns out.
+
 ## Layout
 
 ```
@@ -516,19 +610,19 @@ one-bit-asr/
 ├── configs/            baseline / binary / qat / distillation (extends-composed)
 ├── src/onebit_asr/
 │   ├── config.py               extends-aware config loader
-│   ├── data/                   text normalization, dev-subset loader
+│   ├── data/                   text normalization, dev/train loaders, CTC collator
 │   ├── features/               (placeholder) audio helpers
 │   ├── models/                 conformer_utils (taxonomy), replace_layers
 │   ├── quantization/           ste, scaling, binarization, bitlinear
-│   ├── training/               (placeholders) train / qat / distillation
+│   ├── training/               qat (freeze/probe/trainer/checkpoint); train+distillation placeholders
 │   ├── decoding/               (placeholder) decode
 │   └── evaluation/             evaluate (runner), metrics, model_size
 ├── scripts/            check_env, inspect_model, infer, eval_baseline,
 │                       verify_eval_equivalence, quantize, diagnose_ptq_collapse,
-│                       smoke_ptq_pipeline, setup_windows_ffmpeg
-├── tests/              40 tests (STE, binarization, BitLinear, replacement)
+│                       smoke_ptq_pipeline, train_qat, setup_windows_ffmpeg
+├── tests/              56 tests (STE, binarization, BitLinear, replacement, QAT, evaluate)
 ├── results/            env, model_inspection, baseline, ptq_binary,
-│                       size_report, ptq_collapse_diagnostic  (tracked)
+│                       size_report, ptq_collapse_diagnostic, qat_smoke  (tracked)
 ├── checkpoints/        (git-ignored)
 └── one_bit_asr_implementation_plan.md
 ```

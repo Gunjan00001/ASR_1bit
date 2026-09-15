@@ -1,13 +1,44 @@
-# Quantization-aware training config (Phase 11, cloud-gpu profile).
+# Quantization-aware training config (Phase 11).
 #
-# NOT EXECUTED in this checkpoint. Provided so Phase 11 inherits the exact
-# layer selection and quantization settings from binary.yaml.
+# Inherits the Phase 9/10 layer selection and quantization settings from
+# binary.yaml (which extends baseline.yaml), so QAT binarizes exactly the same
+# attention + FFN layers using the same BitLinear / per-tensor mean-abs scale /
+# STE. Nothing here introduces a new quantization method.
+#
+# The real QAT training run is cloud-GPU work. This config also drives the
+# local CPU smoke/dry run (see qat.smoke overrides).
+
 extends: binary.yaml
 
-compute_profile: cloud-gpu  # QAT trains on the cloud-gpu profile
+compute_profile: cloud-gpu  # real QAT trains on the cloud-gpu profile
 
-training:
+qat:
+  init_from: facebook/wav2vec2-conformer-rope-large-960h-ft  # FP32 fine-tuned
   freeze_feature_extractor: true
-  learning_rate: 2.0e-05
-  epochs: null               # set per experiment
-  train_subset: null         # fixed subset id, recorded in results
+  training:
+    dataset: openslr/librispeech_asr
+    config: clean
+    split: train.100            # NEVER the validation split (leakage guard)
+    subset_size: 1000           # configurable; recorded in results
+    seed: 42
+    batch_size: 4
+    gradient_accumulation_steps: 4
+    gradient_checkpointing: false   # explicit, configurable (enable if VRAM requires)
+    learning_rate: 2.0e-05      # small LR from the fine-tuned checkpoint
+    epochs: 3                   # configurable
+    warmup_ratio: 0.1
+    max_grad_norm: 1.0
+    weight_decay: 0.0
+    optimizer: adamw_torch
+    lr_scheduler: linear
+    logging_steps: 10
+    save_strategy: epoch
+    fp16: false                 # set true on a CUDA GPU if desired
+    bf16: false
+  smoke:                        # local CPU dry run overrides (--smoke)
+    subset_size: 16
+    batch_size: 1
+    gradient_accumulation_steps: 2
+    gradient_checkpointing: false
+    max_steps: 8
+    eval_utterances: 8

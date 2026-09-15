@@ -3,13 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.egg-info/
-build/
-dist/
+/build/
+/dist/
 
 # Environments
 .venv/
 .conda/
-env/
+/env/
 
 # Tooling caches
 .pytest_cache/
@@ -24,8 +24,9 @@ env/
 checkpoints/*
 !checkpoints/.gitkeep
 
-# Downloaded data & model artifacts
-data/
+# Downloaded corpora / model artifacts — repo root only (anchor with a leading
+# slash so this does NOT match source packages like src/onebit_asr/data/).
+/data/
 *.safetensors
 *.bin
 *.pt

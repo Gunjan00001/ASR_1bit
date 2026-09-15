@@ -1,0 +1,251 @@
+{
+  "phase": "Phase 11 QAT (smoke)",
+  "timestamp_utc": "2026-09-15T21:12:42.151492+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "compute_profile": "local",
+  "config_profile": "cloud-gpu",
+  "git_commit": "8d9b2544b652beb36c1cc64de17d23c73f2c5a1c",
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "init_from": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "quantization": {
+    "scale": "per_tensor_mean_abs",
+    "ste": "pass_through",
+    "ste_clip": null
+  },
+  "layers": {
+    "attention_q": true,
+    "attention_k": true,
+    "attention_v": true,
+    "attention_output": true,
+    "ffn_in": true,
+    "ffn_out": true,
+    "feature_projection": false,
+    "ctc_head": false
+  },
+  "replacement": {
+    "n_replaced": 192,
+    "n_retained": 2,
+    "replaced_params": 503660544,
+    "retained_params": 558112,
+    "replaced_categories": [
+      "attention_k",
+      "attention_output",
+      "attention_q",
+      "attention_v",
+      "ffn_in",
+      "ffn_out"
+    ],
+    "retained_categories": [
+      "ctc_head",
+      "feature_projection"
+    ]
+  },
+  "freeze": {
+    "feature_extractor_frozen": true,
+    "trainable_params": 589166752,
+    "frozen_params": 4210176,
+    "trainable_by_group": {
+      "other": {
+        "tensors": 1,
+        "params": 1024,
+        "params_trainable": 1024,
+        "params_frozen": 0
+      },
+      "feature_extractor_frozen": {
+        "tensors": 28,
+        "params": 4210176,
+        "params_trainable": 0,
+        "params_frozen": 4210176
+      },
+      "feature_projection": {
+        "tensors": 4,
+        "params": 526336,
+        "params_trainable": 526336,
+        "params_frozen": 0
+      },
+      "encoder_other": {
+        "tensors": 557,
+        "params": 85290112,
+        "params_trainable": 85290112,
+        "params_frozen": 0
+      },
+      "encoder_bitlinear": {
+        "tensors": 192,
+        "params": 503316480,
+        "params_trainable": 503316480,
+        "params_frozen": 0
+      },
+      "ctc_head": {
+        "tensors": 2,
+        "params": 32800,
+        "params_trainable": 32800,
+        "params_frozen": 0
+      }
+    }
+  },
+  "training": {
+    "dataset": "openslr/librispeech_asr",
+    "config": "clean",
+    "split": "train.100",
+    "subset_size": 16,
+    "seed": 42,
+    "sample_ids": [
+      "5703-47198-0059",
+      "1594-135914-0071",
+      "2514-149482-0061",
+      "441-130108-0035",
+      "163-122947-0062",
+      "1116-132847-0032",
+      "7059-77900-0024",
+      "198-129977-0023",
+      "298-126790-0036",
+      "89-218-0040",
+      "6563-285357-0044",
+      "5703-47198-0031",
+      "226-131532-0029",
+      "6476-96661-0012",
+      "2436-2476-0028",
+      "8108-280354-0027"
+    ],
+    "batch_size": 1,
+    "gradient_accumulation_steps": 2,
+    "gradient_checkpointing": false,
+    "learning_rate": 2e-05,
+    "epochs": 3,
+    "max_steps": 8,
+    "warmup_ratio": 0.1,
+    "warmup_steps": 1,
+    "max_grad_norm": 1.0,
+    "weight_decay": 0.0,
+    "optimizer": "adamw_torch",
+    "lr_scheduler": "linear",
+    "device": "cpu",
+    "steps_completed": 8,
+    "final_train_loss": 1137.068115234375,
+    "train_loss_history": [
+      {
+        "step": 1,
+        "loss": 907.3037109375
+      },
+      {
+        "step": 2,
+        "loss": 1080.5789794921875
+      },
+      {
+        "step": 3,
+        "loss": 822.738525390625
+      },
+      {
+        "step": 4,
+        "loss": 1130.836669921875
+      },
+      {
+        "step": 5,
+        "loss": 1230.44384765625
+      },
+      {
+        "step": 6,
+        "loss": 1235.126953125
+      },
+      {
+        "step": 7,
+        "loss": 759.099853515625
+      },
+      {
+        "step": 8,
+        "loss": 1137.068115234375
+      }
+    ]
+  },
+  "gradient_flow": {
+    "probe_loss": 831.659423828125,
+    "loss_is_finite": true,
+    "total_bitlinear": 192,
+    "with_nonzero_grad": 192,
+    "total_grad_norm": 595.2536603380868,
+    "frozen_feature_extractor_grad_is_zero": true
+  },
+  "master_weights": {
+    "digest_changed": true,
+    "abs_sum_before": 44569929.658203125,
+    "abs_sum_after": 44570232.064453125,
+    "abs_sum_delta": 302.40625,
+    "bitlinear_numel": 503316480,
+    "fraction_exactly_pm1_after": 0.0,
+    "remain_fp_not_binary": true
+  },
+  "eval": {
+    "protocol": "fixed dev-clean subset, seed, greedy CTC, normalized text",
+    "subset_size": 256,
+    "n_utterances": 8,
+    "wer": 1.0,
+    "cer": 1.0,
+    "rtf": 0.3909563072513015,
+    "latency_s": {
+      "mean": 2.726187200001732,
+      "p50": 1.7814069500018377,
+      "p95": 6.52809790998872,
+      "max": 7.712250599986874
+    },
+    "peak_rss_mb": 7455.092736,
+    "sample_ids": [
+      "1988-24833-0026",
+      "2428-83699-0039",
+      "6345-93302-0010",
+      "2078-142845-0048",
+      "2035-152373-0007",
+      "2902-9006-0017",
+      "5694-64029-0000",
+      "251-137823-0017"
+    ]
+  },
+  "comparison": {
+    "vs_fp32_baseline": {
+      "wer": 0.020184544405997693,
+      "delta_wer": 0.9798154555940023
+    },
+    "vs_ptq": {
+      "wer": 1.0,
+      "delta_wer": 0.0
+    }
+  },
+  "checkpoint": {
+    "path": "D:\\Asr_1-bit\\checkpoints\\qat_smoke",
+    "format": "fp32_master_weights",
+    "is_1bit_packed": false,
+    "manifest": {
+      "format": "fp32_master_weights",
+      "is_1bit_packed": false,
+      "description": "FP32 master weights for every parameter (BitLinear masters, biases, LayerNorms, convolutions, feature projection, CTC head). Structurally identical to the original FP32 checkpoint; binary weights exist only at forward time.",
+      "expected_reconstruction": "Wav2Vec2ConformerForCTC.from_pretrained(dir) then replace_linears(...) with the same layer selection; forward() binarizes from these masters.",
+      "bitlinear_layers": 192,
+      "total_params": 593376928,
+      "files": [
+        "model.safetensors"
+      ],
+      "sha256": {
+        "model.safetensors": "0d9865e667a3e0a1111549101ac166f9c79794d25c062c0f356481ce68ea5504"
+      }
+    },
+    "save_load_verified": true
+  },
+  "baseline": {
+    "path": "D:\\Asr_1-bit\\results\\baseline.json",
+    "wer": 0.020184544405997693,
+    "cer": 0.004933559004645468
+  },
+  "ptq": {
+    "path": "D:\\Asr_1-bit\\results\\ptq_binary.json",
+    "wer": 1.0,
+    "cer": 1.0
+  },
+  "versions": {
+    "torch": "2.14.0",
+    "transformers": "5.17.0",
+    "datasets": "5.0.1",
+    "jiwer": "4.0.0",
+    "numpy": "2.5.3",
+    "safetensors": "0.8.0"
+  },
+  "config_path": "D:\\Asr_1-bit\\configs\\baseline.yaml"
+}

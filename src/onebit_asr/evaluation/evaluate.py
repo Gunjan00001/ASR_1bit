@@ -64,6 +64,11 @@ def evaluate_model(
     if decoding != "greedy":
         raise ValueError(f"pinned protocol requires greedy decoding, got {decoding!r}")
 
+    # The pinned protocol is inference: guarantee eval mode (no dropout), even if
+    # the caller just finished a training loop that left the model in train mode.
+    was_training = model.training
+    model.eval()
+
     proc = psutil.Process()
     peak_rss = 0
     refs, hyps, details = [], [], []
@@ -94,6 +99,8 @@ def evaluate_model(
 
     total_audio = sum(audio_secs)
     total_params, _ = count_parameters(model)
+    if was_training:
+        model.train()
     return {
         "sample_ids": [d["id"] for d in details],
         "n_utterances": len(details),

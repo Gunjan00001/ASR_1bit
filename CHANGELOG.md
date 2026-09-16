@@ -8,6 +8,46 @@ an exact, reproducible repository state.
 
 ---
 
+## v1.3.0 — QAT GPU probe tooling (no GPU run executed)
+
+**Scope:** the mandatory pre-run probe from the Phase 11 plan §7b. Tooling only —
+no GPU was available, so **no GPU probe or QAT training was run** in this
+checkpoint.
+
+### Added
+- `--probe` mode in `scripts/train_qat.py`: runs a short (default 30-step)
+  training pass using the *full run's* batch settings, then records measured
+  seconds/optimizer-step, peak VRAM, and an extrapolation to the full run.
+  Writes `results/qat_probe.json`. No eval and no checkpoint are produced.
+- `src/onebit_asr/training/qat.py`: `gpu_memory_stats` (device, total, peak
+  allocated/reserved, whole-GPU `nvidia-smi` usage), `reset_gpu_peak_memory`,
+  `extrapolate_training_time`, `vram_headroom` (default 15% required).
+- `configs/qat.yaml`: `qat.probe.steps` (default 30).
+- `--probe-steps` CLI override.
+- 5 new tests (61 total): extrapolation math, invalid step-time rejection,
+  headroom pass/fail, CPU not-applicable, CPU-labeled memory stats.
+
+### Probe result schema (honest labeling)
+`results/qat_probe.json` records `is_real_gpu_probe: true|false`, the actual
+`compute_profile`, measured memory/time, extrapolation, and a
+`verdict.full_run_recommended` gated on ≥15% VRAM headroom. A CPU validation
+run sets `is_real_gpu_probe: false` with an explicit notice, so a non-GPU
+probe can never be mistaken for a GPU measurement.
+
+### Verified in this checkpoint (local CPU only)
+- `pytest tests/ -q` → 61 passed.
+- `--probe --smoke --probe-steps 3 --output <temp>` completes end-to-end and
+  writes a correctly-labeled (`is_real_gpu_probe: false`) probe JSON. The
+  output was written outside `results/` and is intentionally not committed.
+- No repo files under `results/` were added for the probe (a CPU probe is not
+  a measurement of interest).
+
+### Not included (explicitly deferred)
+The real A10G probe, the full 1,000 × 3 QAT run, and any QAT WER — all gated
+on GPU access and explicit approval. See README §31.
+
+---
+
 ## v1.2.0 — Phase 11 QAT infrastructure + CPU smoke run
 
 **Scope:** QAT infrastructure, tests, and a tiny CPU smoke/dry run only.

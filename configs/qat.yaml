@@ -42,3 +42,5 @@ qat:
     gradient_checkpointing: false
     max_steps: 8
     eval_utterances: 8
+  probe:                        # --probe: short timed/VRAM probe (Phase 11 §7b)
+    steps: 30                    # runs the FULL run's batch settings by default

@@ -39,15 +39,19 @@ from onebit_asr.training.qat import (
     CHECKPOINT_FORMAT,
     build_training_arguments,
     build_trainer,
+    extrapolate_training_time,
     freeze_feature_extractor,
     freeze_report,
+    gpu_memory_stats,
     load_qat_checkpoint,
     make_loss_recorder,
     master_weight_delta,
     master_weight_snapshot,
     probe_gradient_flow,
+    reset_gpu_peak_memory,
     save_qat_checkpoint,
     setup_qat_model,
+    vram_headroom,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -70,25 +74,43 @@ def git_commit() -> str:
         return "unknown"
 
 
-def resolve_training(cfg: dict, smoke: bool) -> dict:
-    """Merge the smoke overrides over the full training block."""
+def resolve_training(cfg: dict, smoke: bool, probe: bool = False,
+                     probe_steps: int | None = None) -> dict:
+    """Merge smoke/probe overrides over the full training block."""
     training = copy.deepcopy(cfg["qat"]["training"])
     if smoke:
         training.update(cfg["qat"].get("smoke", {}))
+    if probe:
+        steps = probe_steps if probe_steps is not None else \
+            cfg["qat"].get("probe", {}).get("steps", 30)
+        training["max_steps"] = int(steps)
+        training["epochs"] = 1
     return training
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Phase 11 QAT (smoke or full).")
+    parser = argparse.ArgumentParser(description="Phase 11 QAT (smoke, probe, or full).")
     parser.add_argument("--config", default="configs/qat.yaml")
     parser.add_argument("--smoke", action="store_true",
                         help="tiny CPU dry run (recommended before any GPU run)")
+    parser.add_argument("--probe", action="store_true",
+                        help="short timed/VRAM probe; gates the full run (Phase 11 §7b)")
+    parser.add_argument("--probe-steps", type=int, default=None,
+                        help="override the configured probe step count")
     parser.add_argument("--output", default=None)
     parser.add_argument("--checkpoint-dir", default=None)
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    output = Path(args.output or (RESULTS / ("qat_smoke.json" if args.smoke else "qat.json")))
+    probe_output = RESULTS / "qat_probe.json"
+    if args.output:
+        output = Path(args.output)
+    elif args.probe:
+        output = probe_output
+    elif args.smoke:
+        output = RESULTS / "qat_smoke.json"
+    else:
+        output = RESULTS / "qat.json"
     checkpoint_dir = Path(args.checkpoint_dir or
                           (ROOT / "checkpoints" / ("qat_smoke" if args.smoke else "qat")))
 
@@ -96,7 +118,7 @@ def main() -> int:
     quant_cfg = cfg.get("quantization", {})
     scale_mode = quant_cfg.get("scale", "per_tensor_mean_abs")
     ste_clip = quant_cfg.get("ste_clip", None)
-    training = resolve_training(cfg, args.smoke)
+    training = resolve_training(cfg, args.smoke, args.probe, args.probe_steps)
 
     # Leakage guard: training must never use the evaluation split.
     if training["split"] == eval_cfg.get("split"):
@@ -128,7 +150,8 @@ def main() -> int:
 
     collator = DataCollatorCTCWithPadding(processor=processor)
     training_args = build_training_arguments(
-        training, str(checkpoint_dir), smoke=args.smoke, train_num_samples=len(features)
+        training, str(checkpoint_dir), smoke=(args.smoke or args.probe),
+        train_num_samples=len(features),
     )
     recorder = make_loss_recorder()
     trainer = build_trainer(model, train_dataset, collator, training_args, recorder)
@@ -143,10 +166,108 @@ def main() -> int:
 
     masters_before = master_weight_snapshot(model)
 
-    print(f"Training ({'smoke' if args.smoke else 'full'}): "
+    mode = "probe" if args.probe else ("smoke" if args.smoke else "full")
+    print(f"Training ({mode}): "
           f"lr={training['learning_rate']} epochs={training.get('epochs')} "
+          f"max_steps={training.get('max_steps')} "
           f"gradient_checkpointing={training_args.gradient_checkpointing} "
           f"device={training_args.device} ...")
+
+    # --- Probe mode: short timed/VRAM run, then stop (no eval, no checkpoint) ---
+    if args.probe:
+        reset_gpu_peak_memory()
+        train_output = trainer.train()
+        runtime = float(train_output.metrics.get("train_runtime", 0.0))
+        steps_done = max(1, trainer.state.global_step)
+        seconds_per_step = runtime / steps_done
+
+        mem = gpu_memory_stats()
+        full = cfg["qat"]["training"]
+        extrapolation = extrapolate_training_time(
+            seconds_per_step,
+            subset_size=int(full["subset_size"]),
+            batch_size=int(training["batch_size"]),
+            gradient_accumulation_steps=int(training.get("gradient_accumulation_steps", 1)),
+            epochs=int(full.get("epochs", 1)),
+        )
+        headroom = vram_headroom(mem["peak_reserved_bytes"], mem["total_bytes"])
+
+        probe_result = {
+            "phase": "Phase 11 QAT GPU probe",
+            "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "platform": platform.platform(),
+            "compute_profile": "cloud-gpu" if mem["cuda"] else "local",
+            "config_profile": cfg.get("compute_profile"),
+            "git_commit": git_commit(),
+            "mode": mode,
+            "is_real_gpu_probe": bool(mem["cuda"]),
+            "notice": (
+                "Measured probe values for planning the full run. If is_real_gpu_probe "
+                "is false this was a CPU validation of the probe code, NOT a GPU result."
+            ),
+            "model_id": cfg["qat"]["init_from"],
+            "layers": cfg["layers"],
+            "quantization": {"scale": scale_mode, "ste": quant_cfg.get("ste"), "ste_clip": ste_clip},
+            "freeze": freeze,
+            "replacement": {
+                "n_replaced": replacement["n_replaced"],
+                "n_retained": replacement["n_retained"],
+            },
+            "probe": {
+                "steps": steps_done,
+                "batch_size": training["batch_size"],
+                "gradient_accumulation_steps": training.get("gradient_accumulation_steps"),
+                "gradient_checkpointing": training_args.gradient_checkpointing,
+                "fp16": training_args.fp16,
+                "bf16": training_args.bf16,
+                "dtype": "fp32" if not (training_args.fp16 or training_args.bf16)
+                else ("fp16" if training_args.fp16 else "bf16"),
+                "runtime_seconds": runtime,
+                "seconds_per_optimizer_step": seconds_per_step,
+                "train_loss_history": recorder.history,
+            },
+            "memory": mem,
+            "extrapolation_to_full_run": {
+                "full_subset_size": full["subset_size"],
+                "full_epochs": full.get("epochs"),
+                **extrapolation,
+            },
+            "vram_headroom": headroom,
+            "verdict": {
+                "full_run_recommended": bool(headroom["passes"]) if headroom["applicable"] else None,
+                "reason": (
+                    "CPU validation run: no GPU memory to assess."
+                    if not headroom["applicable"]
+                    else (
+                        f"peak reserved {mem['peak_reserved_bytes'] / 1e9:.2f} GB of "
+                        f"{mem['total_bytes'] / 1e9:.2f} GB; free fraction "
+                        f"{headroom['free_fraction']:.1%}"
+                    )
+                ),
+            },
+            "gradient_flow": gradient_flow,
+            "versions": {
+                "torch": pkg_version("torch"),
+                "transformers": pkg_version("transformers"),
+                "datasets": pkg_version("datasets"),
+            },
+            "config_path": cfg.get("_config_path"),
+        }
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(probe_result, indent=2))
+
+        print(f"Probe: {steps_done} steps in {runtime:.1f}s "
+              f"({seconds_per_step:.3f}s/step) on {mem['device_name'] or 'cpu'}")
+        if mem["cuda"]:
+            print(f"Peak reserved: {mem['peak_reserved_bytes'] / 1e9:.2f} GB / "
+                  f"{mem['total_bytes'] / 1e9:.2f} GB "
+                  f"(free {headroom['free_fraction']:.1%}; "
+                  f"headroom {'OK' if headroom['passes'] else 'INSUFFICIENT'})")
+        print(f"Extrapolated full run: {extrapolation['optimizer_steps_total']} steps, "
+              f"~{extrapolation['estimated_hours']:.2f} h")
+        print(f"Saved probe to {output}")
+        return 0
+
     trainer.train()
 
     masters_after = master_weight_snapshot(model)

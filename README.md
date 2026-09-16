@@ -471,12 +471,15 @@ No performance claim in this README is unsupported by a file in `results/`.
 - `src/onebit_asr/training/qat.py` — `setup_qat_model`,
   `freeze_feature_extractor`, `freeze_report`, `probe_gradient_flow`,
   `master_weight_snapshot`/`master_weight_delta`, `build_training_arguments`,
-  `build_trainer`, `save_qat_checkpoint`/`load_qat_checkpoint`.
+  `build_trainer`, `save_qat_checkpoint`/`load_qat_checkpoint`, and the GPU
+  probe helpers `gpu_memory_stats`, `extrapolate_training_time`,
+  `vram_headroom`.
 - `src/onebit_asr/data/collator.py` — `DataCollatorCTCWithPadding` (−100 labels).
 - `src/onebit_asr/data/dataset.py` — `load_train_subset` (leakage-guarded),
   `prepare_ctc_features`.
-- `scripts/train_qat.py` — `--smoke` (CPU dry run) / full (cloud-gpu) modes.
-- `tests/test_qat.py`, `tests/test_evaluate.py` — 16 new tests.
+- `scripts/train_qat.py` — `--smoke` (CPU dry run), `--probe` (timed/VRAM
+  probe that gates the full run), or full (cloud-gpu) modes.
+- `tests/test_qat.py`, `tests/test_evaluate.py` — 21 new tests.
 
 ### Two honest measurement notes
 
@@ -528,7 +531,7 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 56 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 61 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
@@ -548,7 +551,7 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 56 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 61 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
@@ -585,23 +588,38 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ## 31. Gated next step — real cloud-GPU QAT (NOT run)
 
-Requires GPU access **and** explicit approval. Not executed by this checkpoint.
+Requires GPU access **and** explicit approval. Not executed by this repository
+checkpoint — no GPU exists on the development machine (CPU-only, see §5).
+
+### Step 1 — mandatory probe (measures VRAM + time/step)
 
 ```powershell
-# On a cloud GPU machine, from a clean checkout of v1.2.0:
-.venv\Scripts\python.exe scripts\train_qat.py --config configs/qat.yaml `
-    --output results/qat.json --checkpoint-dir checkpoints/qat
-# if VRAM is tight, first set qat.training.gradient_checkpointing: true in configs/qat.yaml
+# On a cloud GPU machine (e.g. A10G 24 GB), from a clean checkout of v1.3.0:
+.venv\Scripts\python.exe scripts\train_qat.py --config configs/qat.yaml --probe
+# writes results/qat_probe.json with peak VRAM, s/optimizer-step, and an
+# extrapolation to the full run
 ```
 
-- Full mode uses the config's `training.*` block: `train.100`, `subset_size`
-  1000 (raise for a stronger run), lr 2e-5, 3 epochs, then evaluates on the
-  full pinned 256-utterance dev subset.
-- Outputs: `results/qat.json` (bring it back and commit) and
-  `checkpoints/qat/` (FP32 masters + manifest; git-ignored).
+The full run proceeds **only if** the probe reports ≥15% VRAM headroom
+(`vram_headroom.passes == true`). Otherwise enable
+`qat.training.gradient_checkpointing: true` (and/or `batch_size: 2` with
+`gradient_accumulation_steps: 8`) and re-probe. On T4 also set
+`fp16: true`, `bf16: false` (Turing has no bf16).
+
+### Step 2 — full run (only after the probe passes)
+
+```powershell
+.venv\Scripts\python.exe scripts\train_qat.py --config configs/qat.yaml `
+    --output results/qat.json --checkpoint-dir checkpoints/qat
+```
+
+- Full mode uses `training.*`: `train.100`, `subset_size` 1000 (raise for a
+  stronger run), lr 2e-5, 3 epochs, then evaluates on the full pinned
+  256-utterance dev subset.
+- Outputs: `results/qat.json` (commit it) and `checkpoints/qat/` (FP32 masters
+  + manifest; git-ignored).
 - Then and only then: Phase 12 (QAT evaluation) / Phase 13 (distillation).
-- **Acceptance for that run is a measured WER**, not a target. The 1-bit QAT
-  WER will be reported exactly as measured, however it turns out.
+- **Acceptance is a measured WER**, reported exactly as measured.
 
 ## Layout
 
@@ -620,7 +638,7 @@ one-bit-asr/
 ├── scripts/            check_env, inspect_model, infer, eval_baseline,
 │                       verify_eval_equivalence, quantize, diagnose_ptq_collapse,
 │                       smoke_ptq_pipeline, train_qat, setup_windows_ffmpeg
-├── tests/              56 tests (STE, binarization, BitLinear, replacement, QAT, evaluate)
+├── tests/              61 tests (STE, binarization, BitLinear, replacement, QAT, evaluate)
 ├── results/            env, model_inspection, baseline, ptq_binary,
 │                       size_report, ptq_collapse_diagnostic, qat_smoke  (tracked)
 ├── checkpoints/        (git-ignored)

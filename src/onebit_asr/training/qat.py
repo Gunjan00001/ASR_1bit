@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import subprocess
 from pathlib import Path
 
 import torch
@@ -332,3 +333,89 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+# --- GPU probe (Phase 11 §7b): measure before committing to a full run ------
+
+def reset_gpu_peak_memory() -> None:
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
+
+
+def gpu_memory_stats() -> dict:
+    """Peak memory for this process (torch) plus whole-GPU usage (nvidia-smi).
+
+    On a CPU host this returns ``cuda: False`` with null fields, so the probe
+    still works locally for validation.
+    """
+    if not torch.cuda.is_available():
+        return {
+            "cuda": False,
+            "device": "cpu",
+            "device_name": None,
+            "total_bytes": None,
+            "peak_allocated_bytes": None,
+            "peak_reserved_bytes": None,
+            "nvidia_smi_memory_used_mb": _nvidia_smi_used_mb(),
+        }
+    props = torch.cuda.get_device_properties(0)
+    return {
+        "cuda": True,
+        "device": f"cuda:{torch.cuda.current_device()}",
+        "device_name": props.name,
+        "total_bytes": int(props.total_memory),
+        "peak_allocated_bytes": int(torch.cuda.max_memory_allocated()),
+        "peak_reserved_bytes": int(torch.cuda.max_memory_reserved()),
+        "nvidia_smi_memory_used_mb": _nvidia_smi_used_mb(),
+    }
+
+
+def _nvidia_smi_used_mb() -> int | None:
+    """Whole-GPU used memory in MB (includes other processes); None if absent."""
+    try:
+        out = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+            text=True, stderr=subprocess.DEVNULL, timeout=15,
+        )
+        return int(out.strip().splitlines()[0])
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def extrapolate_training_time(
+    seconds_per_optimizer_step: float,
+    subset_size: int,
+    batch_size: int,
+    gradient_accumulation_steps: int,
+    epochs: int,
+) -> dict:
+    """Extrapolate full-run time from the probe's measured seconds/step."""
+    if seconds_per_optimizer_step <= 0:
+        raise ValueError("seconds_per_optimizer_step must be positive")
+    micro_batches = math.ceil(int(subset_size) * int(epochs) / max(1, int(batch_size)))
+    optimizer_steps = math.ceil(micro_batches / max(1, int(gradient_accumulation_steps)))
+    total_seconds = seconds_per_optimizer_step * optimizer_steps
+    return {
+        "micro_batches_total": micro_batches,
+        "optimizer_steps_total": optimizer_steps,
+        "estimated_seconds": total_seconds,
+        "estimated_minutes": total_seconds / 60,
+        "estimated_hours": total_seconds / 3600,
+    }
+
+
+def vram_headroom(peak_bytes: int | None, total_bytes: int | None,
+                  required_fraction: float = 0.15) -> dict:
+    """Check peak VRAM leaves the required fraction of total free."""
+    if peak_bytes is None or total_bytes is None or total_bytes <= 0:
+        return {"applicable": False, "required_fraction": required_fraction,
+                "passes": None, "free_bytes": None, "free_fraction": None}
+    free = int(total_bytes) - int(peak_bytes)
+    free_fraction = free / int(total_bytes)
+    return {
+        "applicable": True,
+        "required_fraction": required_fraction,
+        "passes": free_fraction >= required_fraction,
+        "free_bytes": free,
+        "free_fraction": free_fraction,
+    }

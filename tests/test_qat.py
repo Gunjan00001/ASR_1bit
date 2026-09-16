@@ -30,8 +30,10 @@ from onebit_asr.training.qat import (
     bitlinear_grad_stats,
     build_training_arguments,
     build_trainer,
+    extrapolate_training_time,
     freeze_feature_extractor,
     freeze_report,
+    gpu_memory_stats,
     load_qat_checkpoint,
     make_loss_recorder,
     master_weight_delta,
@@ -39,6 +41,7 @@ from onebit_asr.training.qat import (
     probe_gradient_flow,
     save_qat_checkpoint,
     setup_qat_model,
+    vram_headroom,
 )
 from onebit_asr.quantization.bitlinear import BitLinear
 
@@ -304,6 +307,42 @@ def test_master_weight_delta_detects_update_and_fpness(tiny_model):
     assert delta["digest_changed"] is True
     assert delta["remain_fp_not_binary"] is True
     assert abs(delta["abs_sum_delta"]) > 0
+
+
+def test_extrapolate_training_time_matches_manual_math():
+    # 1000 samples x 3 epochs, batch 4, accum 4 -> 750 micro-batches, 188 steps
+    out = extrapolate_training_time(2.0, subset_size=1000, batch_size=4,
+                                    gradient_accumulation_steps=4, epochs=3)
+    assert out["micro_batches_total"] == 750
+    assert out["optimizer_steps_total"] == 188  # ceil(750 / 4)
+    assert abs(out["estimated_seconds"] - 376.0) < 1e-9
+
+
+def test_extrapolate_training_time_rejects_nonpositive_step_time():
+    with pytest.raises(ValueError, match="must be positive"):
+        extrapolate_training_time(0.0, subset_size=10, batch_size=1,
+                                  gradient_accumulation_steps=1, epochs=1)
+
+
+def test_vram_headroom_pass_and_fail():
+    total = 24 * 1000**3
+    ok = vram_headroom(int(total * 0.80), total)          # 20% free
+    assert ok["applicable"] is True and ok["passes"] is True
+    bad = vram_headroom(int(total * 0.95), total)         # 5% free
+    assert bad["passes"] is False
+
+
+def test_vram_headroom_not_applicable_on_cpu():
+    out = vram_headroom(None, None)
+    assert out["applicable"] is False and out["passes"] is None
+
+
+def test_gpu_memory_stats_on_cpu_is_labelled():
+    stats = gpu_memory_stats()
+    if not torch.cuda.is_available():
+        assert stats["cuda"] is False
+        assert stats["device"] == "cpu"
+        assert stats["peak_allocated_bytes"] is None
 
 
 def test_build_trainer_returns_stock_trainer(tiny_model, tmp_path):

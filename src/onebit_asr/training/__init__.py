@@ -5,15 +5,19 @@ from onebit_asr.training.qat import (
     bitlinear_grad_stats,
     build_training_arguments,
     build_trainer,
+    extrapolate_training_time,
     freeze_feature_extractor,
     freeze_report,
+    gpu_memory_stats,
     load_qat_checkpoint,
     make_loss_recorder,
     master_weight_delta,
     master_weight_snapshot,
     probe_gradient_flow,
+    reset_gpu_peak_memory,
     save_qat_checkpoint,
     setup_qat_model,
+    vram_headroom,
 )
 
 __all__ = [
@@ -30,4 +34,8 @@ __all__ = [
     "make_loss_recorder",
     "save_qat_checkpoint",
     "load_qat_checkpoint",
+    "gpu_memory_stats",
+    "reset_gpu_peak_memory",
+    "extrapolate_training_time",
+    "vram_headroom",
 ]

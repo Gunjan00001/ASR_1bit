@@ -152,25 +152,32 @@ def clone_repo() -> None:
 
 # --- 3/4. Dependencies + CUDA assertion --------------------------------------
 
-TORCH_CUDA_CHECK = (
-    "import json, torch;"
+STACK_CHECK = (
+    "import json, torch, torchvision;"
     "assert torch.cuda.is_available(), 'CUDA not available after install';"
+    "from torchvision.io import decode_image;"
+    "from transformers import Wav2Vec2ConformerForCTC;"
     "d=torch.cuda.get_device_properties(0);"
-    "print(json.dumps({'torch':torch.__version__,'cuda':torch.version.cuda,"
-    "'device':d.name,'total_gb':d.total_memory/1e9,"
+    "print(json.dumps({'torch':torch.__version__,'torchvision':torchvision.__version__,"
+    "'cuda':torch.version.cuda,'device':d.name,'total_gb':d.total_memory/1e9,"
     "'capability':f'{d.major}.{d.minor}','count':torch.cuda.device_count()}))"
 )
 
 
 def install_dependencies() -> None:
-    log("=== Installing Kaggle dependencies (torch stack preserved) ===")
+    log("=== Installing Kaggle dependencies (matching CUDA 13 torch stack) ===")
     run([sys.executable, "-m", "pip", "install", "-r", "kaggle/requirements-kaggle.txt",
          "-c", "kaggle/constraints-kaggle.txt"], cwd=REPO_DIR)
     run([sys.executable, "-m", "pip", "install", "-e", "."], cwd=REPO_DIR)
-    log("=== Asserting torch CUDA is intact after install ===")
-    code = run([sys.executable, "-c", TORCH_CUDA_CHECK], cwd=REPO_DIR, check=False)
+    log("=== Removing stale torchaudio (unused; built against the old torch) ===")
+    run([sys.executable, "-m", "pip", "uninstall", "-y", "torchaudio"], cwd=REPO_DIR,
+        check=False)
+    log("=== Asserting torch/torchvision/transformers stack is intact ===")
+    code = run([sys.executable, "-c", STACK_CHECK], cwd=REPO_DIR, check=False)
     if code != 0:
-        raise RuntimeError("torch CUDA lost after dependency install; aborting")
+        raise RuntimeError(
+            "torch/torchvision/transformers stack broken after install; aborting"
+        )
 
 
 # --- 5. Audio decoder --------------------------------------------------------

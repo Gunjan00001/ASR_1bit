@@ -1,13 +1,15 @@
 # Kaggle execution dependencies (Phase 11 attention-only QAT).
 #
-# IMPORTANT: torch / torchvision / torchaudio are intentionally NOT listed.
-# Kaggle provides them as the CUDA build (torch 2.14.0+cu130,
-# torchvision 0.29.0+cu130, CUDA 13.0). Listing them here would let pip replace
-# the CUDA build with a CPU/default wheel. kaggle/constraints-kaggle.txt pins
-# them so a conflicting dependency fails loudly instead of silently swapping.
-#
-# Versions mirror requirements.txt (the local pinned set); only the torch stack
-# is omitted.
+# The torch stack IS pinned here on purpose. The Kaggle image at submit time
+# shipped torch 2.10.0+cu128 / torchvision 0.25.0+cu128 / torchaudio 2.10.0+cu128
+# (CUDA 12.8), but our dependency set pulls torch 2.14.0. Installing torch alone
+# left torchvision mismatched and transformers crashed at import with
+# "RuntimeError: operator torchvision::nms does not exist". We therefore pin the
+# matching CUDA 13 pair explicitly (the validated working stack):
+#   torch 2.14.0+cu130, torchvision 0.29.0+cu130, CUDA 13.0.
+# kaggle/kernel.py additionally removes the stale torchaudio (unused here).
+torch==2.14.0
+torchvision==0.29.0
 transformers==5.17.0
 datasets==5.0.1
 evaluate==0.4.6

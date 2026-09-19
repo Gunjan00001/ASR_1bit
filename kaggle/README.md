@@ -10,8 +10,9 @@ repo at the exact commit SHA that `scripts/kaggle_submit.ps1` pins.
 
 1. Report Python / torch / CUDA / GPU name / VRAM.
 2. Clone `Gunjan00001/ASR_1bit` at the pinned revision.
-3. Install `kaggle/requirements-kaggle.txt` (constraints protect the
-   preinstalled CUDA torch 2.14.0+cu130 / torchvision 0.29.0+cu130), then
+3. Install `kaggle/requirements-kaggle.txt`, which pins the matching CUDA 13
+   stack (`torch 2.14.0+cu130`, `torchvision 0.29.0+cu130`) because the Kaggle
+   image shipped an older mismatched pair; stale `torchaudio` is removed. Then
    `pip install -e .`.
 4. Assert `torch.cuda.is_available()`.
 5. Verify audio decoding (torchcodec, else `ONEBIT_AUDIO_DECODER=soundfile`).

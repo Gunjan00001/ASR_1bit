@@ -27,12 +27,11 @@ import sys
 from pathlib import Path
 
 import torch
-from datasets import Dataset
 from transformers import Wav2Vec2ConformerForCTC, Wav2Vec2Processor
 
 from onebit_asr.config import load_config
 from onebit_asr.data.collator import DataCollatorCTCWithPadding
-from onebit_asr.data.dataset import load_dev_subset, load_train_subset, prepare_ctc_features
+from onebit_asr.data.dataset import build_ctc_train_dataset, load_dev_subset
 from onebit_asr.evaluation.evaluate import evaluate_model, print_summary
 from onebit_asr.models.replace_layers import report_replacement
 from onebit_asr.training.qat import (
@@ -142,16 +141,18 @@ def main() -> int:
     print(f"Trainable: {freeze['trainable_params']:,} | Frozen: {freeze['frozen_params']:,}")
 
     print(f"Loading train subset ({training['split']}, n={training['subset_size']}, seed={training['seed']}) ...")
-    train_samples = load_train_subset(
-        subset_size=training["subset_size"], seed=training["seed"], split=training["split"]
+    # Streamed, bounded-memory construction (see build_ctc_train_dataset): a
+    # 10k-utterance subset materialized as Python lists OOM-kills the Kaggle
+    # worker. Same selection/order as before.
+    train_dataset, provenance = build_ctc_train_dataset(
+        split=training["split"], subset_size=training["subset_size"],
+        seed=training["seed"], processor=processor,
     )
-    features, provenance = prepare_ctc_features(train_samples, processor)
-    train_dataset = Dataset.from_list(features)
 
     collator = DataCollatorCTCWithPadding(processor=processor)
     training_args = build_training_arguments(
         training, str(checkpoint_dir), smoke=(args.smoke or args.probe),
-        train_num_samples=len(features),
+        train_num_samples=len(train_dataset),
     )
     recorder = make_loss_recorder()
     trainer = build_trainer(model, train_dataset, collator, training_args, recorder)

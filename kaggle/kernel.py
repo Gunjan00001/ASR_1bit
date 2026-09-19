@@ -120,6 +120,22 @@ def report_environment() -> dict:
         "cuda_available": bool(torch.cuda.is_available()),
         "cuda_device_count": int(torch.cuda.device_count()) if torch.cuda.is_available() else 0,
     }
+    try:
+        import psutil
+
+        vm = psutil.virtual_memory()
+        info["ram_total_gb"] = round(vm.total / 1e9, 2)
+        info["ram_available_gb"] = round(vm.available / 1e9, 2)
+    except Exception:  # noqa: BLE001
+        pass
+    for cg in ("/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"):
+        try:
+            if os.path.isfile(cg):
+                raw = open(cg, encoding="utf-8").read().strip()
+                if raw and raw != "max":
+                    info.setdefault("cgroup_memory_limit_gb", {})[cg] = round(int(raw) / 1e9, 2)
+        except Exception:  # noqa: BLE001
+            pass
     if info["cuda_available"]:
         props = torch.cuda.get_device_properties(0)
         info.update({

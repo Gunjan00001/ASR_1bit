@@ -129,6 +129,14 @@ def probe_gradient_flow(model: nn.Module, batch: dict) -> dict:
     gradients after the final step. Returns BitLinear grad stats plus a check
     that the frozen feature extractor received no gradient.
     """
+    # The batch comes from a CPU DataLoader, but the model may already be on a
+    # CUDA device (stock Trainer places it there in __init__). Move tensors.
+    device = next(model.parameters()).device
+    batch = {
+        key: (value.to(device) if torch.is_tensor(value) else value)
+        for key, value in batch.items()
+    }
+
     was_training = model.training
     model.train()
     model.zero_grad(set_to_none=True)

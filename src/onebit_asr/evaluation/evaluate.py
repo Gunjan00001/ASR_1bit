@@ -69,6 +69,13 @@ def evaluate_model(
     was_training = model.training
     model.eval()
 
+    # Place inputs on the model's device (GPU QAT training leaves the model on
+    # CUDA; the pinned protocol is device-agnostic).
+    try:
+        device = next(model.parameters()).device
+    except (AttributeError, StopIteration):
+        device = torch.device("cpu")
+
     proc = psutil.Process()
     peak_rss = 0
     refs, hyps, details = [], [], []
@@ -81,7 +88,7 @@ def evaluate_model(
         audio_sec = len(s["audio"]) / 16_000
         t0 = time.perf_counter()
         with torch.no_grad():
-            logits = model(inputs.input_values).logits
+            logits = model(inputs.input_values.to(device)).logits
         hyp = processor.batch_decode(torch.argmax(logits, dim=-1))[0]
         dt = time.perf_counter() - t0
 

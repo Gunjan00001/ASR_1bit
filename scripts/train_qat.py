@@ -290,8 +290,11 @@ def main() -> int:
         checkpoint_dir, Wav2Vec2ConformerForCTC, cfg["layers"],
         scale_mode=scale_mode, ste_clip=ste_clip,
     )
+    device = next(model.parameters()).device
+    reloaded = reloaded.to(device)
     reloaded.eval()
-    inp = processor(samples[0]["audio"], sampling_rate=16_000, return_tensors="pt").input_values
+    inp = processor(samples[0]["audio"], sampling_rate=16_000,
+                    return_tensors="pt").input_values.to(device)
     # Compare reloaded model against the trained model on one utterance.
     model.eval()
     with torch.no_grad():

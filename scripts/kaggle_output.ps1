@@ -9,6 +9,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Kaggle CLI is Python; force UTF-8 so it does not crash printing filenames on
+# a legacy Windows console code page.
+$env:PYTHONIOENCODING = "utf-8"
+$env:PYTHONUTF8 = "1"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
 Push-Location $RepoRoot

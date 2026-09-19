@@ -14,6 +14,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$env:PYTHONIOENCODING = "utf-8"
+$env:PYTHONUTF8 = "1"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
 Write-Host "Repository: $RepoRoot"

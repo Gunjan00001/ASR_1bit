@@ -8,5 +8,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$env:PYTHONIOENCODING = "utf-8"
+$env:PYTHONUTF8 = "1"
 kaggle kernels status $KernelId
 if ($LASTEXITCODE -ne 0) { throw "kaggle kernels status failed" }

@@ -13,8 +13,11 @@ Sample IDs are recorded in results JSON so any run can be reproduced exactly.
 
 from __future__ import annotations
 
+import io
+import os
+
 import numpy as np
-from datasets import load_dataset
+from datasets import Audio, load_dataset
 
 DATASET_ID = "openslr/librispeech_asr"
 CONFIG = "clean"
@@ -23,8 +26,33 @@ TRAIN_SPLIT = "train.100"
 EXPECTED_SR = 16_000
 
 
+def _audio_decoder() -> str:
+    """Selected audio decoder backend (default: HF ``datasets`` / torchcodec).
+
+    Set ``ONEBIT_AUDIO_DECODER=soundfile`` to bypass torchcodec/FFmpeg and
+    decode the raw FLAC/audio bytes with ``soundfile`` instead. Used on Kaggle
+    when torchcodec is unavailable; the default path is unchanged.
+    """
+    return os.environ.get("ONEBIT_AUDIO_DECODER", "").strip().lower()
+
+
+def _decode_audio_soundfile(entry: dict) -> tuple[np.ndarray, int]:
+    """Decode an ``Audio(decode=False)`` entry (bytes or path) via soundfile."""
+    import soundfile as sf
+
+    raw = entry.get("bytes")
+    if raw is not None:
+        audio, sr = sf.read(io.BytesIO(raw), dtype="float32", always_2d=False)
+    else:
+        audio, sr = sf.read(entry["path"], dtype="float32", always_2d=False)
+    return np.asarray(audio, dtype=np.float32), int(sr)
+
+
 def _load_subset(split: str, subset_size: int, seed: int) -> list[dict]:
     ds = load_dataset(DATASET_ID, CONFIG, split=split)
+    use_soundfile = _audio_decoder() == "soundfile"
+    if use_soundfile:
+        ds = ds.cast_column("audio", Audio(decode=False))
     if len(ds) < subset_size:
         raise ValueError(
             f"Split {split!r} has {len(ds)} utterances, need {subset_size}"
@@ -32,8 +60,11 @@ def _load_subset(split: str, subset_size: int, seed: int) -> list[dict]:
     sub = ds.shuffle(seed=seed).select(range(subset_size))
     samples = []
     for row in sub:
-        audio = np.asarray(row["audio"]["array"], dtype=np.float32)
-        sr = int(row["audio"]["sampling_rate"])
+        if use_soundfile:
+            audio, sr = _decode_audio_soundfile(row["audio"])
+        else:
+            audio = np.asarray(row["audio"]["array"], dtype=np.float32)
+            sr = int(row["audio"]["sampling_rate"])
         if sr != EXPECTED_SR:
             raise ValueError(f"Sample {row.get('id')}: {sr} Hz, expected {EXPECTED_SR} Hz")
         samples.append({"id": str(row.get("id", "")), "audio": audio, "text": row["text"]})

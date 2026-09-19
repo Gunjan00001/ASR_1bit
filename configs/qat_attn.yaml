@@ -1,0 +1,33 @@
+# Phase 11 — attention-only QAT (cloud-gpu profile).
+#
+# Pristine experiment specification. This file defines ONLY the experiment:
+#   * attention projections -> BitLinear (96 layers)
+#   * FFN projections       -> kept FP
+#   * feature_projection / ctc_head -> kept FP
+#   * 10,000-utterance train.100 subset, 3 epochs, batch 4, grad-accum 4
+#
+# Hardware-specific settings (fp16, gradient_checkpointing) are deliberately NOT
+# here. The Kaggle runner (kaggle/kernel.py) applies them through an effective
+# config (configs/kaggle_effective_attn.yaml) so this experiment definition
+# stays compute-profile agnostic.
+#
+# Inherits everything else from qat.yaml -> binary.yaml -> baseline.yaml:
+#   lr 2e-5, epochs 3, batch_size 4, grad-accum 4, warmup_ratio 0.1,
+#   adamw_torch, linear schedule, per-tensor mean-abs scale, pass-through STE.
+extends: qat.yaml
+
+compute_profile: cloud-gpu
+
+layers:
+  attention_q: true
+  attention_k: true
+  attention_v: true
+  attention_output: true
+  ffn_in: false
+  ffn_out: false
+  feature_projection: false
+  ctc_head: false
+
+qat:
+  training:
+    subset_size: 10000

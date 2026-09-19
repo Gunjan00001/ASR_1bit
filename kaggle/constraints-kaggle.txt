@@ -1,0 +1,7 @@
+# Kaggle dependency constraints: protect the preinstalled CUDA torch stack.
+#
+# If any dependency in requirements-kaggle.txt demands an incompatible torch,
+# pip must FAIL rather than silently replace the cu130 build. Local version
+# labels are ignored by "==", so the installed "2.14.0+cu130" satisfies these.
+torch==2.14.0
+torchvision==0.29.0

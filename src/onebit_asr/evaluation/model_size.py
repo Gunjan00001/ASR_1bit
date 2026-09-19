@@ -105,34 +105,31 @@ def _is_bitlinear(module: nn.Module) -> bool:
     return bool(getattr(module, "is_bitlinear", False))
 
 
-def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale_mode: str = "per_tensor_mean_abs") -> dict:
-    """Honest size accounting for a (partially) binarized model.
+def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dict]:
+    """Build the packed artifact tensor map and its component-byte accounting.
 
-    Separates, with no double counting:
+    Shared by :func:`binary_model_size_report` (which *measures* a real file)
+    and :func:`write_packed_artifact` (which *writes* a deployable file), so the
+    two can never diverge.
 
-    - theoretical 1-bit weight payload (``ceil(n/8)``, payload only)
-    - naive binary representation (1 byte/weight, how bool/int8 serializes)
-    - real packed payload (``numpy.packbits``)
-    - FP scales (one FP32 scalar per BitLinear, per-tensor)
-    - non-quantized FP parameters (everything not a BitLinear weight)
-    - a *measured* container overhead: a real safetensors file is written with
-      the packed weights + scales + remaining FP params, and its size recorded.
+    The packed artifact contains, with no double counting:
 
-    The FP32 master weights of BitLinear layers are intentionally excluded from
-    the packed artifact (they are training-time state for Phase 11 QAT); they
-    are accounted separately as ``fp_master_bytes``.
+    - bit-packed ``sign(W)`` for every BitLinear weight (``numpy.packbits``)
+    - one FP32 per-tensor scale per BitLinear layer
+    - every non-quantized FP parameter (conv/norm/proj/head/biases)
+
+    The FP32 master weights of BitLinear layers are intentionally excluded
+    (training-time state, accounted separately).
+
+    Returns:
+        ``(tensors, stats)``.
     """
-    import tempfile
-
-    from safetensors.torch import save_file
-
     bitlinear_weights: dict[str, nn.Module] = {}
     for name, module in model.named_modules():
         if _is_bitlinear(module) and hasattr(module, "weight"):
             bitlinear_weights[f"{name}.weight"] = module
 
     quantized_weight_count = sum(m.weight.numel() for m in bitlinear_weights.values())
-    component_bytes = 0  # tracked for cross-check against the measured file
 
     tensors: dict[str, torch.Tensor] = {}
     packed_payload_bytes = 0
@@ -154,14 +151,7 @@ def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale
         non_quantized_params += param.numel()
         non_quantized_bytes += param.numel() * param.element_size()
 
-    with tempfile.TemporaryDirectory() as tmp:
-        artifact = Path(tmp) / "packed_model.safetensors"
-        save_file(tensors, str(artifact))
-        packed_artifact_bytes = artifact.stat().st_size
-
-    fp_master_bytes = quantized_weight_count * 4
-    result = {
-        "scale_mode": scale_mode,
+    stats = {
         "n_bitlinear_layers": len(bitlinear_weights),
         "quantized_weight_count": int(quantized_weight_count),
         "non_quantized_param_count": int(non_quantized_params),
@@ -170,13 +160,75 @@ def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale
         "packed_payload_bytes": int(packed_payload_bytes),
         "fp_scale_bytes": int(scale_bytes),
         "non_quantized_fp_param_bytes": int(non_quantized_bytes),
-        "fp_master_bytes_excluded_from_artifact": int(fp_master_bytes),
+        "fp_master_bytes_excluded_from_artifact": int(quantized_weight_count * 4),
+        "packed_artifact_components_bytes": int(
+            packed_payload_bytes + scale_bytes + non_quantized_bytes
+        ),
+    }
+    return tensors, stats
+
+
+def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale_mode: str = "per_tensor_mean_abs") -> dict:
+    """Honest size accounting for a (partially) binarized model.
+
+    Separates, with no double counting: theoretical 1-bit payload, naive binary
+    representation (1 byte/weight), real packed payload (``numpy.packbits``),
+    FP scales, non-quantized FP parameters, and a *measured* container overhead
+    from a real safetensors file written to a temporary directory.
+
+    The FP32 master weights of BitLinear layers are intentionally excluded from
+    the packed artifact (they are training-time state for Phase 11 QAT); they
+    are accounted separately as ``fp_master_bytes_excluded_from_artifact``.
+    """
+    import tempfile
+
+    from safetensors.torch import save_file
+
+    tensors, stats = build_packed_tensors(model)
+    with tempfile.TemporaryDirectory() as tmp:
+        artifact = Path(tmp) / "packed_model.safetensors"
+        save_file(tensors, str(artifact))
+        packed_artifact_bytes = artifact.stat().st_size
+
+    result = {
+        "scale_mode": scale_mode,
+        **stats,
         "packed_artifact_bytes_measured": int(packed_artifact_bytes),
-        "container_overhead_bytes": int(packed_artifact_bytes - packed_payload_bytes - scale_bytes - non_quantized_bytes),
-        "packed_artifact_components_bytes": int(packed_payload_bytes + scale_bytes + non_quantized_bytes),
+        "container_overhead_bytes": int(
+            packed_artifact_bytes - stats["packed_artifact_components_bytes"]
+        ),
     }
 
     if repo_id is not None:
         result.update(checkpoint_size_report(repo_id))
     return result
+
+
+def write_packed_artifact(
+    model: nn.Module,
+    out_path: str | Path,
+    scale_mode: str = "per_tensor_mean_abs",
+) -> dict:
+    """Write a real, deployable packed 1-bit artifact and return its size report.
+
+    Unlike :func:`binary_model_size_report`, this persists the packed weights +
+    scales + non-quantized FP parameters to ``out_path`` (safetensors). The
+    returned report includes the written path and the measured file size.
+    """
+    from safetensors.torch import save_file
+
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    tensors, stats = build_packed_tensors(model)
+    save_file(tensors, str(out_path))
+    measured = out_path.stat().st_size
+    return {
+        "scale_mode": scale_mode,
+        **stats,
+        "packed_artifact_path": str(out_path),
+        "packed_artifact_bytes_measured": int(measured),
+        "container_overhead_bytes": int(
+            measured - stats["packed_artifact_components_bytes"]
+        ),
+    }
 

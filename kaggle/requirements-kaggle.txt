@@ -1,0 +1,21 @@
+# Kaggle execution dependencies (Phase 11 attention-only QAT).
+#
+# IMPORTANT: torch / torchvision / torchaudio are intentionally NOT listed.
+# Kaggle provides them as the CUDA build (torch 2.14.0+cu130,
+# torchvision 0.29.0+cu130, CUDA 13.0). Listing them here would let pip replace
+# the CUDA build with a CPU/default wheel. kaggle/constraints-kaggle.txt pins
+# them so a conflicting dependency fails loudly instead of silently swapping.
+#
+# Versions mirror requirements.txt (the local pinned set); only the torch stack
+# is omitted.
+transformers==5.17.0
+datasets==5.0.1
+evaluate==0.4.6
+jiwer==4.0.0
+accelerate==1.15.0
+numpy==2.5.3
+soundfile==0.14.0
+pyyaml==6.0.3
+psutil==7.2.2
+torchcodec==0.16.0
+safetensors>=0.4

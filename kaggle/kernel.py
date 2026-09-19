@@ -62,6 +62,8 @@ os.environ.setdefault("TRANSFORMERS_CACHE", str(TMP / "hf" / "transformers"))
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 os.environ.setdefault("PYTHONUNBUFFERED", "1")
+# Reduce CUDA allocator fragmentation on the 16 GB T4.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 
 def log(message: str) -> None:
@@ -253,9 +255,15 @@ def verify_replacement() -> dict:
 
 
 def run_probe(output_rel: str) -> dict:
-    run([sys.executable, "scripts/train_qat.py", "--config", CONFIG_EFFECTIVE,
-         "--probe", "--output", output_rel], cwd=REPO_DIR,
-        extra_env={"PYTHONUNBUFFERED": "1"})
+    """Run the probe. A hard crash (e.g. CUDA OOM before any measurement) is a
+    gate failure, not a fatal error, so the caller can retry with gradient
+    checkpointing."""
+    code = run([sys.executable, "scripts/train_qat.py", "--config", CONFIG_EFFECTIVE,
+                "--probe", "--output", output_rel], cwd=REPO_DIR, check=False,
+               extra_env={"PYTHONUNBUFFERED": "1"})
+    if code != 0:
+        log(f"probe process exited with code {code}; treating as gate failure")
+        return {}
     return read_json(REPO_DIR / output_rel)
 
 

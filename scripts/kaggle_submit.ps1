@@ -16,8 +16,6 @@ param(
 $ErrorActionPreference = "Stop"
 $env:PYTHONIOENCODING = "utf-8"
 $env:PYTHONUTF8 = "1"
-# Refresh the OAuth access token non-interactively if it has expired.
-kaggle auth print-access-token > $null 2>&1
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
 Write-Host "Repository: $RepoRoot"

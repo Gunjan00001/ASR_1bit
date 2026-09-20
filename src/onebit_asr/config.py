@@ -60,5 +60,8 @@ def load_config(path: str | Path, _seen: tuple[Path, ...] = ()) -> dict:
         parent = load_config(parent_path, (*_seen, path))
         merged = _deep_merge(parent, data)
 
-    merged.setdefault("_config_path", str(path))
+    # Record the *requested* (leaf) config, not the root of the ``extends``
+    # chain. Each recursion level sets this, so the outermost call wins; using
+    # ``setdefault`` would instead leave the first (base) parent's path.
+    merged["_config_path"] = str(path)
     return merged

@@ -39,12 +39,17 @@ REPO_REVISION = "__REPO_REVISION__"
 CONFIG_PRISTINE = "configs/qat_attn.yaml"
 CONFIG_EFFECTIVE = "configs/kaggle_effective_attn.yaml"
 
-PROBE_OUTPUT_1 = "results/qat_probe_attn.json"
-PROBE_OUTPUT_2 = "results/qat_probe_attn_gc.json"
-FULL_OUTPUT = "results/qat_attn.json"
+# Artifact naming. This kernel is the attention-only QAT *reproduction* runner.
+# Outputs are named *_repro so the original v7 result (results/qat_attn.json,
+# which deliberately keeps save_load_verified=false) is never overwritten.
+RUN_NAME = "qat_attn_repro"
+PROBE_OUTPUT_1 = f"results/{RUN_NAME}_probe.json"
+PROBE_OUTPUT_2 = f"results/{RUN_NAME}_probe_gc.json"
+FULL_OUTPUT = f"results/{RUN_NAME}.json"
+PACKED_SIZE_REPORT = f"results/{RUN_NAME}_size_report.json"
 CHECKPOINT_DIR = "checkpoints/qat_attn"
 PACKED_DIR = "checkpoints/qat_attn_packed"
-REPLACEMENT_REPORT = "replacement_check.json"
+REPLACEMENT_REPORT = f"{RUN_NAME}_replacement_check.json"
 EXPECTED_REPLACEMENTS = 96
 
 WORK = Path("/kaggle/working")
@@ -332,12 +337,16 @@ def collect_outputs() -> None:
     log("=== Collecting outputs into /kaggle/working ===")
     results_out = WORK / "results"
     results_out.mkdir(parents=True, exist_ok=True)
-    for rel in ["results/qat_attn.json", PROBE_OUTPUT_1, PROBE_OUTPUT_2,
-                REPLACEMENT_REPORT]:
+    for rel in [FULL_OUTPUT, PROBE_OUTPUT_1, PROBE_OUTPUT_2, REPLACEMENT_REPORT]:
         src = REPO_DIR / rel
         if src.is_file():
             shutil.copy2(src, results_out / src.name)
             log(f"copied {rel} -> {results_out / src.name}")
+    # Also surface the packed size report under results/ for easy retrieval.
+    packed_report = REPO_DIR / PACKED_DIR / "size_report.json"
+    if packed_report.is_file():
+        shutil.copy2(packed_report, results_out / Path(PACKED_SIZE_REPORT).name)
+        log(f"copied {PACKED_DIR}/size_report.json -> {results_out / Path(PACKED_SIZE_REPORT).name}")
     for rel in [CHECKPOINT_DIR, PACKED_DIR]:
         src = REPO_DIR / rel
         if src.is_dir():
@@ -348,9 +357,14 @@ def collect_outputs() -> None:
             shutil.copytree(src, dst, ignore=shutil.ignore_patterns("checkpoint-*"))
             log(f"copied {rel} -> {dst}")
 
-    results = read_json(results_out / "qat_attn.json")
-    probe = read_json(results_out / "qat_probe_attn.json")
-    replacement = read_json(results_out / "replacement_check.json")
+    results = read_json(results_out / Path(FULL_OUTPUT).name)
+    probe_1 = read_json(results_out / Path(PROBE_OUTPUT_1).name)
+    probe_2 = read_json(results_out / Path(PROBE_OUTPUT_2).name)
+    # Attempt 1 may have crashed (e.g. CUDA OOM) and produced no output, so
+    # prefer whichever probe actually passed the VRAM gate. Record both attempts
+    # honestly rather than reporting the failed one.
+    probe = probe_1 if gate(probe_1)[0] else probe_2
+    replacement = read_json(results_out / Path(REPLACEMENT_REPORT).name)
     summary = {
         "revision": REPO_REVISION,
         "config_pristine": CONFIG_PRISTINE,
@@ -359,10 +373,18 @@ def collect_outputs() -> None:
         "probe_gate": {
             "headroom": probe.get("vram_headroom"),
             "is_real_gpu_probe": probe.get("is_real_gpu_probe"),
+            "attempt_1": {
+                "is_real_gpu_probe": probe_1.get("is_real_gpu_probe"),
+                "vram_headroom": probe_1.get("vram_headroom"),
+            },
+            "attempt_2_gradient_checkpointing": {
+                "is_real_gpu_probe": probe_2.get("is_real_gpu_probe"),
+                "vram_headroom": probe_2.get("vram_headroom"),
+            },
         },
         "eval": results.get("eval"),
         "checkpoint": results.get("checkpoint", {}).get("path"),
-        "packed_size_report": read_json(WORK / PACKED_DIR / "size_report.json"),
+        "packed_size_report": read_json(WORK / PACKED_SIZE_REPORT),
     }
     (WORK / "kaggle_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     log("=== Summary ===")

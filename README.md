@@ -4,11 +4,16 @@ Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
 
-**Current checkpoint:** `v1.2.0` — CPU-safe work complete through **Phase 11
-QAT infrastructure + tests + CPU smoke/dry run**. The FP32 baseline, the 1-bit
-PTQ model, and the QAT pipeline are all measured/validated under the same
-pinned protocol. The **real cloud-GPU QAT training has NOT been run** (gated;
-see §31). Results are real measurements; nothing in this README is estimated.
+**Current checkpoint:** `v1.4.0` — **the real cloud-GPU attention-only 1-bit QAT
+run has been executed** on a Kaggle Tesla T4 and measured under the pinned
+256-utterance dev-clean protocol: **WER 0.0392 / CER 0.0125** vs the FP32
+baseline 0.0202 and the full PTQ collapse of 1.0000. Attention-only QAT therefore
+recovers attention binarization from the 44.4% PTQ diagnostic to near-baseline
+accuracy. The FFN remains FP32, so the current packed artifact (≈1.98 GB vs
+2.374 GB FP32) is **not** the compression target — see §27b and §31. Results are
+real measurements; nothing in this README is estimated. The full research history
+(including failed experiments and infrastructure failures) is in
+[`planning.md`](planning.md).
 
 > This README is written for an engineer joining at this checkpoint. It states
 > what exists, what was measured, and — just as importantly — what has **not**
@@ -42,13 +47,14 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (40 tests) | ✅ green |
+| 7 | Test gate (63 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
 | 11 | QAT (infrastructure + tests + CPU smoke) | ✅ done (local) |
-| 11 | QAT (real cloud-GPU training run) | ⛔ not run (gated) |
-| 12 | QAT evaluation | ⛔ not started |
+| 11 | **QAT (real cloud-GPU training run, attention-only)** | ✅ **measured — WER 3.92%** |
+| 11 | QAT clean reproduction / Kaggle packing | 🔄 in progress (`results/qat_attn_repro.json`) |
+| 12 | QAT evaluation (full comparison) | 🔶 partial (dev-subset comparison present) |
 | 13 | Knowledge distillation | ⛔ not started |
 | 14–19 | Controlled experiments, sensitivity, packing, benchmarks, streaming | ⛔ not started |
 
@@ -275,7 +281,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **40 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **63 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -406,15 +412,17 @@ parameters and removing FP master weights from deployment state are future work.
 
 ## 25. What has NOT been implemented yet
 
-- **No trained 1-bit QAT model.** QAT *infrastructure* + a CPU smoke run exist
-  (§27), but the real cloud-GPU QAT training has not been run, so **no accuracy
-  recovery is claimed**.
+- **Only the attention-only QAT model is trained.** A real cloud-GPU run exists
+  and recovered WER to 0.0392 (§27b), but **the FFN remains FP32** — the
+  attention+FFN configuration that collapsed under PTQ has **not** been
+  QAT-trained, so the core accuracy-vs-size question is still open (§31).
 - **No knowledge distillation** (Phase 13).
 - **No CUDA kernels / custom bitwise ops** (Phases 17–18).
 - **No actual binary hardware acceleration** — inference expands weights back
   to FP (`alpha·sign(W)`) before `F.linear`; the model is *smaller on disk*,
-  not *faster to run* (it measured slower).
-- **No GPU training** of any kind has been executed.
+  not *faster to run*.
+- **No full test-clean evaluation** — QAT was evaluated on the pinned
+  256-utterance dev-clean subset only.
 - No streaming ASR (Phase 19).
 - `evaluate` is pinned but unused (metrics are computed with `jiwer`);
   `features/audio.py`, `decoding/decode.py`, `evaluation/latency.py`,
@@ -433,18 +441,20 @@ Reused vs. ours, measured vs. theoretical vs. planned:
   accounting, QAT assembly (freeze/probe/trainer wiring/checkpoint), tests.
 - **Measured (real numbers in `results/`):** baseline WER/CER/RTF, PTQ
   WER/CER, replacement counts, packed artifact size, latency/RSS, QAT smoke
-  gradient-flow/freeze/master-update checks and smoke WER.
+  gradient-flow/freeze/master-update checks and smoke WER, and the real
+  attention-only QAT WER/CER/RTF/size (`results/qat_attn.json`).
 - **Theoretical (labeled as such):** 1-bit payload = 62,914,560 B; FP32 weight
   bytes = params × 4.
-- **Planned (not implemented):** the real cloud-GPU QAT run, distillation,
-  binary compute kernels, hardware acceleration, streaming.
+- **Planned (not implemented):** attention+FFN QAT, distillation, binary compute
+  kernels, hardware acceleration, streaming.
 
 No performance claim in this README is unsupported by a file in `results/`.
 
 ## 27. Phase 11 — QAT infrastructure (implemented) and smoke run (measured)
 
-> The real QAT training run is **cloud-GPU work and has not been executed**.
-> See §31 for the gated procedure.
+> The real cloud-GPU QAT run **has been executed** (attention-only) and is
+> measured in §27b. The attention+FFN configuration remains `NOT YET RUN`; see
+> §31. This section documents the infrastructure and the CPU smoke run.
 
 ### Design (preserves every approved decision)
 
@@ -516,9 +526,52 @@ real cloud run is trustworthy. The measured smoke WER is reported as-is.
 ### What QAT has and has not demonstrated
 
 - Demonstrated: the QAT machinery is correct and produces trainable 1-bit
-  students with intact FP masters.
-- Not demonstrated: any accuracy recovery. That requires the real cloud-GPU
-  run in §31. **No QAT WER claim is made here.**
+  students with intact FP masters, and (see §27b) **real accuracy recovery for
+  attention-only binarization**.
+- Not demonstrated: any recovery for **FFN** binarization, or a size win
+  approaching the 5.6× full-PTQ figure. Those require the attention+FFN QAT run
+  in §31.
+
+## 27b. Real cloud-GPU attention-only QAT (measured)
+
+**Run:** Kaggle script kernel `gunjanpal/asr-1bit-qat-attn`, Tesla T4; result
+committed in `585a4d8` and stored in `results/qat_attn.json`.
+
+**Experiment (`configs/qat_attn.yaml`):** attention_q/k/v/output → `BitLinear`
+(96 layers); FFN, `feature_projection`, `ctc_head` stay FP. `train.100`, 10,000
+utterances, 3 epochs, batch 4, grad-accum 4, lr 2e-5, warmup_ratio 0.1, fp16,
+gradient checkpointing. Effective config generated inside the Kaggle clone only.
+
+**Probe:** attempt 1 (no gradient checkpointing) **OOM'd**; attempt 2 (gradient
+checkpointing) passed — 9.232 s/step, peak reserved 12.99/15.64 GB (16.9% free),
+extrapolated 1,875 steps ≈ 4.81 h. Full run: 1,875 steps, final train loss 348.9.
+
+**Measured (pinned 256-utterance dev-clean):**
+
+| Model | WER | CER | Δ WER vs FP32 |
+|---|---:|---:|---:|
+| FP32 baseline | 0.0202 | 0.0049 | — |
+| 1-bit PTQ (attn+FFN) | 1.0000 | 1.0000 | +0.9798 |
+| PTQ attention-only (16-utt diagnostic) | 0.4441 | — | — |
+| **1-bit QAT attention-only** | **0.0392** | **0.0125** | **+0.0190** |
+
+**Interpretation:** attention-only binarization collapsed to 44.4% WER under PTQ;
+**QAT recovered it to 3.92% WER**, close to the FP32 2.02% baseline. This is the
+project's first real 1-bit accuracy recovery.
+
+**Size (honest):** the packed artifact measures **1,983,557,856 B (≈1.98 GB)** vs
+**2.374 GB** FP32 (≈1.20×) because only ~17% of parameters (the attention
+projections) are binarized; the FP32 FFN dominates the artifact. This is **not**
+the compression target (`results/qat_attn_size_report.json`).
+
+> **Infrastructure note.** The original Kaggle run ended with status `ERROR`
+> because the pre-fix save/load check (`torch.allclose(atol=1e-5)` on raw
+> logits) returned a false negative on GPU, causing `train_qat.py` to exit 1 and
+> skip the packing stage. The training and evaluation in `results/qat_attn.json`
+> are valid. The check was fixed in `9fa7bbb` (decoded argmax equality + tolerant
+> `atol/rtol=1e-3`); the historical `save_load_verified: false` is preserved and
+> annotated in the JSON. A clean reproduction that packs through Kaggle is
+> recorded separately in `results/qat_attn_repro.json`. See `planning.md` §5–6.
 
 ## 28. Reproducibility instructions
 
@@ -531,7 +584,7 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 61 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 63 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
@@ -551,7 +604,7 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 61 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 63 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
@@ -563,8 +616,9 @@ pinned dependencies, recorded provenance in every results JSON.
 ## 30. Known limitations / issues
 
 - **WER collapse under PTQ** (expected; §23). QAT is the intended remedy.
-- **QAT accuracy recovery is NOT yet measured** — only the smoke pipeline is;
-  the real cloud-GPU run is gated (§31).
+- **QAT recovery is measured only for attention-only binarization** (WER 0.0392,
+  §27b). The FFN — the decisive sensitivity — is still FP32, so the core
+  accuracy-vs-size question is open (§31).
 - **Smoke-run loss rose** (907 → 1137 over 8 steps): expected on 16 utterances
   at lr 2e-5 against an already-collapsed model; it is a pipeline check, not an
   accuracy experiment.
@@ -586,46 +640,57 @@ pinned dependencies, recorded provenance in every results JSON.
 - No LM decoding; WER figures are greedy-only and therefore not directly
   comparable to LM-assisted ASR leaderboards.
 
-## 31. Gated next step — real cloud-GPU QAT (NOT run)
+## 31. Next substantive experiment — attention+FFN QAT (NOT YET RUN)
 
-Requires GPU access **and** explicit approval. Not executed by this repository
-checkpoint — no GPU exists on the development machine (CPU-only, see §5).
+The attention-only QAT run (§27b) is done. The **attention+FFN** configuration —
+the one that collapsed to 100% WER under PTQ — has **not** been QAT-trained.
+That is the next experiment, and it is the one that determines whether the
+project's compression objective (FFN dominates size) is achievable.
+
+**Why attention+FFN next:** PTQ showed catastrophic FFN sensitivity; attention-only
+QAT proved QAT can recover accuracy; the compression target requires addressing
+the FFN.
+
+**Procedure (same gate as before, unchanged):**
 
 ### Step 1 — mandatory probe (measures VRAM + time/step)
 
 ```powershell
-# On a cloud GPU machine (e.g. A10G 24 GB), from a clean checkout of v1.3.0:
-.venv\Scripts\python.exe scripts\train_qat.py --config configs/qat.yaml --probe
-# writes results/qat_probe.json with peak VRAM, s/optimizer-step, and an
-# extrapolation to the full run
+# On the Kaggle T4, via kaggle/kernel.py (or a GPU host):
+.venv\Scripts\python.exe scripts/train_qat.py --config configs/qat_attn_ffn.yaml --probe
 ```
 
 The full run proceeds **only if** the probe reports ≥15% VRAM headroom
 (`vram_headroom.passes == true`). Otherwise enable
-`qat.training.gradient_checkpointing: true` (and/or `batch_size: 2` with
-`gradient_accumulation_steps: 8`) and re-probe. On T4 also set
-`fp16: true`, `bf16: false` (Turing has no bf16).
+`qat.training.gradient_checkpointing: true` (and/or a smaller micro-batch) and
+re-probe. On T4 set `fp16: true`, `bf16: false` (Turing has no bf16). Note:
+attention+FFN roughly doubles the quantized parameter count vs attention-only, so
+expect **less** headroom than the 16.9% measured for attention-only.
 
 ### Step 2 — full run (only after the probe passes)
 
 ```powershell
-.venv\Scripts\python.exe scripts\train_qat.py --config configs/qat.yaml `
-    --output results/qat.json --checkpoint-dir checkpoints/qat
+.venv\Scripts\python.exe scripts/train_qat.py --config configs/qat_attn_ffn.yaml `
+    --output results/qat_attn_ffn.json --checkpoint-dir checkpoints/qat_attn_ffn
 ```
 
-- Full mode uses `training.*`: `train.100`, `subset_size` 1000 (raise for a
-  stronger run), lr 2e-5, 3 epochs, then evaluates on the full pinned
-  256-utterance dev subset.
-- Outputs: `results/qat.json` (commit it) and `checkpoints/qat/` (FP32 masters
-  + manifest; git-ignored).
-- Then and only then: Phase 12 (QAT evaluation) / Phase 13 (distillation).
+- Full mode uses `training.*`: `train.100`, `subset_size` 10000, lr 2e-5,
+  3 epochs, then evaluates on the full pinned 256-utterance dev subset.
+- Outputs: `results/qat_attn_ffn.json` (commit it) and
+  `checkpoints/qat_attn_ffn/` (FP32 masters + manifest; git-ignored), plus the
+  packed artifact via `scripts/pack_qat_model.py`.
+- Then and only then: Phase 12 full evaluation / Phase 13 (distillation).
 - **Acceptance is a measured WER**, reported exactly as measured.
+
+> A `configs/qat_attn_ffn.yaml` does not exist yet; it must be added (FFN
+> enabled) before this experiment. It is **out of scope** for the current
+> cleanup task.
 
 ## Layout
 
 ```
 one-bit-asr/
-├── configs/            baseline / binary / qat / distillation (extends-composed)
+├── configs/            baseline / binary / qat / qat_attn / distillation (extends-composed)
 ├── src/onebit_asr/
 │   ├── config.py               extends-aware config loader
 │   ├── data/                   text normalization, dev/train loaders, CTC collator
@@ -637,10 +702,14 @@ one-bit-asr/
 │   └── evaluation/             evaluate (runner), metrics, model_size
 ├── scripts/            check_env, inspect_model, infer, eval_baseline,
 │                       verify_eval_equivalence, quantize, diagnose_ptq_collapse,
-│                       smoke_ptq_pipeline, train_qat, setup_windows_ffmpeg
-├── tests/              61 tests (STE, binarization, BitLinear, replacement, QAT, evaluate)
+│                       smoke_ptq_pipeline, train_qat, pack_qat_model, setup_windows_ffmpeg
+├── kaggle/             kernel.py, requirements/constraints, verify_replacement.py,
+│                       README.md (cloud execution + pack-only recovery)
+├── tests/              63 tests (STE, binarization, BitLinear, replacement, QAT, evaluate, config)
 ├── results/            env, model_inspection, baseline, ptq_binary,
-│                       size_report, ptq_collapse_diagnostic, qat_smoke  (tracked)
+│                       size_report, ptq_collapse_diagnostic, qat_smoke,
+│                       qat_attn, qat_attn_size_report, qat_attn_repro  (tracked)
 ├── checkpoints/        (git-ignored)
-└── one_bit_asr_implementation_plan.md
+├── planning.md                          living research history & execution plan
+└── one_bit_asr_implementation_plan.md   original (unchanged) specification
 ```

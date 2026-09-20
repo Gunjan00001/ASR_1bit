@@ -8,6 +8,70 @@ an exact, reproducible repository state.
 
 ---
 
+## v1.4.0 — First real cloud-GPU QAT: attention-only 1-bit WER 3.92%
+
+**Scope:** the first real GPU QAT training run (Kaggle Tesla T4) — attention-only
+1-bit quantization — plus the entire Kaggle execution pipeline and the
+infrastructure fixes it required. No FFN QAT, no distillation, no new scientific
+arms. Full narrative and failure log: [`planning.md`](planning.md).
+
+### Added — Kaggle execution pipeline
+- `kaggle/kernel.py` — script kernel: env report → clone repo at a pinned SHA →
+  install deps (preserving the CUDA 13 torch stack) → verify audio decode →
+  verify **exactly 96** attention BitLinear replacements → run the GPU probe →
+  enforce the ≥15% VRAM headroom gate (auto-retry once with gradient
+  checkpointing) → full QAT → pack the artifact → collect outputs.
+- `kaggle/verify_replacement.py` (96-layer gate), `kaggle/requirements-kaggle.txt`,
+  `kaggle/constraints-kaggle.txt`, `kaggle/kernel-metadata.template.json`,
+  `kaggle/README.md`.
+- `scripts/kaggle_submit.ps1` / `kaggle_status.ps1` / `kaggle_output.ps1` —
+  local CLI wrappers (submit pins the exact pushed commit; GitHub stays the
+  source of truth).
+- `configs/qat_attn.yaml` — pristine attention-only experiment spec.
+- `scripts/pack_qat_model.py` + `model_size.build_packed_tensors` /
+  `write_packed_artifact` — write a real packed 1-bit deploy artifact.
+- `dataset.build_ctc_train_dataset` — streamed, bounded-memory feature build.
+- `dataset._audio_decoder` / `_decode_audio_soundfile` — opt-in
+  `ONEBIT_AUDIO_DECODER=soundfile` fallback (default unchanged).
+
+### Measured — attention-only QAT (Kaggle Tesla T4)
+- Replacement: **96/96** attention layers; FFN, feature_projection, ctc_head FP.
+- Probe: attempt 1 (GC off) OOM → attempt 2 (GC on) **PASS**: 9.232 s/step,
+  peak reserved **12.99 / 15.64 GB (16.9% free)**, extrapolated **4.81 h**.
+- Training: train.100, 10,000 utts × 3 epochs, batch 4 × accum 4, fp16 + gradient
+  checkpointing, 1,875 steps, final train loss 348.9.
+- Evaluation (pinned 256-utt dev-clean): **WER 0.0392 / CER 0.0125**
+  (vs FP32 0.0202; vs attn+FFN PTQ 1.0000). `results/qat_attn.json`.
+- Packed deploy artifact (generated locally from the valid retrieved checkpoint):
+  **1,983,557,856 B (~1.98 GB)** — dominated by the retained FP32 FFN
+  (`results/qat_attn_size_report.json`).
+
+### Fixed (each discovered by a real failure)
+- torch/torchvision CUDA-stack mismatch (`4ff384c`).
+- 10k-subset host-RAM OOM via streamed features (`7933a48`).
+- GPU device placement in probe/eval/save-load (`bb0e50d`).
+- Probe CUDA OOM now treated as a gate failure with a GC retry (`60e4535`).
+- Kaggle CLI UTF-8 crash on the Windows console (`6b90094`).
+- Trainer epoch checkpoints exhausting Kaggle's 20 GB quota (`d1927e4`).
+- Save/load false negative: raw-logit `atol=1e-5` → argmax + tolerant
+  `atol/rtol=1e-3` (`9fa7bbb`).
+- `_config_path` provenance recorded the `extends` root instead of the leaf.
+- Kaggle summary reported a null probe gate when attempt 1 had crashed.
+
+### Honest note on the original run status
+The v7 Kaggle job ended `ERROR` because the pre-fix save/load check returned exit
+1 **after** training and evaluation succeeded, which skipped the Kaggle packing
+stage. That is `FAILURE CAUSED BY INFRASTRUCTURE/BUG`, not a failed QAT
+experiment. `results/qat_attn.json` is preserved with `save_load_verified: false`
+and an explanatory note; the clean reproduction is recorded separately as
+`results/qat_attn_repro.json` (+ `results/qat_attn_repro_size_report.json`).
+
+### Not included (explicitly deferred)
+Attention+FFN QAT, FFN-only QAT, layer-sensitivity sweeps, knowledge
+distillation, 2-bit/INT8, binary compute kernels, streaming ASR.
+
+---
+
 ## v1.3.0 — QAT GPU probe tooling (no GPU run executed)
 
 **Scope:** the mandatory pre-run probe from the Phase 11 plan §7b. Tooling only —

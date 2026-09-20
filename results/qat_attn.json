@@ -11175,7 +11175,8 @@
         "model.safetensors": "5b5a1352c945bf4ef112cd20dd4909195845cbb2a6d305538229ca824e1f8d13"
       }
     },
-    "save_load_verified": false
+    "save_load_verified": false,
+    "save_load_verified_note": "HISTORICAL, PRE-FIX MEASUREMENT. The original save/load check compared raw logits with torch.allclose(atol=1e-5), which is a false negative across GPU processes because fp32 kernels are not bit-identical. This is a FAILURE CAUSED BY INFRASTRUCTURE/BUG, not a failed QAT experiment; the training and evaluation results in this file are valid. The corrected check (decoded argmax equality + tolerant atol/rtol=1e-3) landed in commit 9fa7bbb. This boolean is deliberately left false to preserve the historical record; see results/qat_attn_repro.json for the clean re-run's corrected verification."
   },
   "baseline": {
     "path": "/kaggle/temp/ASR_1bit/results/baseline.json",

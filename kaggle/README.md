@@ -21,10 +21,12 @@ repo at the exact commit SHA that `scripts/kaggle_submit.ps1` pins.
    effective T4 config (`fp16: true`, `gradient_checkpointing` per attempt).
 8. **Require the VRAM headroom gate to pass.** If attempt 1 fails, retry once
    with `gradient_checkpointing: true`; if that fails too, abort.
-9. Run the full attention-only QAT → `results/qat_attn.json`,
-   `checkpoints/qat_attn/`.
+9. Run the full attention-only QAT → `results/qat_attn_repro.json`,
+   `checkpoints/qat_attn/` (the `*_repro` name protects the original v7 result
+   `results/qat_attn.json`, which keeps its historical `save_load_verified: false`).
 10. Write the real packed 1-bit deploy artifact →
-    `checkpoints/qat_attn_packed/model_packed.safetensors` + `size_report.json`.
+    `checkpoints/qat_attn_packed/model_packed.safetensors` + `size_report.json`
+    (also copied to `results/qat_attn_repro_size_report.json`).
 11. Copy results / logs / checkpoints into `/kaggle/working`.
 
 `configs/qat_attn.yaml` stays pristine (experiment definition only). The

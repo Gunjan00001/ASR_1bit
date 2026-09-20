@@ -40,5 +40,8 @@ checkpoints/*
 /kaggle/build/
 /kaggle/output/
 /kaggle/kmeta/
+/kaggle/pull/
+/kaggle/ctrl/
+/kaggle/v*/
 # Effective config generated inside the Kaggle clone by kaggle/kernel.py
 configs/kaggle_effective_attn.yaml

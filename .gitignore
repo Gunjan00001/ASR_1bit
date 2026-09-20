@@ -39,5 +39,6 @@ checkpoints/*
 # Kaggle execution (generated locally by scripts/kaggle_*.ps1)
 /kaggle/build/
 /kaggle/output/
+/kaggle/kmeta/
 # Effective config generated inside the Kaggle clone by kaggle/kernel.py
 configs/kaggle_effective_attn.yaml

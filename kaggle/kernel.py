@@ -236,6 +236,10 @@ def write_effective_config(gradient_checkpointing: bool) -> None:
         "    fp16: true          # T4 (Turing) has no bf16\n"
         "    bf16: false\n"
         f"    gradient_checkpointing: {str(bool(gradient_checkpointing)).lower()}\n"
+        # HF Trainer's epoch checkpoints carry optimizer state (~5 GB each) and
+        # would exhaust Kaggle's 20 GB /kaggle/working quota. We persist the
+        # final model ourselves via save_qat_checkpoint, so disable them.
+        "    save_strategy: \"no\"\n"
     )
     (REPO_DIR / CONFIG_EFFECTIVE).write_text(content, encoding="utf-8")
     log(f"Effective config ({CONFIG_EFFECTIVE}):")
@@ -280,10 +284,38 @@ def gate(probe: dict) -> tuple[bool, str]:
 
 # --- 9/10. Full run + packing ------------------------------------------------
 
+def log_disk(tag: str) -> None:
+    try:
+        usage = shutil.disk_usage(WORK)
+        log(f"[disk:{tag}] /kaggle/working free {usage.free / 1e9:.2f} GB "
+            f"of {usage.total / 1e9:.2f} GB")
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def cleanup_trainer_checkpoints() -> None:
+    """Remove HF Trainer epoch checkpoints (optimizer state) to free disk.
+
+    With save_strategy 'no' there should be none, but this is a safety net.
+    """
+    base = REPO_DIR / CHECKPOINT_DIR
+    removed = 0
+    for path in sorted(base.glob("checkpoint-*")):
+        if path.is_dir():
+            shutil.rmtree(path, ignore_errors=True)
+            removed += 1
+    if removed:
+        log(f"removed {removed} Trainer checkpoint dir(s) from {CHECKPOINT_DIR}")
+    log_disk("after-trainer-cleanup")
+
+
 def run_full_training() -> None:
     log("=== Probe passed: running FULL attention-only QAT ===")
+    log_disk("before-full")
     run([sys.executable, "scripts/train_qat.py", "--config", CONFIG_EFFECTIVE,
          "--output", FULL_OUTPUT, "--checkpoint-dir", CHECKPOINT_DIR], cwd=REPO_DIR)
+    cleanup_trainer_checkpoints()
+    log_disk("after-full")
 
 
 def pack_model() -> None:
@@ -312,7 +344,8 @@ def collect_outputs() -> None:
             dst = WORK / rel
             if dst.exists():
                 shutil.rmtree(dst)
-            shutil.copytree(src, dst)
+            # Never copy HF Trainer checkpoint-* dirs (optimizer state, ~5 GB).
+            shutil.copytree(src, dst, ignore=shutil.ignore_patterns("checkpoint-*"))
             log(f"copied {rel} -> {dst}")
 
     results = read_json(results_out / "qat_attn.json")
@@ -341,6 +374,7 @@ def main() -> int:
     TMP.mkdir(parents=True, exist_ok=True)
     try:
         report_environment()
+        log_disk("start")
         clone_repo()
         install_dependencies()
         configure_audio_decoder()
@@ -363,7 +397,11 @@ def main() -> int:
                 return 2
 
         run_full_training()
-        pack_model()
+        try:
+            pack_model()
+        except Exception:  # noqa: BLE001
+            log("WARNING: packed-artifact generation failed; training results preserved")
+            log(traceback.format_exc())
         collect_outputs()
         log("=== DONE ===")
         return 0

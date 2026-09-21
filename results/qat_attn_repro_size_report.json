@@ -1,0 +1,35 @@
+{
+  "scale_mode": "per_tensor_mean_abs",
+  "n_bitlinear_layers": 96,
+  "quantized_weight_count": 100663296,
+  "non_quantized_param_count": 492713632,
+  "theoretical_payload_bytes_1bit": 12582912,
+  "naive_binary_bytes": 100663296,
+  "packed_payload_bytes": 12582912,
+  "fp_scale_bytes": 384,
+  "non_quantized_fp_param_bytes": 1970854528,
+  "fp_master_bytes_excluded_from_artifact": 402653184,
+  "packed_artifact_components_bytes": 1983437824,
+  "packed_artifact_path": "checkpoints\\qat_attn_repro_packed\\model_packed.safetensors",
+  "packed_artifact_bytes_measured": 1983557856,
+  "container_overhead_bytes": 120032,
+  "timestamp_utc": "2026-09-21T02:39:53.546402+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "checkpoint": "kaggle\\output_repro\\checkpoints\\qat_attn",
+  "config_path": "D:\\Asr_1-bit\\configs\\qat_attn.yaml",
+  "layers": {
+    "attention_q": true,
+    "attention_k": true,
+    "attention_v": true,
+    "attention_output": true,
+    "ffn_in": false,
+    "ffn_out": false,
+    "feature_projection": false,
+    "ctc_head": false
+  },
+  "replacement": {
+    "n_replaced": 96,
+    "n_retained": 98
+  },
+  "note": "Deployable packed artifact = packed binary weights + FP32 scales + non-quantized FP params. FP32 master weights are training-time state and are excluded."
+}

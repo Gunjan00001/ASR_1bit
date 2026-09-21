@@ -66,6 +66,20 @@ experiment. `results/qat_attn.json` is preserved with `save_load_verified: false
 and an explanatory note; the clean reproduction is recorded separately as
 `results/qat_attn_repro.json` (+ `results/qat_attn_repro_size_report.json`).
 
+### Clean reproduction (attempt 1 measured; final Kaggle run quota-blocked)
+- `results/qat_attn_repro.json` — rerun on commit `20019c9`: **WER 0.0408 /
+  CER 0.0124** vs the original 0.0392 (**+0.16 pp**; both kept, per policy).
+- That rerun again ended `ERROR`: the first "corrected" save/load check still
+  required exact per-frame argmax equality (a GPU false negative), so packing was
+  skipped. Fixed in `d94331d` — tolerant logit closeness (`atol/rtol=1e-2`) plus
+  argmax agreement ≥ 0.99 (both recorded) — and `kernel.py` now proceeds to
+  packing whenever training + evaluation succeeded.
+- The final clean Kaggle run (`COMPLETE` + Kaggle-side packing) was **blocked by
+  the weekly GPU quota** (`kaggle quota`: 30.01 h / 30.00 h; refresh
+  `2026-09-26`). It is queued for after the reset.
+- `results/qat_attn_repro_size_report.json` — packed deploy artifact
+  **1,983,557,856 B**, generated locally from attempt 1's checkpoint.
+
 ### Not included (explicitly deferred)
 Attention+FFN QAT, FFN-only QAT, layer-sensitivity sweeps, knowledge
 distillation, 2-bit/INT8, binary compute kernels, streaming ASR.

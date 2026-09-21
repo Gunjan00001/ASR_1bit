@@ -54,8 +54,13 @@ try {
     [System.IO.File]::WriteAllText((Join-Path $build "kernel-metadata.json"), $meta, $utf8)
 
     Write-Host "Submitting $KernelId at revision $rev on $Accelerator ..."
-    kaggle kernels push -p $build
-    if ($LASTEXITCODE -ne 0) { throw "kaggle kernels push failed" }
+    $pushOut = kaggle kernels push -p $build 2>&1 | Out-String
+    Write-Host $pushOut
+    # The Kaggle CLI can print "Kernel push error: ..." (e.g. weekly GPU quota
+    # reached) and still exit 0, so check the text as well as the exit code.
+    if ($LASTEXITCODE -ne 0 -or $pushOut -match 'Kernel push error') {
+        throw "kaggle kernels push failed: $($pushOut.Trim())"
+    }
 
     Write-Host ""
     Write-Host "Submitted. Next:"

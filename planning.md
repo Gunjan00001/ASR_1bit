@@ -217,7 +217,14 @@ each diagnosed and fixed. These are preserved deliberately.
     are valid**; `results/qat_attn.json` was still written and collected. The
     `ERROR` status is therefore `FAILURE CAUSED BY INFRASTRUCTURE/BUG`, **not** a
     failed QAT experiment. The packed artifact was generated **locally** from the
-    downloaded FP32-master checkpoint because the Kaggle pack step was skipped.
+     downloaded FP32-master checkpoint because the Kaggle pack step was skipped.
+
+12. **Kaggle weekly GPU quota exhausted** (`FAILURE CAUSED BY INFRASTRUCTURE/BUG`).
+    After the v5–v8 runs, `kaggle quota` reported **30.01 h / 30.00 h used**
+    (`refreshAt 2026-09-26`), so the final clean reproduction push was rejected
+    with `Kernel push error: Maximum weekly GPU quota of 30.00 hours reached`.
+    The Kaggle `COMPLETE` reproduction is deferred until after the reset. (The
+    submit wrapper previously ignored this error and printed "Submitted"; fixed.)
 
 ---
 
@@ -248,9 +255,26 @@ If the rerun WER differs, **both** are retained and the difference is documented
 > whenever the training + evaluation result exists, so a diagnostic mismatch can
 > no longer abort the pipeline.
 >
-> **Rerun attempt 2 (final):** _pending — to be filled in after the clean run
-> completes._ (See `results/qat_attn_repro.json` and
-> `results/qat_attn_repro_size_report.json`.)
+> **Rerun attempt 2 (final): BLOCKED by the Kaggle weekly GPU quota.** Pushing the
+> corrected commit (`cd438a8`, kernel v9) was rejected with
+> `Kernel push error: Maximum weekly GPU quota of 30.00 hours reached`
+> (`kaggle quota`: **30.01 h used / 30.00 h**, `refreshAt 2026-09-26`). The clean
+> Kaggle `COMPLETE` run and the Kaggle-side packing therefore remain **pending
+> until the quota refreshes on 2026-09-26**. (The submit wrapper was also fixed:
+> it now treats `Kernel push error` as a failure instead of falsely reporting
+> success.)
+>
+> **Offline reproduction artifacts (from attempt 1's valid checkpoint, v8):**
+> - `results/qat_attn_repro.json` — real measured rerun: **WER 0.0408 / CER 0.0124**
+>   vs the original 0.0392 → difference **+0.0016 (+0.16 pp)**; both are kept.
+> - `results/qat_attn_repro_size_report.json` — packed deploy artifact measured
+>   **1,983,557,856 B**, generated **locally** from attempt 1's checkpoint (the
+>   Kaggle-side pack step was skipped; the report's `platform` shows Windows).
+> - `results/qat_attn_repro_probe_gc.json` — probe attempt 2 (GC) PASS,
+>   **9.457 s/step**, 16.9% VRAM headroom.
+>
+> These are honest offline reproductions, **not** the requested Kaggle `COMPLETE`
+> run; that run is queued for after the quota reset.
 
 ---
 

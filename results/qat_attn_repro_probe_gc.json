@@ -1,0 +1,250 @@
+{
+  "phase": "Phase 11 QAT GPU probe",
+  "timestamp_utc": "2026-09-20T20:57:29.678677+00:00",
+  "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+  "compute_profile": "cloud-gpu",
+  "config_profile": "cloud-gpu",
+  "git_commit": "20019c919265e9600640f40fd19337380f2db68a",
+  "mode": "probe",
+  "is_real_gpu_probe": true,
+  "notice": "Measured probe values for planning the full run. If is_real_gpu_probe is false this was a CPU validation of the probe code, NOT a GPU result.",
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "layers": {
+    "attention_q": true,
+    "attention_k": true,
+    "attention_v": true,
+    "attention_output": true,
+    "ffn_in": false,
+    "ffn_out": false,
+    "feature_projection": false,
+    "ctc_head": false
+  },
+  "quantization": {
+    "scale": "per_tensor_mean_abs",
+    "ste": "pass_through",
+    "ste_clip": null
+  },
+  "freeze": {
+    "feature_extractor_frozen": true,
+    "trainable_params": 589166752,
+    "frozen_params": 4210176,
+    "trainable_by_group": {
+      "other": {
+        "tensors": 1,
+        "params": 1024,
+        "params_trainable": 1024,
+        "params_frozen": 0
+      },
+      "feature_extractor_frozen": {
+        "tensors": 28,
+        "params": 4210176,
+        "params_trainable": 0,
+        "params_frozen": 4210176
+      },
+      "feature_projection": {
+        "tensors": 4,
+        "params": 526336,
+        "params_trainable": 526336,
+        "params_frozen": 0
+      },
+      "encoder_other": {
+        "tensors": 653,
+        "params": 487943296,
+        "params_trainable": 487943296,
+        "params_frozen": 0
+      },
+      "encoder_bitlinear": {
+        "tensors": 96,
+        "params": 100663296,
+        "params_trainable": 100663296,
+        "params_frozen": 0
+      },
+      "ctc_head": {
+        "tensors": 2,
+        "params": 32800,
+        "params_trainable": 32800,
+        "params_frozen": 0
+      }
+    }
+  },
+  "replacement": {
+    "n_replaced": 96,
+    "n_retained": 98
+  },
+  "probe": {
+    "steps": 30,
+    "batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "gradient_checkpointing": true,
+    "fp16": true,
+    "bf16": false,
+    "dtype": "fp16",
+    "runtime_seconds": 283.7234,
+    "seconds_per_optimizer_step": 9.457446666666668,
+    "train_loss_history": [
+      {
+        "step": 1,
+        "loss": 6544.041015625
+      },
+      {
+        "step": 2,
+        "loss": 7386.806640625
+      },
+      {
+        "step": 3,
+        "loss": 5858.5966796875
+      },
+      {
+        "step": 4,
+        "loss": 7262.2060546875
+      },
+      {
+        "step": 5,
+        "loss": 6494.01318359375
+      },
+      {
+        "step": 6,
+        "loss": 5824.52734375
+      },
+      {
+        "step": 7,
+        "loss": 7089.66650390625
+      },
+      {
+        "step": 8,
+        "loss": 6354.7568359375
+      },
+      {
+        "step": 9,
+        "loss": 6824.19921875
+      },
+      {
+        "step": 10,
+        "loss": 5734.4658203125
+      },
+      {
+        "step": 11,
+        "loss": 6547.890625
+      },
+      {
+        "step": 12,
+        "loss": 7961.67578125
+      },
+      {
+        "step": 13,
+        "loss": 5476.251953125
+      },
+      {
+        "step": 14,
+        "loss": 5006.03076171875
+      },
+      {
+        "step": 15,
+        "loss": 5091.529296875
+      },
+      {
+        "step": 16,
+        "loss": 4938.296875
+      },
+      {
+        "step": 17,
+        "loss": 4672.46142578125
+      },
+      {
+        "step": 18,
+        "loss": 4286.79541015625
+      },
+      {
+        "step": 19,
+        "loss": 4514.44140625
+      },
+      {
+        "step": 20,
+        "loss": 3452.019775390625
+      },
+      {
+        "step": 21,
+        "loss": 3851.373291015625
+      },
+      {
+        "step": 22,
+        "loss": 3180.437744140625
+      },
+      {
+        "step": 23,
+        "loss": 3373.311767578125
+      },
+      {
+        "step": 24,
+        "loss": 2886.361572265625
+      },
+      {
+        "step": 25,
+        "loss": 3369.12939453125
+      },
+      {
+        "step": 26,
+        "loss": 3189.2216796875
+      },
+      {
+        "step": 27,
+        "loss": 3029.85400390625
+      },
+      {
+        "step": 28,
+        "loss": 2807.83740234375
+      },
+      {
+        "step": 29,
+        "loss": 2940.318359375
+      },
+      {
+        "step": 30,
+        "loss": 2934.24609375
+      }
+    ]
+  },
+  "memory": {
+    "cuda": true,
+    "device": "cuda:0",
+    "device_name": "Tesla T4",
+    "total_bytes": 15636037632,
+    "peak_allocated_bytes": 11714074624,
+    "peak_reserved_bytes": 12989759488,
+    "nvidia_smi_memory_used_mb": 12539
+  },
+  "extrapolation_to_full_run": {
+    "full_subset_size": 10000,
+    "full_epochs": 3,
+    "micro_batches_total": 7500,
+    "optimizer_steps_total": 1875,
+    "estimated_seconds": 17732.7125,
+    "estimated_minutes": 295.54520833333333,
+    "estimated_hours": 4.9257534722222225
+  },
+  "vram_headroom": {
+    "applicable": true,
+    "required_fraction": 0.15,
+    "passes": true,
+    "free_bytes": 2646278144,
+    "free_fraction": 0.16924224706291624
+  },
+  "verdict": {
+    "full_run_recommended": true,
+    "reason": "peak reserved 12.99 GB of 15.64 GB; free fraction 16.9%"
+  },
+  "gradient_flow": {
+    "probe_loss": 753.7177734375,
+    "loss_is_finite": true,
+    "total_bitlinear": 96,
+    "with_nonzero_grad": 96,
+    "total_grad_norm": 444.7028113147244,
+    "frozen_feature_extractor_grad_is_zero": true
+  },
+  "versions": {
+    "torch": "2.14.0",
+    "transformers": "5.17.0",
+    "datasets": "5.0.1"
+  },
+  "config_path": "/kaggle/temp/ASR_1bit/configs/kaggle_effective_attn.yaml"
+}

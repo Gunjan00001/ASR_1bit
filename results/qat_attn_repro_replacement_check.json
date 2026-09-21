@@ -1,0 +1,32 @@
+{
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "expected_bitlinear": 96,
+  "n_bitlinear": 96,
+  "passed": true,
+  "layers": {
+    "attention_q": true,
+    "attention_k": true,
+    "attention_v": true,
+    "attention_output": true,
+    "ffn_in": false,
+    "ffn_out": false,
+    "feature_projection": false,
+    "ctc_head": false
+  },
+  "quantization": {
+    "scale": "per_tensor_mean_abs",
+    "ste_clip": null
+  },
+  "replacement": {
+    "n_replaced": 96,
+    "n_retained": 98,
+    "replaced_params": 100761600,
+    "retained_params": 403457056,
+    "replaced_categories": [
+      "attention_k",
+      "attention_output",
+      "attention_q",
+      "attention_v"
+    ]
+  }
+}

@@ -39,6 +39,7 @@ checkpoints/*
 # Kaggle execution (generated locally by scripts/kaggle_*.ps1)
 /kaggle/build/
 /kaggle/output/
+/kaggle/output*/
 /kaggle/kmeta/
 /kaggle/pull/
 /kaggle/ctrl/

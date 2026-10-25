@@ -33,6 +33,8 @@ import torch
 import torch.nn as nn
 from huggingface_hub import snapshot_download
 
+from onebit_asr.quantization.scaling import compute_scale
+
 WEIGHT_SUFFIXES = (".safetensors", ".bin")
 
 
@@ -125,7 +127,7 @@ def _is_bitlinear(module: nn.Module) -> bool:
     return bool(getattr(module, "is_bitlinear", False))
 
 
-def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dict]:
+def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_abs") -> tuple[dict[str, torch.Tensor], dict]:
     """Build the packed artifact tensor map and its component-byte accounting.
 
     Shared by :func:`binary_model_size_report` (which *measures* a real file)
@@ -135,7 +137,9 @@ def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dic
     The packed artifact contains, with no double counting:
 
     - bit-packed ``sign(W)`` for every BitLinear weight (``numpy.packbits``)
-    - one FP32 per-tensor scale per BitLinear layer
+    - the scale(s) for every BitLinear layer. Per-tensor mode stores one FP32
+      scalar (as a 1-element tensor); per-output-channel mode stores one FP32
+      value per output row (shape ``[out,1]``).
     - every non-quantized FP parameter (conv/norm/proj/head/biases)
 
     The FP32 master weights of BitLinear layers are intentionally excluded
@@ -156,14 +160,18 @@ def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dic
     tensors: dict[str, torch.Tensor] = {}
     packed_payload_bytes = 0
     scale_bytes = 0
+    scale_element_count = 0
     for weight_name, module in bitlinear_weights.items():
         packed = pack_binary_weights(module.weight)
         packed_payload_bytes += packed.nbytes
         tensors[f"{weight_name}_packed"] = torch.from_numpy(packed)
-        # One FP32 scalar per layer, exactly what forward() would compute. Using
-        # the master weight (not the packed bits) is important: the scale is not
-        # recoverable from the signs alone.
-        alpha = module.weight.detach().abs().mean().to(torch.float32).reshape(1)
+        # Use the *same* scale function as forward. Per-tensor gives a 0-D
+        # tensor (we store it as shape [1] for compatibility with old
+        # artifacts); per-channel gives [out,1] and is stored as-is.
+        alpha = compute_scale(module.weight.detach(), scale_mode).to(torch.float32)
+        if alpha.dim() == 0:
+            alpha = alpha.reshape(1)
+        scale_element_count += alpha.numel()
         scale_bytes += alpha.numel() * alpha.element_size()
         tensors[f"{weight_name}_scale"] = alpha
 
@@ -178,20 +186,32 @@ def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dic
         non_quantized_params += param.numel()
         non_quantized_bytes += param.numel() * param.element_size()
 
+    total_params = sum(p.numel() for p in model.parameters())
+    component_bytes = int(packed_payload_bytes + scale_bytes + non_quantized_bytes)
     stats = {
+        "scale_mode": scale_mode,
         "n_bitlinear_layers": len(bitlinear_weights),
         "quantized_weight_count": int(quantized_weight_count),
         "non_quantized_param_count": int(non_quantized_params),
+        "total_params": int(total_params),
         "theoretical_payload_bytes_1bit": theoretical_payload_bytes(quantized_weight_count),
         "naive_binary_bytes": naive_binary_bytes(quantized_weight_count),
         "packed_payload_bytes": int(packed_payload_bytes),
         "fp_scale_bytes": int(scale_bytes),
+        "fp_scale_element_count": int(scale_element_count),
         "non_quantized_fp_param_bytes": int(non_quantized_bytes),
         # Assumes FP32 masters (the packing path loads/saves FP32). If you pack
         # an fp16 model, this figure overstates the excluded bytes.
         "fp_master_bytes_excluded_from_artifact": int(quantized_weight_count * 4),
-        "packed_artifact_components_bytes": int(
-            packed_payload_bytes + scale_bytes + non_quantized_bytes
+        "packed_artifact_components_bytes": component_bytes,
+        # Effective bits: a 1-bit payload plus scales. Report both the
+        # quantized-weight view and the whole-deployed-artifact view.
+        "effective_bits_per_quantized_param": (
+            8.0 * (packed_payload_bytes + scale_bytes) / quantized_weight_count
+            if quantized_weight_count else None
+        ),
+        "effective_bits_per_total_param": (
+            8.0 * component_bytes / total_params if total_params else None
         ),
     }
     return tensors, stats
@@ -209,7 +229,7 @@ def quick_size_report(model: nn.Module, scale_mode: str = "per_tensor_mean_abs")
     total is the *component* sum, not a measured artifact. Do not compare it
     directly with a measured file size without accounting for headers.
     """
-    tensors, stats = build_packed_tensors(model)
+    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode)
     del tensors
     return {"scale_mode": scale_mode, **stats}
 
@@ -230,7 +250,7 @@ def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale
 
     from safetensors.torch import save_file
 
-    tensors, stats = build_packed_tensors(model)
+    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode)
     with tempfile.TemporaryDirectory() as tmp:
         artifact = Path(tmp) / "packed_model.safetensors"
         save_file(tensors, str(artifact))
@@ -242,6 +262,10 @@ def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale
         "packed_artifact_bytes_measured": int(packed_artifact_bytes),
         "container_overhead_bytes": int(
             packed_artifact_bytes - stats["packed_artifact_components_bytes"]
+        ),
+        "effective_bits_per_total_param_measured": (
+            8.0 * packed_artifact_bytes / stats["total_params"]
+            if stats["total_params"] else None
         ),
     }
 
@@ -265,7 +289,7 @@ def write_packed_artifact(
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    tensors, stats = build_packed_tensors(model)
+    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode)
     save_file(tensors, str(out_path))
     measured = out_path.stat().st_size
     return {
@@ -275,6 +299,9 @@ def write_packed_artifact(
         "packed_artifact_bytes_measured": int(measured),
         "container_overhead_bytes": int(
             measured - stats["packed_artifact_components_bytes"]
+        ),
+        "effective_bits_per_total_param_measured": (
+            8.0 * measured / stats["total_params"] if stats["total_params"] else None
         ),
     }
 

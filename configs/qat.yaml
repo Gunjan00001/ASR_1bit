@@ -44,3 +44,12 @@ qat:
     eval_utterances: 8
   probe:                        # --probe: short timed/VRAM probe (Phase 11 §7b)
     steps: 30                    # runs the FULL run's batch settings by default
+  pilot:                        # --pilot: short controlled WER pilot
+    subset_size: 2000
+    batch_size: 4
+    gradient_accumulation_steps: 4
+    max_steps: 500
+    eval_every_steps: 250        # dev WER checkpoints for best-state selection
+    eval_utterances: 128         # keep each mid-training eval cheap
+    logging_steps: 10
+    save_strategy: "no"          # the final masters are saved explicitly

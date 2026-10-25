@@ -26,6 +26,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from onebit_asr.quantization.bitlinear import BitLinear
+from onebit_asr.quantization.scaling import compute_scale
 
 #: popcount lookup table for one byte
 POPCOUNT = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint8)
@@ -70,11 +71,41 @@ class PackedBitLinear(nn.Module):
             self.bias = nn.Parameter(bias.detach().clone(), requires_grad=False)
 
     @classmethod
-    def from_bitlinear(cls, module: BitLinear) -> "PackedBitLinear":
+    def from_bitlinear(
+        cls,
+        module: BitLinear,
+        scale_mode: str = "per_tensor_mean_abs",
+    ) -> "PackedBitLinear":
+        """Pack a trained BitLinear, preserving its scale granularity.
+
+        Per-tensor mode stores a 0-D alpha (wrapped as ``[1]`` by the module);
+        per-output-channel mode stores ``[out,1]``. The forward broadcasts both.
+        """
         weight = module.weight.detach()
         packed = pack_sign_bits(weight)
-        alpha = weight.abs().mean().float()
+        alpha = compute_scale(weight, scale_mode).float()
         return cls(packed, tuple(weight.shape), alpha, module.bias)
+
+    @classmethod
+    def from_artifact(
+        cls,
+        packed: torch.Tensor | np.ndarray,
+        shape: tuple[int, int],
+        alpha: torch.Tensor,
+        bias: torch.Tensor | None,
+    ) -> "PackedBitLinear":
+        """Rebuild a packed layer from artifact tensors.
+
+        ``packed`` is the flat ``uint8`` bit array; ``shape`` is ``[out,in]``;
+        ``alpha`` is the artifact scale (scalar, ``[1]``, or ``[out,1]``);
+        ``bias`` is the FP bias (or ``None``). This is the loader counterpart of
+        ``build_packed_tensors`` and is covered by the artifact round-trip test.
+        """
+        if isinstance(packed, torch.Tensor):
+            packed_np = packed.detach().cpu().numpy()
+        else:
+            packed_np = np.asarray(packed)
+        return cls(packed_np, tuple(shape), alpha, bias)
 
     def effective_weight(self) -> torch.Tensor:
         raw = unpack_sign_bits(self.packed.cpu().numpy(), self.numel,
@@ -97,12 +128,15 @@ class PackedBitLinear(nn.Module):
         )
 
 
-def pack_model(model: nn.Module) -> tuple[nn.Module, dict]:
+def pack_model(model: nn.Module, scale_mode: str = "per_tensor_mean_abs") -> tuple[nn.Module, dict]:
     """Replace every ``BitLinear`` in ``model`` with ``PackedBitLinear`` in place.
 
     This drops the FP32 masters (they are not copied into the packed module).
     It is intentionally destructive: keep the QAT checkpoint if you need to
     resume training. The returned model is for inference/benchmarking only.
+
+    ``scale_mode`` must match the mode used to train the BitLinear layers;
+    otherwise the packed forward uses a different scale than the checkpoint.
     """
     replaced = 0
     packed_bytes = 0
@@ -113,14 +147,14 @@ def pack_model(model: nn.Module) -> tuple[nn.Module, dict]:
         # of their parent, not of themselves.
         parent_path, attr = name.rsplit(".", 1) if "." in name else ("", name)
         parent = model.get_submodule(parent_path) if parent_path else model
-        new = PackedBitLinear.from_bitlinear(module)
+        new = PackedBitLinear.from_bitlinear(module, scale_mode=scale_mode)
         setattr(parent, attr, new)
         packed_bytes += int(new.packed.numel())
         replaced += 1
     return model, {
         "n_packed_layers": replaced,
         "packed_weight_bytes": packed_bytes,
-        "scale_bytes": replaced * 4,
+        "scale_mode": scale_mode,
         "note": "Forward expands packed bits to FP; storage-only compression.",
     }
 
@@ -129,11 +163,13 @@ def packed_model_size_report(model: nn.Module) -> dict:
     """Size accounting for a converted (PackedBitLinear) model."""
     packed_bytes = 0
     n_layers = 0
+    scale_bytes = 0
     packed_param_names: set[str] = set()
     for name, module in model.named_modules():
         if isinstance(module, PackedBitLinear):
             n_layers += 1
             packed_bytes += int(module.packed.numel())
+            scale_bytes += int(module.alpha.numel() * module.alpha.element_size())
             packed_param_names.update({f"{name}.alpha", f"{name}.bias"})
 
     fp_scale_bias_bytes = 0
@@ -150,6 +186,7 @@ def packed_model_size_report(model: nn.Module) -> dict:
     return {
         "n_packed_layers": n_layers,
         "packed_weight_bytes": packed_bytes,
+        "fp_scale_bytes": scale_bytes,
         "fp_scale_and_bias_bytes": fp_scale_bias_bytes,
         "non_packed_fp_param_bytes": non_packed_bytes,
         "total_fp_param_bytes": fp_scale_bias_bytes + non_packed_bytes,

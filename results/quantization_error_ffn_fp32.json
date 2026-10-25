@@ -1,0 +1,1590 @@
+{
+  "purpose": "pre-training gate for per-output-channel FFN scaling",
+  "source": "hf:facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "timestamp_utc": "2026-10-25T16:46:27.832372+00:00",
+  "platform": "Linux-4.18.0-477.10.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "method": {
+    "per_tensor": "alpha = mean(|W|); Wq = alpha*sign(W)",
+    "per_channel": "alpha_i = mean_j |W[i,j]|; Wq[i,j] = alpha_i*sign(W[i,j])",
+    "metric": "relative Frobenius reconstruction error ||W-Wq||_F/||W||_F"
+  },
+  "gate": 0.1,
+  "gate_passes": false,
+  "summary": {
+    "all": {
+      "n_layers": 96,
+      "mean_err_per_tensor": 0.6507586327691873,
+      "mean_err_per_channel": 0.6342845583955447,
+      "mean_relative_improvement": 0.024266301482214727,
+      "median_relative_improvement": 0.01474581509906531,
+      "mean_row_cv": 0.1755152033486714,
+      "max_row_cv": 0.68925940990448,
+      "mean_frac_rows_gt_2x_mean": 0.00205230712890625,
+      "mean_frac_rows_lt_half_mean": 0.028910319010416668,
+      "zero_rows_total": 0
+    },
+    "ffn_in": {
+      "n_layers": 48,
+      "mean_err_per_tensor": 0.6404348736008009,
+      "mean_err_per_channel": 0.6225457849601904,
+      "mean_relative_improvement": 0.026782207193034393,
+      "median_relative_improvement": 0.01475763092491023,
+      "mean_row_cv": 0.17613524462406835,
+      "max_row_cv": 0.5118801593780518,
+      "mean_frac_rows_gt_2x_mean": 0.0010935465494791667,
+      "mean_frac_rows_lt_half_mean": 0.034749348958333336,
+      "zero_rows_total": 0
+    },
+    "ffn_out": {
+      "n_layers": 48,
+      "mean_err_per_tensor": 0.6610823919375738,
+      "mean_err_per_channel": 0.6460233318308989,
+      "mean_relative_improvement": 0.021750395771395065,
+      "median_relative_improvement": 0.014160757368701581,
+      "mean_row_cv": 0.17489516207327446,
+      "max_row_cv": 0.68925940990448,
+      "mean_frac_rows_gt_2x_mean": 0.0030110677083333335,
+      "mean_frac_rows_lt_half_mean": 0.0230712890625,
+      "zero_rows_total": 0
+    }
+  },
+  "layers": [
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 0,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.7231701016426086,
+      "err_per_channel": 0.7043136358261108,
+      "relative_improvement": 0.026074730929372254,
+      "row_cv": 0.2373937964439392,
+      "frac_rows_gt_2x_mean": 0.000244140625,
+      "frac_rows_lt_half_mean": 0.015869140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 0,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.7160836458206177,
+      "err_per_channel": 0.6545723676681519,
+      "relative_improvement": 0.08589957124628243,
+      "row_cv": 0.4157569706439972,
+      "frac_rows_gt_2x_mean": 0.00390625,
+      "frac_rows_lt_half_mean": 0.1474609375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 0,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6631261110305786,
+      "err_per_channel": 0.6524041891098022,
+      "relative_improvement": 0.01616875243249462,
+      "row_cv": 0.1586584448814392,
+      "frac_rows_gt_2x_mean": 0.000244140625,
+      "frac_rows_lt_half_mean": 0.003662109375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 0,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.7191375494003296,
+      "err_per_channel": 0.647254467010498,
+      "relative_improvement": 0.09995734814539027,
+      "row_cv": 0.4508572816848755,
+      "frac_rows_gt_2x_mean": 0.00390625,
+      "frac_rows_lt_half_mean": 0.158203125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 1,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.701094388961792,
+      "err_per_channel": 0.6368235945701599,
+      "relative_improvement": 0.09167209922590706,
+      "row_cv": 0.4113639295101166,
+      "frac_rows_gt_2x_mean": 0.01025390625,
+      "frac_rows_lt_half_mean": 0.00048828125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 1,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.8547917604446411,
+      "err_per_channel": 0.8369983434677124,
+      "relative_improvement": 0.020816083870149875,
+      "row_cv": 0.3339167833328247,
+      "frac_rows_gt_2x_mean": 0.001953125,
+      "frac_rows_lt_half_mean": 0.0234375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 1,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.7033634185791016,
+      "err_per_channel": 0.6193658709526062,
+      "relative_improvement": 0.11942268450096945,
+      "row_cv": 0.46911484003067017,
+      "frac_rows_gt_2x_mean": 0.026611328125,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 1,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.8785101771354675,
+      "err_per_channel": 0.8515681624412537,
+      "relative_improvement": 0.030667845854743435,
+      "row_cv": 0.451778382062912,
+      "frac_rows_gt_2x_mean": 0.001953125,
+      "frac_rows_lt_half_mean": 0.0322265625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 2,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6873252987861633,
+      "err_per_channel": 0.6696362495422363,
+      "relative_improvement": 0.0257360659867553,
+      "row_cv": 0.21322765946388245,
+      "frac_rows_gt_2x_mean": 0.000244140625,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 2,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6795116662979126,
+      "err_per_channel": 0.6516162157058716,
+      "relative_improvement": 0.04105220259722671,
+      "row_cv": 0.26259922981262207,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.00390625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 2,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6386633515357971,
+      "err_per_channel": 0.620725691318512,
+      "relative_improvement": 0.02808625259951173,
+      "row_cv": 0.19515177607536316,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.08544921875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 2,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6692909002304077,
+      "err_per_channel": 0.6464626789093018,
+      "relative_improvement": 0.03410807066590506,
+      "row_cv": 0.23325812816619873,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0068359375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 3,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6651379466056824,
+      "err_per_channel": 0.633517861366272,
+      "relative_improvement": 0.047539138912120915,
+      "row_cv": 0.2713041603565216,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.1220703125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 3,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6913462281227112,
+      "err_per_channel": 0.6831780672073364,
+      "relative_improvement": 0.011814862919777064,
+      "row_cv": 0.14667561650276184,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 3,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6689262390136719,
+      "err_per_channel": 0.6188462376594543,
+      "relative_improvement": 0.0748662534572724,
+      "row_cv": 0.3415588140487671,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.24609375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 3,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.7077297568321228,
+      "err_per_channel": 0.6988088488578796,
+      "relative_improvement": 0.012604963812987237,
+      "row_cv": 0.15863600373268127,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.001953125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 4,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6417475342750549,
+      "err_per_channel": 0.6318132281303406,
+      "relative_improvement": 0.01548008463474124,
+      "row_cv": 0.14660529792308807,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0087890625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 4,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6438678503036499,
+      "err_per_channel": 0.6298965215682983,
+      "relative_improvement": 0.02169906251533237,
+      "row_cv": 0.1743597686290741,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 4,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6464291214942932,
+      "err_per_channel": 0.6241876482963562,
+      "relative_improvement": 0.03440666959205575,
+      "row_cv": 0.22024193406105042,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.101318359375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 4,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6681801676750183,
+      "err_per_channel": 0.6486746668815613,
+      "relative_improvement": 0.029191978057846055,
+      "row_cv": 0.2153708040714264,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0048828125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 5,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.643426239490509,
+      "err_per_channel": 0.6350821256637573,
+      "relative_improvement": 0.012968252325797151,
+      "row_cv": 0.13484570384025574,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.008056640625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 5,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6431848406791687,
+      "err_per_channel": 0.6275538206100464,
+      "relative_improvement": 0.02430253183924048,
+      "row_cv": 0.18402785062789917,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 5,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6586103439331055,
+      "err_per_channel": 0.6245923638343811,
+      "relative_improvement": 0.05165114762026808,
+      "row_cv": 0.2774936556816101,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.1474609375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 5,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6916108131408691,
+      "err_per_channel": 0.6716663241386414,
+      "relative_improvement": 0.028837734493554593,
+      "row_cv": 0.2282315045595169,
+      "frac_rows_gt_2x_mean": 0.001953125,
+      "frac_rows_lt_half_mean": 0.001953125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 6,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.7181836366653442,
+      "err_per_channel": 0.6235654354095459,
+      "relative_improvement": 0.13174652891721073,
+      "row_cv": 0.5118801593780518,
+      "frac_rows_gt_2x_mean": 0.014892578125,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 6,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.7903643846511841,
+      "err_per_channel": 0.7817128300666809,
+      "relative_improvement": 0.010946285982156714,
+      "row_cv": 0.1900632530450821,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 6,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6917101740837097,
+      "err_per_channel": 0.6293588280677795,
+      "relative_improvement": 0.09014085429425028,
+      "row_cv": 0.3972500264644623,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.244384765625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 6,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.7335936427116394,
+      "err_per_channel": 0.7297453880310059,
+      "relative_improvement": 0.005245757946332442,
+      "row_cv": 0.11028698831796646,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.001953125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 7,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6308590173721313,
+      "err_per_channel": 0.6231744885444641,
+      "relative_improvement": 0.012181055697162657,
+      "row_cv": 0.12653860449790955,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.01611328125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 7,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6363084316253662,
+      "err_per_channel": 0.6233543753623962,
+      "relative_improvement": 0.020358140202355227,
+      "row_cv": 0.1655569225549698,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 7,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6412708759307861,
+      "err_per_channel": 0.6206585764884949,
+      "relative_improvement": 0.032142890338459705,
+      "row_cv": 0.21012328565120697,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.07080078125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 7,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6533621549606323,
+      "err_per_channel": 0.6411538124084473,
+      "relative_improvement": 0.01868541429817076,
+      "row_cv": 0.16603220999240875,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0029296875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 8,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6856892108917236,
+      "err_per_channel": 0.6242969036102295,
+      "relative_improvement": 0.08953372213871472,
+      "row_cv": 0.3893747329711914,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.257080078125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 8,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.737680196762085,
+      "err_per_channel": 0.7311407923698425,
+      "relative_improvement": 0.008864823023507986,
+      "row_cv": 0.14506112039089203,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 8,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6258732676506042,
+      "err_per_channel": 0.6194974184036255,
+      "relative_improvement": 0.010187125056343033,
+      "row_cv": 0.11414901167154312,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.018310546875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 8,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6311284303665161,
+      "err_per_channel": 0.6232183575630188,
+      "relative_improvement": 0.012533222119155188,
+      "row_cv": 0.1283964365720749,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.00390625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 9,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6420146226882935,
+      "err_per_channel": 0.6263766884803772,
+      "relative_improvement": 0.02435759818434647,
+      "row_cv": 0.183598592877388,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.047607421875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 9,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6486724019050598,
+      "err_per_channel": 0.6437712907791138,
+      "relative_improvement": 0.007555602969314202,
+      "row_cv": 0.1045951396226883,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 9,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.620849072933197,
+      "err_per_channel": 0.6171240210533142,
+      "relative_improvement": 0.005999931452396041,
+      "row_cv": 0.08665207773447037,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.001953125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 9,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6289670467376709,
+      "err_per_channel": 0.6203450560569763,
+      "relative_improvement": 0.013708175532271778,
+      "row_cv": 0.13349361717700958,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.001953125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 10,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6358497738838196,
+      "err_per_channel": 0.6233335733413696,
+      "relative_improvement": 0.01968421010201833,
+      "row_cv": 0.1626744270324707,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.03076171875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 10,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6454538702964783,
+      "err_per_channel": 0.6387273669242859,
+      "relative_improvement": 0.01042135415363251,
+      "row_cv": 0.12164575606584549,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0009765625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 10,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.621882438659668,
+      "err_per_channel": 0.617742657661438,
+      "relative_improvement": 0.006656854641453417,
+      "row_cv": 0.09155105799436569,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.00048828125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 10,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6275544166564941,
+      "err_per_channel": 0.6166098713874817,
+      "relative_improvement": 0.017439994012508387,
+      "row_cv": 0.1498570591211319,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0087890625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 11,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6368395686149597,
+      "err_per_channel": 0.6219179630279541,
+      "relative_improvement": 0.023430713671667887,
+      "row_cv": 0.17766456305980682,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.05029296875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 11,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6452702879905701,
+      "err_per_channel": 0.6404349207878113,
+      "relative_improvement": 0.007493553155556812,
+      "row_cv": 0.1030779480934143,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0087890625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 11,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6221274137496948,
+      "err_per_channel": 0.6157587766647339,
+      "relative_improvement": 0.01023686940039469,
+      "row_cv": 0.11342587321996689,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0166015625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 11,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6272411346435547,
+      "err_per_channel": 0.617362916469574,
+      "relative_improvement": 0.01574867722856578,
+      "row_cv": 0.142280712723732,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0107421875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 12,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6350176334381104,
+      "err_per_channel": 0.6151461005210876,
+      "relative_improvement": 0.03129288364707972,
+      "row_cv": 0.20400060713291168,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.06689453125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 12,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6406466364860535,
+      "err_per_channel": 0.6353117227554321,
+      "relative_improvement": 0.008327388964193019,
+      "row_cv": 0.10748261958360672,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0146484375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 12,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6150830984115601,
+      "err_per_channel": 0.6116567254066467,
+      "relative_improvement": 0.005570585525373516,
+      "row_cv": 0.08215557038784027,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.002685546875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 12,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.616646945476532,
+      "err_per_channel": 0.6087192296981812,
+      "relative_improvement": 0.01285616646041189,
+      "row_cv": 0.12512381374835968,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0205078125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 13,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.618304431438446,
+      "err_per_channel": 0.6115330457687378,
+      "relative_improvement": 0.010951539929861174,
+      "row_cv": 0.11608605831861496,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.014404296875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 13,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6277744770050049,
+      "err_per_channel": 0.6167482137680054,
+      "relative_improvement": 0.017564051488049914,
+      "row_cv": 0.15052209794521332,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.021484375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 13,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6120918989181519,
+      "err_per_channel": 0.6098167300224304,
+      "relative_improvement": 0.0037170380783387367,
+      "row_cv": 0.06666522473096848,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.000244140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 13,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6180766820907593,
+      "err_per_channel": 0.6082602739334106,
+      "relative_improvement": 0.015882184916186787,
+      "row_cv": 0.1395048052072525,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0244140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 14,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6174073219299316,
+      "err_per_channel": 0.6114047169685364,
+      "relative_improvement": 0.009722276928352475,
+      "row_cv": 0.10921451449394226,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.002685546875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 14,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6280313730239868,
+      "err_per_channel": 0.6155293583869934,
+      "relative_improvement": 0.019906672140908972,
+      "row_cv": 0.16022872924804688,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0244140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 14,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6144504547119141,
+      "err_per_channel": 0.6108415126800537,
+      "relative_improvement": 0.005873446759108363,
+      "row_cv": 0.08444282412528992,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.00048828125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 14,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6228862404823303,
+      "err_per_channel": 0.6096596121788025,
+      "relative_improvement": 0.02123442041886465,
+      "row_cv": 0.16311870515346527,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0302734375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 15,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6180254817008972,
+      "err_per_channel": 0.6126220226287842,
+      "relative_improvement": 0.008743100781608424,
+      "row_cv": 0.10375406593084335,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.000244140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 15,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6301658749580383,
+      "err_per_channel": 0.6167550086975098,
+      "relative_improvement": 0.02128148602369427,
+      "row_cv": 0.16649483144283295,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0244140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 15,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.617440402507782,
+      "err_per_channel": 0.6139110326766968,
+      "relative_improvement": 0.005716130361327824,
+      "row_cv": 0.08373690396547318,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 15,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.623491108417511,
+      "err_per_channel": 0.6109989881515503,
+      "relative_improvement": 0.020035763296876948,
+      "row_cv": 0.15883971750736237,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.029296875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 16,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6189219951629639,
+      "err_per_channel": 0.6147740483283997,
+      "relative_improvement": 0.0067018895223977994,
+      "row_cv": 0.09102089703083038,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.000244140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 16,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6283420920372009,
+      "err_per_channel": 0.6169536709785461,
+      "relative_improvement": 0.01812455540218772,
+      "row_cv": 0.1530444175004959,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0244140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 16,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6136574745178223,
+      "err_per_channel": 0.6116359233856201,
+      "relative_improvement": 0.0032942662904751063,
+      "row_cv": 0.06322804093360901,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 16,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6211574077606201,
+      "err_per_channel": 0.6086046099662781,
+      "relative_improvement": 0.020208722680450753,
+      "row_cv": 0.15846198797225952,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.033203125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 17,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6168293952941895,
+      "err_per_channel": 0.6077264547348022,
+      "relative_improvement": 0.01475763092491023,
+      "row_cv": 0.13410279154777527,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.001220703125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 17,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6255647540092468,
+      "err_per_channel": 0.6171437501907349,
+      "relative_improvement": 0.013461442264036965,
+      "row_cv": 0.13107682764530182,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0234375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 17,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6179601550102234,
+      "err_per_channel": 0.6094049215316772,
+      "relative_improvement": 0.013844312467693983,
+      "row_cv": 0.1303585022687912,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 17,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6220986247062683,
+      "err_per_channel": 0.6132892370223999,
+      "relative_improvement": 0.014160757368701581,
+      "row_cv": 0.13321129977703094,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0244140625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 18,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6437633037567139,
+      "err_per_channel": 0.6201794743537903,
+      "relative_improvement": 0.036634317714754686,
+      "row_cv": 0.225641667842865,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.068603515625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 18,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6395925879478455,
+      "err_per_channel": 0.6360977292060852,
+      "relative_improvement": 0.005464195188649116,
+      "row_cv": 0.08683034032583237,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.001953125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 18,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6185231804847717,
+      "err_per_channel": 0.6140408515930176,
+      "relative_improvement": 0.0072468244249812835,
+      "row_cv": 0.09467596560716629,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 18,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6188448071479797,
+      "err_per_channel": 0.6126576066017151,
+      "relative_improvement": 0.009997984106514687,
+      "row_cv": 0.11105521023273468,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0205078125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 19,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6275169253349304,
+      "err_per_channel": 0.6172805428504944,
+      "relative_improvement": 0.01631252014273954,
+      "row_cv": 0.14499184489250183,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0068359375,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 19,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6307534575462341,
+      "err_per_channel": 0.6260900497436523,
+      "relative_improvement": 0.007393392373501116,
+      "row_cv": 0.09856117516756058,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0107421875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 19,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.615411102771759,
+      "err_per_channel": 0.6122683882713318,
+      "relative_improvement": 0.00510669126096804,
+      "row_cv": 0.07897709310054779,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 19,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6199010014533997,
+      "err_per_channel": 0.6115987300872803,
+      "relative_improvement": 0.01339289878005383,
+      "row_cv": 0.12881185114383698,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0205078125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 20,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6280804872512817,
+      "err_per_channel": 0.6193758845329285,
+      "relative_improvement": 0.013859056116275657,
+      "row_cv": 0.13386601209640503,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.007080078125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 20,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.623839795589447,
+      "err_per_channel": 0.6195677518844604,
+      "relative_improvement": 0.006847982022291556,
+      "row_cv": 0.09320679306983948,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0107421875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 20,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6191248297691345,
+      "err_per_channel": 0.6154513955116272,
+      "relative_improvement": 0.005933269158139096,
+      "row_cv": 0.08575378358364105,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 20,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6164962649345398,
+      "err_per_channel": 0.6101177334785461,
+      "relative_improvement": 0.010346423520783101,
+      "row_cv": 0.11233767122030258,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.013671875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 21,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6307880282402039,
+      "err_per_channel": 0.6214865446090698,
+      "relative_improvement": 0.01474581509906531,
+      "row_cv": 0.13911858201026917,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.000732421875,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 21,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6246498227119446,
+      "err_per_channel": 0.6217011213302612,
+      "relative_improvement": 0.004720567067291292,
+      "row_cv": 0.07765292376279831,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.00390625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 21,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6224085688591003,
+      "err_per_channel": 0.6160703897476196,
+      "relative_improvement": 0.010183309531067105,
+      "row_cv": 0.11311369389295578,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 21,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.618840217590332,
+      "err_per_channel": 0.6158674955368042,
+      "relative_improvement": 0.0048036988693190485,
+      "row_cv": 0.07718571275472641,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.00390625,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 22,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6287204027175903,
+      "err_per_channel": 0.6173928380012512,
+      "relative_improvement": 0.01801685561241003,
+      "row_cv": 0.15270330011844635,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 22,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6240819692611694,
+      "err_per_channel": 0.6221628189086914,
+      "relative_improvement": 0.0030751575065532622,
+      "row_cv": 0.06261951476335526,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 22,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6225314140319824,
+      "err_per_channel": 0.6154940128326416,
+      "relative_improvement": 0.011304491694260548,
+      "row_cv": 0.1192438080906868,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 22,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.614134669303894,
+      "err_per_channel": 0.6115902066230774,
+      "relative_improvement": 0.004143167301889557,
+      "row_cv": 0.07080775499343872,
+      "frac_rows_gt_2x_mean": 0.0009765625,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn1.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 23,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6248161196708679,
+      "err_per_channel": 0.6152575612068176,
+      "relative_improvement": 0.01529819440171521,
+      "row_cv": 0.13939981162548065,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn1.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 23,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.6497585773468018,
+      "err_per_channel": 0.642921507358551,
+      "relative_improvement": 0.010522477465659555,
+      "row_cv": 0.12371408194303513,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.0,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn2.intermediate_dense.weight",
+      "group": "ffn_in",
+      "layer": 23,
+      "shape": [
+        4096,
+        1024
+      ],
+      "err_per_tensor": 0.6298306584358215,
+      "err_per_channel": 0.6233125329017639,
+      "relative_improvement": 0.01034901278106296,
+      "row_cv": 0.11639775335788727,
+      "frac_rows_gt_2x_mean": 0.0,
+      "frac_rows_lt_half_mean": 0.001953125,
+      "zero_rows": 0
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn2.output_dense.weight",
+      "group": "ffn_out",
+      "layer": 23,
+      "shape": [
+        1024,
+        4096
+      ],
+      "err_per_tensor": 0.7773376703262329,
+      "err_per_channel": 0.6449460387229919,
+      "relative_improvement": 0.17031418475793006,
+      "row_cv": 0.68925940990448,
+      "frac_rows_gt_2x_mean": 0.1103515625,
+      "frac_rows_lt_half_mean": 0.3056640625,
+      "zero_rows": 0
+    }
+  ]
+}

@@ -369,3 +369,26 @@ def test_build_trainer_returns_stock_trainer(tiny_model, tmp_path):
                             make_loss_recorder())
     assert isinstance(trainer, Trainer)
     assert trainer.model is model
+
+
+def test_checkpoint_manifest_records_layers_and_exclusions(tiny_model, tmp_path):
+    model = _fresh_qat_model(tiny_model)
+    excluded = ["wav2vec2_conformer.encoder.layers.0.ffn1.intermediate_dense"]
+    manifest = save_qat_checkpoint(
+        model, tmp_path, layers=ATTN_FFN, scale_mode="per_tensor_mean_abs",
+        exclude_layers=excluded,
+    )
+    assert manifest["layers"] == ATTN_FFN
+    assert manifest["exclude_layers"] == excluded
+    assert manifest["mixed_precision"] is True
+
+
+def test_checkpoint_layer_mismatch_raises(tiny_model, tmp_path):
+    from transformers import Wav2Vec2ConformerForCTC
+
+    model = _fresh_qat_model(tiny_model)
+    save_qat_checkpoint(model, tmp_path, layers=ATTN_FFN)
+    other = dict(ATTN_FFN)
+    other["ffn_in"] = False
+    with pytest.raises(ValueError, match="layer selection"):
+        load_qat_checkpoint(tmp_path, Wav2Vec2ConformerForCTC, other)

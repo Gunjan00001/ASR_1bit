@@ -5,6 +5,7 @@ from onebit_asr.quantization.bitlinear import BitLinear
 from onebit_asr.quantization.scaling import (
     SCALE_MODES,
     compute_scale,
+    per_output_channel_mean_abs,
     per_tensor_mean_abs,
 )
 from onebit_asr.quantization.ste import BinaryQuantize, binary_quantize
@@ -17,5 +18,6 @@ __all__ = [
     "quantize_weight",
     "compute_scale",
     "per_tensor_mean_abs",
+    "per_output_channel_mean_abs",
     "SCALE_MODES",
 ]

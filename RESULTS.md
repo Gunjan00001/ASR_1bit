@@ -21,6 +21,8 @@ separately, and each JSON records its own dependency versions.
 | QAT attention-only reproduction (Kaggle T4) | cloud-gpu | 0.0408 | 0.0124 | 0.0121 | 1875 | 346.7 | 96 | `results/qat_attn_repro.json` |
 | QAT attention-only (A100 re-run) | cloud-gpu | 0.0421 | 0.0128 | 0.0285 | 1875 | 97.2 | 96 | `results/qat_attn_a100.json` |
 | QAT FFN-only (A100) | cloud-gpu | 0.1186 | 0.0337 | 0.0293 | 1875 | 165.4 | 96 | `results/qat_ffn_a100.json` |
+| QAT FFN-only, dev-selected control | cloud-gpu | — | — | — | — | — | — | not measured |
+| QAT FFN-only, per-output-channel scales | cloud-gpu | — | — | — | — | — | — | not measured |
 | QAT attention+FFN (A100) | cloud-gpu | 0.2082 | 0.0641 | 0.0297 | 1875 | 298.6 | 192 | `results/qat_attn_ffn.json` |
 | QAT + distillation attention+FFN, lambda_kd=0.5 (A100) | cloud-gpu | 0.2232 | 0.0712 | 0.0312 | 1875 | 2500.6 | 192 | `results/distill_attn_ffn.json` |
 | QAT + distillation attention+FFN, lambda_kd=0.1 (A100) | cloud-gpu | 0.2022 | 0.0641 | 0.0304 | 1875 | 638.2 | 192 | `results/distill_attn_ffn_kd01.json` |
@@ -28,16 +30,18 @@ separately, and each JSON records its own dependency versions.
 
 ## 2. Size accounting
 
-| Artifact | Layers | Quantized weights | Packed payload (MB) | Non-quantized FP (MB) | FP masters (MB) | Measured artifact (MB) |
-|---|---:|---:|---:|---:|---:|---:|
-| PTQ attention+FFN | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
-| QAT attention-only (Kaggle) | 96 | 100663296 | 12.6 | 1970.9 | 402.7 | 1983.6 |
-| QAT attention-only repro | 96 | 100663296 | 12.6 | 1970.9 | 402.7 | 1983.6 |
-| QAT attention-only (A100) | 96 | 100663296 | 12.6 | 1970.9 | 402.7 | 1983.6 |
-| QAT FFN-only (A100) | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
-| QAT attention+FFN (A100) | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
-| QAT + distillation attention+FFN, lambda_kd=0.5 | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
-| QAT + distillation attention+FFN, lambda_kd=0.1 | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
+| Artifact | Scale | Layers | Quantized weights | Packed payload (MB) | Non-quantized FP (MB) | FP masters (MB) | Measured artifact (MB) |
+|---|---|---:|---:|---:|---:|---:|---:|
+| PTQ attention+FFN | per_tensor_mean_abs | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
+| QAT attention-only (Kaggle) | per_tensor_mean_abs | 96 | 100663296 | 12.6 | 1970.9 | 402.7 | 1983.6 |
+| QAT attention-only repro | per_tensor_mean_abs | 96 | 100663296 | 12.6 | 1970.9 | 402.7 | 1983.6 |
+| QAT attention-only (A100) | per_tensor_mean_abs | 96 | 100663296 | 12.6 | 1970.9 | 402.7 | 1983.6 |
+| QAT FFN-only (A100) | per_tensor_mean_abs | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
+| QAT FFN-only, dev-selected control | — | — | — | — | — | — | not measured |
+| QAT FFN-only, per-output-channel scales | — | — | — | — | — | — | not measured |
+| QAT attention+FFN (A100) | per_tensor_mean_abs | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
+| QAT + distillation attention+FFN, lambda_kd=0.5 | per_tensor_mean_abs | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
+| QAT + distillation attention+FFN, lambda_kd=0.1 | per_tensor_mean_abs | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
 
 The **measured artifact** is the packed safetensors file (packed 1-bit weights +
 FP32 scales + non-quantized FP parameters). FP32 master weights are training-time
@@ -121,7 +125,46 @@ Device: `NVIDIA A100-SXM4-80GB` | dataset: `openslr/librispeech_asr clean test` 
 - Chunked RTF: **0.11226428207010031**; scope: chunked pseudo-streaming: full encoder per overlapping window; not a true streaming encoder
 
 
-## 7. Honest reading
+## 7. Screening and mixed-precision validation (v1.6 research)
+
+### Per-output-channel reconstruction gate
+
+- FFN-only QAT masters: per-tensor 0.6458 → per-channel 0.6306 (**2.28%** improvement; gate 10%: **FAIL**; mean row CV 0.168)
+- FP32 starting weights: per-tensor 0.6508 → per-channel 0.6343 (**2.43%** improvement; gate 10%: **FAIL**; mean row CV 0.176)
+
+The 10% gate failed, so no per-channel QAT run was launched. This is a negative screening result, not a WER result.
+
+
+### FFN per-layer sensitivity screen (screening only, not QAT)
+
+- 32 fixed dev utterances; FP32 ref WER 0.0287; scale mode `per_tensor_mean_abs`; `screening_only=True`, `not_qat=True`.
+- `ffn_in`: 48 layers, mean ΔWER +0.0034, mean relL2 0.1046
+- `ffn_out`: 48 layers, mean ΔWER +0.0018, mean relL2 0.0726
+
+| Layer | Rel. L2 | KL | Argmax | ΔWER |
+|---|---:|---:|---:|---:|
+| `wav2vec2_conformer.encoder.layers.11.ffn1.intermediate_dense` | 0.1025 | 0.0697 | 0.961 | +0.0128 |
+| `wav2vec2_conformer.encoder.layers.18.ffn1.intermediate_dense` | 0.2823 | 0.2791 | 0.896 | +0.0128 |
+| `wav2vec2_conformer.encoder.layers.8.ffn2.intermediate_dense` | 0.0876 | 0.0573 | 0.966 | +0.0096 |
+| `wav2vec2_conformer.encoder.layers.17.ffn2.intermediate_dense` | 0.1815 | 0.1684 | 0.931 | +0.0096 |
+| `wav2vec2_conformer.encoder.layers.6.ffn2.intermediate_dense` | 0.0690 | 0.0390 | 0.975 | +0.0080 |
+| `wav2vec2_conformer.encoder.layers.10.ffn2.intermediate_dense` | 0.0703 | 0.0363 | 0.974 | +0.0080 |
+| `wav2vec2_conformer.encoder.layers.15.ffn1.intermediate_dense` | 0.1264 | 0.1135 | 0.954 | +0.0080 |
+| `wav2vec2_conformer.encoder.layers.18.ffn1.output_dense` | 0.2388 | 0.2344 | 0.912 | +0.0080 |
+| `wav2vec2_conformer.encoder.layers.2.ffn1.intermediate_dense` | 0.0821 | 0.0465 | 0.972 | +0.0064 |
+| `wav2vec2_conformer.encoder.layers.5.ffn1.intermediate_dense` | 0.0438 | 0.0142 | 0.986 | +0.0064 |
+
+`ffn_in` is ~1.9× more sensitive than `ffn_out`; the top layers are middle/late, selected from measurements rather than position.
+
+### Mixed-precision implementation validation
+
+- mixed config: 79 BitLinear + 17 excluded FP32 FFN layers; smoke WER 0.7105 (8 steps — pipeline check, not accuracy)
+- per-channel config: 96 BitLinear; smoke WER 0.9803 (8 steps — pipeline check, not accuracy)
+- `packed_verify_ffn_pc_smoke.json`: passed=True, max |Δ logit|=0.0, argmax=1.0
+- `packed_verify_ffn_mixed_smoke.json`: passed=True, max |Δ logit|=0.0, argmax=1.0
+
+
+## 8. Honest reading
 
 - Accuracy numbers are greedy CTC on fixed LibriSpeech subsets; they are not
   comparable to LM-assisted leaderboard numbers.

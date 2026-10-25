@@ -14,6 +14,16 @@ sizes. The full measured comparison is in [`RESULTS.md`](RESULTS.md). No number
 here is estimated; failed and negative results are kept, and the full research
 history is in [`planning.md`](planning.md).
 
+> **v1.6 research checkpoint (in progress, no new WER claimed).**
+> Per-output-channel scaling was implemented and screened: it reduced FFN
+> reconstruction error by only **2.3–2.4%**, below the pre-registered 10% gate,
+> so no per-channel QAT was run. A one-layer **FFN sensitivity screen** identified
+> 17 sensitive layers (`ffn_in` is ~1.9× more sensitive than `ffn_out`); a
+> **mixed-precision FFN config** (79 1-bit + 17 FP32 layers) is implemented and
+> validated (107 tests, CPU smoke, artifact reload exact), but its GPU pilot was
+> blocked by the shared cluster being fully allocated. See
+> `EXPERIMENT_LOG.md` E24–E26 and `RESULTS.md` §7.
+
 > This README is written for an engineer joining at this checkpoint. It states
 > what exists, what was measured, and — just as importantly — what has **not**
 > been done yet.
@@ -128,6 +138,7 @@ A true streaming encoder would need cached convolution/attention state.*
 | QAT attention-only: 4.49% full test | Distillation λ_kd=0.1: 19.98% — ~0.5 pp gain | Distillation λ_kd=0.5: 22.18% (worse than QAT) |
 | QAT FFN-only: 11.34% at 2.9× | Packed inference: storage win, 1.10× slower | Any inference speedup from binarization |
 | Bit packing + honest size accounting | Chunked streaming: partial transcripts, poor WER | 5.6× compression at near-FP32 accuracy on this recipe |
+| FFN layer-sensitivity screen: specific layers, `ffn_in` 1.9× `ffn_out` | Mixed-precision FFN: implementation validated; GPU pilot blocked | Per-output-channel scaling: 2.3–2.4% reconstruction gain (gate 10%) |
 
 **The central scientific finding:** QAT recovers every *isolated* binarization,
 but the *combined* attention+FFN arm is worse than either isolated arm. The two
@@ -161,7 +172,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (88 tests) | ✅ green |
+| 7 | Test gate (107 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
@@ -177,6 +188,9 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 17 | Inference benchmarking | ✅ measured (A100 RTF, latency, VRAM) |
 | 18 | Binary compute | ✅ investigated (packed storage; XNOR boundary measured) |
 | 19 | Streaming ASR | ✅ prototype measured (chunked WER/RTF) |
+| R1 | Research: per-output-channel scaling | ⛔ screened out: 2.3–2.4% reconstruction gain vs 10% gate |
+| R2 | Research: FFN per-layer sensitivity | ✅ measured: 96 layers, 32 dev; `ffn_in` 1.9× `ffn_out` |
+| R3 | Research: mixed-precision FFN | 🔧 implemented + CPU/artifact validated; GPU pilot blocked |
 
 > **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes
@@ -388,7 +402,7 @@ weights, covered by tests).
 
 `scaling.py`: **per-tensor** `alpha = mean(|W|)` (XNOR-Net-style L1 scaling).
 
-- Per-layer scalar, **not** per-channel.
+- Default is a per-layer scalar; `per_output_channel_mean_abs` is an opt-in per-row mode (implemented but screened out for FFN by the 10% gate).
 - **Recomputed on every forward** from the current master weights.
 - **Not a learned parameter.** Gradients still flow into the master weights,
   because `alpha` is a differentiable function of `W`.
@@ -475,7 +489,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **88 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **107 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -504,6 +518,12 @@ This is an experimental choice, not a permanent rule.
   settings, word-overlap merge semantics.
 - `test_latency.py` (3) — warmed-up benchmark wrapper, comparison-table
   rendering, and accuracy-only (`--no-benchmark`) table rows.
+- `test_callbacks.py` (3) — best-dev selection/restore, cadence, and duplicate
+  step guard.
+- Mixed-precision additions in `test_binarization.py`, `test_bitlinear.py`,
+  `test_packed.py`, `test_layer_replacement.py`, and `test_qat.py`: per-channel
+  scales/broadcasting/zero rows/gradients, exact-layer exclusion, manifest
+  verification, and artifact cases.
 
 ## 19. Phase 8 replacement behavior (measured on the real model)
 
@@ -630,7 +650,9 @@ parameters and removing FP master weights from deployment state are future work.
 - **No true streaming encoder** — `streaming.py` is chunked pseudo-streaming
   (full encoder per overlapping window). Its chunked WER is much worse than the
   full-utterance WER on the demo (Phase 19).
-- **No 2-bit / INT8 arm**, no per-channel scaling, no learned alpha.
+- **No 2-bit / INT8 arm.** Mixed precision (FP32/1-bit per layer) and
+  per-output-channel scaling are implemented; 2-bit, INT8, and learned alpha are
+  not. The per-channel screen was below the 10% gate, so that arm was not trained.
 - **Distillation is a marginal tuning knob**: λ_kd=0.5 made the combined arm
   worse (0.2232); λ_kd=0.1 improves it to **0.2022 dev / 0.1998 full test**, a
   small gain over QAT alone (0.2080 / 0.2050).
@@ -840,7 +862,7 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 87 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 107 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
@@ -860,7 +882,7 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 87 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 107 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
@@ -897,9 +919,10 @@ pinned dependencies, recorded provenance in every results JSON.
 - **`results/baseline.json` uses the pre-`v1.1.0` size schema** (single
   `checkpoint_bytes` = full download, 4.75 GB). It is intentionally immutable;
   treat `checkpoint_bytes_safetensors` in newer files as canonical.
-- **Single scale mode / single STE mode** implemented (per-tensor mean-abs,
-  pass-through default). No per-channel scaling, no learned alpha, no 2-bit or
-  INT8 arm.
+- **Default is per-tensor**, with per-output-channel scaling available as an
+  opt-in mode (`per_output_channel_mean_abs`). The per-channel screen reduced FFN
+  reconstruction error by only 2.3–2.4% (below the 10% gate), so it was not
+  trained. No learned alpha, no 2-bit/INT8.
 - **No LM decoding**; WER figures are greedy-only and therefore not directly
   comparable to LM-assisted ASR leaderboards.
 - **The cluster stack differs from the Kaggle stack** (torch 2.11.0+cu126 /
@@ -910,14 +933,18 @@ pinned dependencies, recorded provenance in every results JSON.
 
 The attention+FFN QAT run is done. The open questions and next experiments are:
 
+0. **Run the mixed-precision FFN pilot/full** (`cluster/qat_ffn_pilot.pbs`). The
+   17 sensitive layers are selected from `results/layer_sensitivity_ffn.json`;
+   the control and mixed arms use the same 2k/500-step pilot, then 10k/1875 full
+   budget, dev-only selection. Promote only if the mixed dev WER ≤ control.
 1. **Improve the attention+FFN recipe** — longer training, LR/early-stop sweep,
-   and KD tuning (λ_kd=0.1 / mean-normalized KL) to test whether the combined
-   arm can approach the FFN-only result.
+   and KD tuning (mean-normalized KL) after the mixed pilot.
 2. **True binary compute** — integrate an XNOR+popcount kernel with 1-bit
    activations. The measured 1-bit×1-bit kernel is 2.3× faster than float, but
    the current model has FP activations, so it cannot use that kernel directly.
-3. **2-bit / INT8 and per-channel / learned scaling** — the current
-   implementation is exactly 1-bit, per-tensor, non-learned alpha.
+3. **2-bit / INT8 and learned scaling** — per-output-channel scaling is
+   implemented but screened out; the current trained arms use 1-bit weights with
+   per-tensor, non-learned alpha.
 4. **LM decoding** — current numbers are greedy CTC on full test-clean; an
    LM-assisted comparison is future work.
 5. **A true streaming encoder** with cached convolution/attention state — the
@@ -956,8 +983,9 @@ future research or unavailable infrastructure.
   future work.
 - **True streaming encoder** — cached convolution/attention state is not
   implemented; the chunked prototype is measured and documented as such.
-- **2-bit / INT8**, LM decoding, per-channel/learned scaling — optional or out
-  of the pinned protocol.
+- **2-bit / INT8**, LM decoding, learned scaling — optional or out of the pinned
+  protocol. Per-output-channel scaling is implemented but was screened out; mixed
+  precision (FP32/1-bit per layer) is implemented but the pilot is pending.
 - **Kaggle T4 clean re-run** — the Kaggle CLI/credentials are unavailable in
   this environment, and the weekly quota was exhausted historically. The A100
   re-run reproduces the attention-only result and the packing pipeline, so this
@@ -978,11 +1006,18 @@ The lowest 1-bit dev WER ever measured in the project is the historical Kaggle
 T4 attention-only run at **0.0392** (256 dev); the A100 full-test result is
 0.0449, which is the number to quote for the final model.
 
+> **v1.6 research extension (not a completed phase):** per-output-channel
+> scaling was screened out (2.3–2.4% reconstruction gain, gate 10%); the FFN
+> layer-sensitivity screen was measured; mixed precision (FP32/1-bit per layer)
+> is implemented and validated, but its GPU pilot is pending. **No mixed WER is
+> claimed**, and the final WER table above is unchanged.
+
 ## Layout
 
 ```
 one-bit-asr/
-├── configs/            baseline / binary / qat / qat_attn / qat_attn_ffn / distill_attn_ffn / distillation
+├── configs/            baseline / binary / qat / qat_attn / qat_attn_ffn / qat_ffn /
+│                       qat_ffn_per_channel / qat_ffn_mixed / distill_*
 ├── src/onebit_asr/
 │   ├── config.py               extends-aware config loader
 │   ├── data/                   text normalization, dev/test/train loaders, CTC collator
@@ -997,13 +1032,18 @@ one-bit-asr/
 │                       verify_eval_equivalence, quantize, diagnose_ptq_collapse,
 │                       smoke_ptq_pipeline, train_qat, train_distillation,
 │                       pack_qat_model, run_final_eval, benchmark_packed,
-│                       stream_infer, setup_windows_ffmpeg
+│                       stream_infer, analyze_quantization_error,
+│                       screen_layer_sensitivity, verify_packed_artifact,
+│                       make_figures, summarize_results, setup_windows_ffmpeg
 ├── kaggle/             kernel.py, requirements/constraints, verify_replacement.py,
 │                       README.md (cloud T4 execution + pack-only recovery)
 ├── cluster/            pick_gpu.sh + PBS jobs (attention/FFN QAT, attention-only
-│                       A100 arm, distillation), README.md (A100 execution)
-├── tests/              88 tests (STE, binarization, BitLinear, replacement, QAT,
-│                       evaluate, config, distillation, packed, streaming, latency)
+│                       A100 arm, distillation, layer screen, mixed pilot),
+│                       README.md (A100 execution)
+├── tests/              107 tests (STE, binarization, BitLinear, replacement,
+│                       QAT, evaluate, config, distillation, packed, streaming,
+│                       latency, callbacks, mixed-precision exclusions)
+├── results/            measured JSONs, screening/validation artifacts, final tables
 ├── docs/figures/       generated charts (scripts/make_figures.py)
 ├── deepdive.md         from-scratch teaching guide
 ├── EXPERIMENT_LOG.md   what/why/did-it-work log

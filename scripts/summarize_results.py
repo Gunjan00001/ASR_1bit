@@ -23,6 +23,8 @@ TRAINING_ARMS = [
     ("qat_attn_repro.json", "QAT attention-only reproduction (Kaggle T4)", "cloud-gpu"),
     ("qat_attn_a100.json", "QAT attention-only (A100 re-run)", "cloud-gpu"),
     ("qat_ffn_a100.json", "QAT FFN-only (A100)", "cloud-gpu"),
+    ("qat_ffn_control_devsel.json", "QAT FFN-only, dev-selected control", "cloud-gpu"),
+    ("qat_ffn_per_channel.json", "QAT FFN-only, per-output-channel scales", "cloud-gpu"),
     ("qat_attn_ffn.json", "QAT attention+FFN (A100)", "cloud-gpu"),
     ("distill_attn_ffn.json", "QAT + distillation attention+FFN, lambda_kd=0.5 (A100)", "cloud-gpu"),
     ("distill_attn_ffn_kd01.json", "QAT + distillation attention+FFN, lambda_kd=0.1 (A100)", "cloud-gpu"),
@@ -73,8 +75,8 @@ def training_table() -> str:
 
 def size_table() -> str:
     lines = [
-        "| Artifact | Layers | Quantized weights | Packed payload (MB) | Non-quantized FP (MB) | FP masters (MB) | Measured artifact (MB) |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+        "| Artifact | Scale | Layers | Quantized weights | Packed payload (MB) | Non-quantized FP (MB) | FP masters (MB) | Measured artifact (MB) |",
+        "|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     files = [
         ("size_report.json", "PTQ attention+FFN"),
@@ -82,6 +84,8 @@ def size_table() -> str:
         ("qat_attn_repro_size_report.json", "QAT attention-only repro"),
         ("qat_attn_a100_size_report.json", "QAT attention-only (A100)"),
         ("qat_ffn_a100_size_report.json", "QAT FFN-only (A100)"),
+        ("qat_ffn_control_devsel_size_report.json", "QAT FFN-only, dev-selected control"),
+        ("qat_ffn_per_channel_size_report.json", "QAT FFN-only, per-output-channel scales"),
         ("qat_attn_ffn_size_report.json", "QAT attention+FFN (A100)"),
         ("distill_attn_ffn_size_report.json", "QAT + distillation attention+FFN, lambda_kd=0.5"),
         ("distill_attn_ffn_kd01_size_report.json", "QAT + distillation attention+FFN, lambda_kd=0.1"),
@@ -89,11 +93,12 @@ def size_table() -> str:
     for filename, label in files:
         d = load(filename)
         if not d:
-            lines.append(f"| {label} | — | — | — | — | — | not measured |")
+            lines.append(f"| {label} | — | — | — | — | — | — | not measured |")
             continue
         mb = lambda v: f"{v / 1e6:.1f}" if isinstance(v, (int, float)) else "—"
         lines.append(
-            f"| {label} | {d.get('n_bitlinear_layers', '—')} | "
+            f"| {label} | {d.get('scale_mode', '—')} | "
+            f"{d.get('n_bitlinear_layers', '—')} | "
             f"{d.get('quantized_weight_count', '—')} | {mb(d.get('packed_payload_bytes'))} | "
             f"{mb(d.get('non_quantized_fp_param_bytes'))} | "
             f"{mb(d.get('fp_master_bytes_excluded_from_artifact'))} | "
@@ -156,6 +161,92 @@ def streaming_section() -> str:
     )
 
 
+def screening_section() -> str:
+    """Screening and validation results from the mixed-precision investigation."""
+    lines = ["### Per-output-channel reconstruction gate\n"]
+    for filename, label in (
+        ("quantization_error_ffn.json", "FFN-only QAT masters"),
+        ("quantization_error_ffn_fp32.json", "FP32 starting weights"),
+    ):
+        d = load(filename)
+        if not d:
+            lines.append(f"- {label}: not measured")
+            continue
+        s = d["summary"]["all"]
+        lines.append(
+            f"- {label}: per-tensor {s['mean_err_per_tensor']:.4f} → "
+            f"per-channel {s['mean_err_per_channel']:.4f} "
+            f"(**{s['mean_relative_improvement']:.2%}** improvement; "
+            f"gate {d['gate']:.0%}: **{'PASS' if d['gate_passes'] else 'FAIL'}**; "
+            f"mean row CV {s['mean_row_cv']:.3f})"
+        )
+    lines.append(
+        "\nThe 10% gate failed, so no per-channel QAT run was launched. "
+        "This is a negative screening result, not a WER result.\n"
+    )
+
+    d = load("layer_sensitivity_ffn.json")
+    if d:
+        lines.append("\n### FFN per-layer sensitivity screen (screening only, not QAT)\n")
+        ref = d.get("fp32_reference", {})
+        lines.append(
+            f"- {d.get('n_utterances')} fixed dev utterances; FP32 ref WER "
+            f"{ref.get('wer', float('nan')):.4f}; "
+            f"scale mode `{d.get('scale_mode')}`; `screening_only=True`, `not_qat=True`."
+        )
+        for group, s in d.get("group_summary", {}).items():
+            lines.append(
+                f"- `{group}`: {s['n_layers']} layers, mean ΔWER "
+                f"{s['mean_delta_wer']:+.4f}, mean relL2 {s['mean_relative_l2']:.4f}"
+            )
+        lines.append("\n| Layer | Rel. L2 | KL | Argmax | ΔWER |")
+        lines.append("|---|---:|---:|---:|---:|")
+        for r in d.get("top_10", []):
+            lines.append(
+                f"| `{r['name']}` | {r['relative_l2']:.4f} | "
+                f"{r['kl_ref_variant']:.4f} | {r['argmax_agreement']:.3f} | "
+                f"{r['delta_wer_vs_fp32']:+.4f} |"
+            )
+        lines.append(
+            "\n`ffn_in` is ~1.9× more sensitive than `ffn_out`; the top layers are "
+            "middle/late, selected from measurements rather than position."
+        )
+    else:
+        lines.append("\nLayer-sensitivity screen: not measured.")
+
+    mixed = load("qat_ffn_mixed_smoke.json")
+    pc = load("qat_ffn_pc_smoke.json")
+    if mixed or pc:
+        lines.append("\n### Mixed-precision implementation validation\n")
+        if mixed:
+            rep = mixed.get("replacement", {})
+            lines.append(
+                f"- mixed config: {rep.get('n_replaced')} BitLinear + "
+                f"{rep.get('n_excluded')} excluded FP32 FFN layers; "
+                f"smoke WER {mixed.get('eval', {}).get('wer'):.4f} "
+                f"(8 steps — pipeline check, not accuracy)"
+            )
+        if pc:
+            rep = pc.get("replacement", {})
+            lines.append(
+                f"- per-channel config: {rep.get('n_replaced')} BitLinear; "
+                f"smoke WER {pc.get('eval', {}).get('wer'):.4f} "
+                f"(8 steps — pipeline check, not accuracy)"
+            )
+        for filename in (
+            "packed_verify_ffn_pc_smoke.json",
+            "packed_verify_ffn_mixed_smoke.json",
+        ):
+            v = load(filename)
+            if v:
+                lines.append(
+                    f"- `{filename}`: passed={v.get('passed')}, "
+                    f"max |Δ logit|={v.get('max_abs_logit_diff')}, "
+                    f"argmax={v.get('mean_argmax_agreement')}"
+                )
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     text = f"""# Results — measured artifacts
 
@@ -207,7 +298,11 @@ benchmark numbers are in §3–§4.
 
 {streaming_section()}
 
-## 7. Honest reading
+## 7. Screening and mixed-precision validation (v1.6 research)
+
+{screening_section()}
+
+## 8. Honest reading
 
 - Accuracy numbers are greedy CTC on fixed LibriSpeech subsets; they are not
   comparable to LM-assisted leaderboard numbers.

@@ -47,7 +47,23 @@ def quantize_weight(
     Order matters: ``wb`` is derived first, but ``alpha`` is computed from
     ``weight`` (not from ``wb``). Computing it from ``wb`` would detach the
     scale from the master and change the gradient (see ``deepdive.md`` §3.4).
+
+    ``alpha`` is a 0-D scalar for ``per_tensor_mean_abs`` or ``[out,1]`` for
+    ``per_output_channel_mean_abs``. In both cases ``alpha * wb`` broadcasts to
+    the full ``[out,in]`` weight, so the rest of the code path is identical.
     """
+    # Shape contract check: a scalar or one scale per output row. A wrong shape
+    # here would silently broadcast in a surprising direction.
+    alpha = compute_scale(weight, scale_mode)  # differentiable scale(s)
+    if alpha.dim() == 2:
+        if alpha.shape != (weight.shape[0], 1):
+            raise ValueError(
+                f"alpha shape {tuple(alpha.shape)} does not match weight "
+                f"{tuple(weight.shape)} for mode {scale_mode!r}"
+            )
+    elif alpha.dim() != 0:
+        raise ValueError(
+            f"alpha must be 0-D or [out,1], got {tuple(alpha.shape)} for mode {scale_mode!r}"
+        )
     wb = binarize(weight, ste_clip)          # ±1 pattern; STE-backed
-    alpha = compute_scale(weight, scale_mode)  # differentiable scalar
     return alpha * wb, alpha

@@ -54,7 +54,16 @@ which later becomes busy.
 | `qat_attn_a100.pbs` | Phase 12/14: attention-only QAT re-run for a like-for-like A100 arm | 4 | `results/qat_attn_a100.json`, `checkpoints/qat_attn_a100*` |
 | `qat_ffn_a100.pbs` | Phase 15: FFN-only QAT sensitivity arm | 1 | `results/qat_ffn_a100.json`, `checkpoints/qat_ffn_a100*` |
 | `distill_attn_ffn.pbs` | Phase 13: FP32 teacher → attention+FFN 1-bit student | 1 | `results/distill_attn_ffn.json`, `checkpoints/distill_attn_ffn*` |
+| `distill_attn_ffn_kd01.pbs` | Phase 13/14: λ_kd=0.1 distillation follow-up | 1 | `results/distill_attn_ffn_kd01.json` |
+| `screen_ffn_sensitivity.pbs` | research: one-layer FFN sensitivity screen (no training) | 4 | `results/layer_sensitivity_ffn.json` |
+| `qat_ffn_pilot.pbs` | research: 500-step FFN control vs mixed-precision pilot | 4 | `results/qat_ffn_control_pilot.json`, `results/qat_ffn_mixed_pilot.json` |
 | `final_eval_a100.pbs` | Phase 12/14/15/17/18/19: final comparison, packed and streaming benchmarks | 1 | `results/final_comparison_*.{json,md}`, `results/packed_inference_benchmark.json`, `results/streaming_demo_qat_attn_ffn.json` |
+
+> **Node allocation:** `jiit-gpu01` has 96 CPUs and 8 A100s, but PBS assigns
+> whole CPUs and GPU slots. When `resources_assigned.ncpus = 96`, new jobs stay
+> queued even if `nvidia-smi` shows free GPU memory. The mixed-precision pilot
+> was queued and canceled for this reason; rerun `qat_ffn_pilot.pbs` when a slot
+> frees.
 
 Each job writes a live log under `logs/` on the shared home filesystem (PBS
 buffers its own `-o` output, so `tee` is used instead), runs `pack_qat_model.py`

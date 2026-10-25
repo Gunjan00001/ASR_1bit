@@ -48,6 +48,10 @@ Status labels:
 | E20 | 2026-10-25 | Packed 1-bit inference | PARTIAL (storage yes, speed no) |
 | E21 | 2026-10-25 | Chunked streaming | PARTIAL (prototype) |
 | E22 | 2026-10-25 | Full test-clean evaluation | WORKED (ranking confirmed) |
+| E23 | 2026-10-25 | Completion audit (v1.5.2) | WORKED |
+| E24 | 2026-10-25 | Per-output-channel reconstruction screen | DID NOT WORK (below gate) |
+| E25 | 2026-10-25 | FFN per-layer sensitivity screen | WORKED (screening) |
+| E26 | 2026-10-25 | Mixed-precision FFN implementation + pilot | PARTIAL (pilot blocked) |
 
 ---
 
@@ -671,6 +675,148 @@ kept as a separate result, but the final full-test number is 0.0449.
 
 **Conclusion:** the project is complete at the scope of the original plan. The
 open items above are explicitly future research, not missing required phases.
+
+---
+
+## E24 — Per-output-channel reconstruction screen
+
+**Question:** does one scale per FFN output row (`alpha_i = mean_j |W[i,j]|`)
+remove enough weight-reconstruction error to justify a QAT run?
+
+**Why:** the current quantizer uses one scale per matrix; the FFN is 68% of the
+parameters and the best compressed arm (11.34% full-test at 0.813 GB). This is
+the cheapest test of whether the scale granularity is the bottleneck. A
+pre-registered gate stopped the experiment if the improvement was below 10%
+relative.
+
+**What:** implemented `per_output_channel_mean_abs` and a CPU screen
+(`scripts/analyze_quantization_error.py`) over all 96 FFN weight matrices of
+(a) the FFN-only QAT masters and (b) the FP32 starting weights. Metrics:
+relative Frobenius reconstruction error, row-norm CV, zero rows.
+
+**Did it work?** **The screen worked; the quantizer did not clear the gate.**
+
+| Source | Per-tensor error | Per-channel error | Improvement |
+|---|---:|---:|---:|
+| FFN-only QAT masters | 0.6458 | 0.6306 | **2.28%** |
+| FP32 starting weights | 0.6508 | 0.6343 | **2.43%** |
+| `ffn_in` (FP32) | 0.6404 | 0.6225 | 2.68% |
+| `ffn_out` (FP32) | 0.6611 | 0.6460 | 2.18% |
+
+Row CV was only 0.168–0.176: FFN rows have fairly similar magnitudes, so one
+scale per row removes only ~2% of the reconstruction error. The gate required
+≥10%.
+
+**What we did instead:** did **not** run per-channel QAT (the planned gate
+stopped it); pivoted to the per-layer sensitivity screen (E25).
+
+**What worked, and why:** the cheap screen saved an expensive QAT run. The
+per-channel plumbing itself is correct and validated: 96/96 BitLinear gradients,
+save/load, and a packed-artifact reload with max logit diff **0**. Those
+capabilities are kept for future work even though this particular quantizer was
+rejected.
+
+---
+
+## E25 — FFN per-layer sensitivity screen
+
+**Question:** which individual FFN layers are most damaged by isolated 1-bit
+quantization?
+
+**Why:** per-channel scaling failed the reconstruction gate; mixed precision
+needs evidence about specific layers, not an assumption based on position.
+The screen is cheap (no retraining) and distinguishes screening from QAT.
+
+**What:** `scripts/screen_layer_sensitivity.py`, 32 fixed dev utterances, each of
+the 96 FFN Linear layers replaced **one at a time** by BitLinear (per-tensor),
+with the rest of the model FP32. Measured relative L2 logit change, mean
+per-frame KL(reference‖variant), frame argmax agreement, and greedy WER/CER.
+
+**Did it work?** **Yes, as a screening experiment.** FP32 reference WER on the
+32 utterances was **0.0287**. The deliberately isolated single-layer damage is
+small (≤1.28 pp WER), but the logit/KL ranking is informative:
+
+| Layer | Category | Rel. L2 | KL | Argmax | ΔWER |
+|---|---|---:|---:|---:|---:|
+| `layers.18.ffn1.intermediate_dense` | ffn_in | 0.2823 | 0.2791 | 0.896 | +0.0128 |
+| `layers.18.ffn1.output_dense` | ffn_out | 0.2388 | 0.2344 | 0.912 | +0.0080 |
+| `layers.23.ffn1.intermediate_dense` | ffn_in | 0.2350 | 0.0361 | 0.969 | +0.0016 |
+| `layers.17.ffn1.intermediate_dense` | ffn_in | 0.2325 | 0.2432 | 0.914 | −0.0016 |
+| `layers.19.ffn1.intermediate_dense` | ffn_in | 0.2281 | 0.1840 | 0.926 | −0.0016 |
+| `layers.17.ffn2.intermediate_dense` | ffn_in | 0.1815 | 0.1684 | 0.931 | +0.0096 |
+
+Group summary: `ffn_in` mean ΔWER **0.00342**, `ffn_out` **0.00183** — the
+intermediate (`ffn_in`) layers are ~1.9× more sensitive. The most sensitive
+layers are middle/late (17–23), not simply the first or last.
+
+**Why:** `ffn_in` is the 1024→4096 expansion; quantizing it changes a wider
+activation basis. WER on 32 utterances is noisy (small deltas, some negative),
+so the logit/KL metrics are the primary screening signal; WER is secondary.
+
+**What we did instead:** encoded the measured policy as
+`configs/qat_ffn_mixed.yaml`: keep **17** layers FP32 (union of top 12 by
+relative L2 and top 8 by WER delta; 14 `ffn_in`, 3 `ffn_out`), quantize the
+other 79. The 17 FP layers cost 285.2 MB, so the expected artifact is
+~1.10 GB — still far below the 1.983 GB attention-only model.
+
+**What worked, and why:** the screen identified specific layers from measured
+output perturbation, not position, and did so in minutes. It is explicitly
+labeled `screening_only: true`, `not_qat: true`; it is not a WER claim.
+
+---
+
+## E26 — Mixed-precision FFN implementation and pilot (pilot blocked)
+
+**Question:** does keeping the 17 sensitive FFN layers FP32 while quantizing the
+other 79 improve the FFN-only WER/size trade-off?
+
+**Why:** E25 found that `ffn_in` is more sensitive and identified the specific
+layers; the balanced gate wants <10% WER with materially smaller storage than
+the 1.983 GB attention-only model.
+
+**What:** added a per-layer exclusion policy to `replace_linears` (exact names,
+validated; unknown names raise), plumbed it through QAT setup, checkpoint
+manifests, loading, final evaluation, packing, and the artifact verifier.
+`configs/qat_ffn_mixed.yaml` keeps 17 layers FP32. Added a dev-WER callback for
+validation-based best-checkpoint selection; added an artifact sidecar manifest
+and a loader that rebuilds from the artifact.
+
+**Did it work?** **Implementation: yes. Training: not run.**
+
+Validated on CPU and the real model:
+- 79/79 BitLinear masters received gradients; the 17 excluded layers stayed FP32;
+  the frozen feature extractor had zero gradient.
+- Save/load verified; the packed artifact rebuilt with **max logit diff 0.0,
+  argmax agreement 1.0, decoded match 1/1** (both per-channel and mixed smoke).
+- 107 tests pass (19 new: per-channel scaling/broadcasting/zero rows/gradients,
+  exclusion policy, manifest checks, artifact cases, callback selection).
+- Mixed smoke WER 0.7105 (8 steps, 16 utterances) is a pipeline check, **not** an
+  accuracy result.
+- Artifact stats: 79 BitLinear layers, 17 FP FFN layers, ~1.10 GB expected
+  (measured smoke artifact includes the FP layers), effective ~1.00 bit per
+  quantized weight, ~14.7 bits per model parameter including all FP parameters.
+
+**Why no pilot/WER:** the GPU node was fully allocated (`resources_assigned.ncpus
+= 96`, all 8 GPU slots in use by 26 running jobs; PBS reported “not enough free
+nodes”). The controlled pilot (control vs mixed, 2k utts × 500 steps, dev-eval
+every 250) was queued and then canceled rather than left unattended. **No mixed
+precision WER is claimed.**
+
+**What to do next (exact command):**
+
+```bash
+qsub cluster/qat_ffn_pilot.pbs
+```
+
+It runs the per-tensor FFN control and the mixed arm sequentially, same seed,
+budget, dev-eval cadence, and best-dev restoration. Promote to full only if the
+mixed best dev WER ≤ control. If not, do not tune arbitrarily; move to the
+attention-layer sensitivity screen (the combined attention+FFN arm is still worse
+than FFN-only).
+
+**What worked, and why:** the mixed policy is data-driven, fully testable, and
+does not touch the evaluation protocol or historical results. The GPU pilot is
+the only missing step; the node allocation, not the code, blocked it.
 
 ---
 

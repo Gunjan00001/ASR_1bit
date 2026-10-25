@@ -1,0 +1,348 @@
+{
+  "phase": "Phase 11 QAT (smoke)",
+  "timestamp_utc": "2026-10-25T17:20:01.431562+00:00",
+  "platform": "Linux-4.18.0-477.10.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "compute_profile": "local",
+  "config_profile": "cloud-gpu",
+  "git_commit": "5433fd1b26b8097f9f317a485ebd5b3b005906bd",
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "init_from": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "quantization": {
+    "scale": "per_tensor_mean_abs",
+    "granularity": "per_tensor",
+    "ste": "pass_through",
+    "ste_clip": null,
+    "exclude_layers": [
+      "wav2vec2_conformer.encoder.layers.18.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.18.ffn1.output_dense",
+      "wav2vec2_conformer.encoder.layers.23.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.17.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.19.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.17.ffn2.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.18.ffn2.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.20.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.23.ffn1.output_dense",
+      "wav2vec2_conformer.encoder.layers.19.ffn1.output_dense",
+      "wav2vec2_conformer.encoder.layers.21.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.22.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.15.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.11.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.8.ffn2.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.10.ffn2.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.6.ffn2.intermediate_dense"
+    ],
+    "mixed_precision": true
+  },
+  "layers": {
+    "attention_q": false,
+    "attention_k": false,
+    "attention_v": false,
+    "attention_output": false,
+    "ffn_in": true,
+    "ffn_out": true,
+    "feature_projection": false,
+    "ctc_head": false
+  },
+  "replacement": {
+    "n_replaced": 79,
+    "n_retained": 98,
+    "n_excluded": 17,
+    "replaced_params": 331535360,
+    "retained_params": 101319712,
+    "excluded_params": 71363584,
+    "exclude_layers": [
+      "wav2vec2_conformer.encoder.layers.10.ffn2.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.11.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.15.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.17.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.17.ffn2.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.18.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.18.ffn1.output_dense",
+      "wav2vec2_conformer.encoder.layers.18.ffn2.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.19.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.19.ffn1.output_dense",
+      "wav2vec2_conformer.encoder.layers.20.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.21.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.22.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.23.ffn1.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.23.ffn1.output_dense",
+      "wav2vec2_conformer.encoder.layers.6.ffn2.intermediate_dense",
+      "wav2vec2_conformer.encoder.layers.8.ffn2.intermediate_dense"
+    ],
+    "replaced_categories": [
+      "ffn_in",
+      "ffn_out"
+    ],
+    "retained_categories": [
+      "attention_k",
+      "attention_output",
+      "attention_q",
+      "attention_v",
+      "ctc_head",
+      "feature_projection"
+    ]
+  },
+  "freeze": {
+    "feature_extractor_frozen": true,
+    "trainable_params": 589166752,
+    "frozen_params": 4210176,
+    "trainable_by_group": {
+      "other": {
+        "tensors": 1,
+        "params": 1024,
+        "params_trainable": 1024,
+        "params_frozen": 0
+      },
+      "feature_extractor_frozen": {
+        "tensors": 28,
+        "params": 4210176,
+        "params_trainable": 0,
+        "params_frozen": 4210176
+      },
+      "feature_projection": {
+        "tensors": 4,
+        "params": 526336,
+        "params_trainable": 526336,
+        "params_frozen": 0
+      },
+      "encoder_other": {
+        "tensors": 670,
+        "params": 257256576,
+        "params_trainable": 257256576,
+        "params_frozen": 0
+      },
+      "encoder_bitlinear": {
+        "tensors": 79,
+        "params": 331350016,
+        "params_trainable": 331350016,
+        "params_frozen": 0
+      },
+      "ctc_head": {
+        "tensors": 2,
+        "params": 32800,
+        "params_trainable": 32800,
+        "params_frozen": 0
+      }
+    }
+  },
+  "training": {
+    "dataset": "openslr/librispeech_asr",
+    "config": "clean",
+    "split": "train.100",
+    "subset_size": 16,
+    "seed": 42,
+    "sample_ids": [
+      "5703-47198-0059",
+      "1594-135914-0071",
+      "2514-149482-0061",
+      "441-130108-0035",
+      "163-122947-0062",
+      "1116-132847-0032",
+      "7059-77900-0024",
+      "198-129977-0023",
+      "298-126790-0036",
+      "89-218-0040",
+      "6563-285357-0044",
+      "5703-47198-0031",
+      "226-131532-0029",
+      "6476-96661-0012",
+      "2436-2476-0028",
+      "8108-280354-0027"
+    ],
+    "batch_size": 1,
+    "gradient_accumulation_steps": 2,
+    "gradient_checkpointing": false,
+    "learning_rate": 2e-05,
+    "epochs": 3,
+    "max_steps": 8,
+    "warmup_ratio": 0.1,
+    "warmup_steps": 1,
+    "max_grad_norm": 1.0,
+    "weight_decay": 0.0,
+    "optimizer": "adamw_torch",
+    "lr_scheduler": "linear",
+    "device": "cpu",
+    "steps_completed": 8,
+    "final_train_loss": 563.8008,
+    "final_train_loss_is_last_step": true,
+    "train_loss_history": [
+      {
+        "step": 1,
+        "loss": 443.2689
+      },
+      {
+        "step": 2,
+        "loss": 508.2849
+      },
+      {
+        "step": 3,
+        "loss": 394.9635
+      },
+      {
+        "step": 4,
+        "loss": 567.8768
+      },
+      {
+        "step": 5,
+        "loss": 606.1808
+      },
+      {
+        "step": 6,
+        "loss": 614.9792
+      },
+      {
+        "step": 7,
+        "loss": 382.152
+      },
+      {
+        "step": 8,
+        "loss": 563.8008
+      }
+    ],
+    "eval_every_steps": 500,
+    "dev_utterances": 8,
+    "best_dev_wer": null,
+    "best_step": null,
+    "final_dev_wer": null,
+    "restored_best": false
+  },
+  "dev_selection": {
+    "eval_every_steps": 500,
+    "history": [],
+    "best_dev_wer": null,
+    "best_step": null,
+    "final_dev_wer": null,
+    "restored_best": false
+  },
+  "gradient_flow": {
+    "probe_loss": 947.21044921875,
+    "loss_is_finite": true,
+    "total_bitlinear": 79,
+    "with_nonzero_grad": 79,
+    "total_grad_norm": 607.6125404536724,
+    "frozen_feature_extractor_grad_is_zero": true
+  },
+  "master_weights": {
+    "digest_changed": true,
+    "abs_sum_before": 30832294.71875,
+    "abs_sum_after": 30832328.2890625,
+    "abs_sum_delta": 33.5703125,
+    "bitlinear_numel": 331350016,
+    "fraction_exactly_pm1_after": 0.0,
+    "remain_fp_not_binary": true
+  },
+  "eval": {
+    "protocol": "fixed dev-clean subset, seed, greedy CTC, normalized text",
+    "subset_size": 256,
+    "n_utterances": 8,
+    "wer": 0.7105263157894737,
+    "cer": 0.3157262905162065,
+    "rtf": 0.14459556249950567,
+    "latency_s": {
+      "mean": 1.0082829317543656,
+      "p50": 0.7943971226923168,
+      "p95": 1.7683885556645693,
+      "max": 1.9752821121364832
+    },
+    "peak_rss_mb": 25212.919808,
+    "sample_ids": [
+      "1988-24833-0026",
+      "2428-83699-0039",
+      "6345-93302-0010",
+      "2078-142845-0048",
+      "2035-152373-0007",
+      "2902-9006-0017",
+      "5694-64029-0000",
+      "251-137823-0017"
+    ]
+  },
+  "comparison": {
+    "vs_fp32_baseline": {
+      "wer": 0.020184544405997693,
+      "delta_wer": 0.690341771383476
+    },
+    "vs_ptq": {
+      "wer": 1.0,
+      "delta_wer": -0.2894736842105263
+    }
+  },
+  "checkpoint": {
+    "path": "checkpoints/qat_ffn_mixed_smoke",
+    "format": "fp32_master_weights",
+    "is_1bit_packed": false,
+    "manifest": {
+      "format": "fp32_master_weights",
+      "is_1bit_packed": false,
+      "description": "FP32 master weights for every parameter (BitLinear masters, biases, LayerNorms, convolutions, feature projection, CTC head). Structurally identical to the original FP32 checkpoint; binary weights exist only at forward time.",
+      "expected_reconstruction": "Wav2Vec2ConformerForCTC.from_pretrained(dir) then replace_linears(...) with the same layer selection; forward() binarizes from these masters.",
+      "layers": {
+        "attention_q": false,
+        "attention_k": false,
+        "attention_v": false,
+        "attention_output": false,
+        "ffn_in": true,
+        "ffn_out": true,
+        "feature_projection": false,
+        "ctc_head": false
+      },
+      "exclude_layers": [
+        "wav2vec2_conformer.encoder.layers.10.ffn2.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.11.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.15.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.17.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.17.ffn2.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.18.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.18.ffn1.output_dense",
+        "wav2vec2_conformer.encoder.layers.18.ffn2.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.19.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.19.ffn1.output_dense",
+        "wav2vec2_conformer.encoder.layers.20.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.21.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.22.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.23.ffn1.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.23.ffn1.output_dense",
+        "wav2vec2_conformer.encoder.layers.6.ffn2.intermediate_dense",
+        "wav2vec2_conformer.encoder.layers.8.ffn2.intermediate_dense"
+      ],
+      "mixed_precision": true,
+      "scale_mode": "per_tensor_mean_abs",
+      "ste_clip": null,
+      "quantization_granularity": "per_tensor",
+      "config_path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/configs/qat_ffn_mixed.yaml",
+      "init_from": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+      "bitlinear_layers": 79,
+      "total_params": 593376928,
+      "files": [
+        "model.safetensors"
+      ],
+      "sha256": {
+        "model.safetensors": "2e7a5722471a0227e44b05f0ba5a1fd313c4a294b1c143fb29bd07a1e38024a1"
+      }
+    },
+    "best_dev_wer": null,
+    "best_step": null,
+    "restored_best": false,
+    "save_load_verified": true,
+    "save_load_argmax_agreement": 1.0,
+    "save_load_max_abs_logit_diff": 0.0
+  },
+  "baseline": {
+    "path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/results/baseline.json",
+    "wer": 0.020184544405997693,
+    "cer": 0.004933559004645468
+  },
+  "ptq": {
+    "path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/results/ptq_binary.json",
+    "wer": 1.0,
+    "cer": 1.0
+  },
+  "versions": {
+    "torch": "2.11.0+cu126",
+    "transformers": "4.57.6",
+    "datasets": "5.0.1",
+    "jiwer": "4.0.0",
+    "numpy": "2.5.3",
+    "safetensors": "0.8.0"
+  },
+  "config_path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/configs/qat_ffn_mixed.yaml"
+}

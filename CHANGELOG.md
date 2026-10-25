@@ -8,6 +8,51 @@ an exact, reproducible repository state.
 
 ---
 
+## Unreleased — v1.6.0 mixed-precision research checkpoint (pilot pending)
+
+**Scope:** implementation, screening, and validation only. **No new WER is
+claimed**; all accuracy numbers remain the v1.5.0 measurements. The GPU pilot
+was blocked by the shared cluster being fully allocated and is not run.
+
+### Added
+- `per_output_channel_mean_abs` scaling (`alpha_i = mean_j |W[i,j]|`), with
+  broadcasting, zero-row safety, gradient, and packed-artifact tests.
+- `scripts/analyze_quantization_error.py` — per-tensor vs per-channel FFN
+  reconstruction screen and gate.
+- `scripts/screen_layer_sensitivity.py` — one-layer-at-a-time PTQ screen with
+  logit/KL/argmax/WER metrics; explicitly `screening_only`, `not_qat`.
+- Per-layer FP32/1-bit mixed precision: `exclude_layers` in `replace_linears`,
+  QAT setup, manifests, loading, final evaluation, packing, and the artifact
+  verifier.
+- `configs/qat_ffn_per_channel.yaml` (screened out) and
+  `configs/qat_ffn_mixed.yaml` (17 sensitive FFN layers FP32, 79 quantized).
+- `src/onebit_asr/training/callbacks.py` — `DevWERCallback` for validation-based
+  best-checkpoint selection (history, best step, restore).
+- Artifact sidecar manifest + `scripts/verify_packed_artifact.py`; the exported
+  model is now reloadable and numerically verifiable (max logit diff 0 on smoke).
+- Checkpoint manifests now record `layers`, `exclude_layers`, `scale_mode`,
+  `ste_clip`, granularity, config path, and init model; loaders verify them.
+- `cluster/screen_ffn_sensitivity.pbs`, `cluster/qat_ffn_pilot.pbs`.
+- 19 new tests; **107 total**, all passing.
+
+### Screened / measured (no WER claim)
+- Per-channel reconstruction gate: FFN-only QAT masters 0.6458→0.6306 (**2.28%**),
+  FP32 0.6508→0.6343 (**2.43%**), gate 10% → **FAIL**. No per-channel QAT run.
+- FFN layer screen (32 dev utts, FP32 ref WER 0.0287): `ffn_in` mean ΔWER
+  **0.00342**, `ffn_out` **0.00183** (1.9×); top layers are middle/late (18, 17,
+  19, 11, 8, …), selected from measurements rather than position.
+- Mixed-precision smoke: 79/79 BitLinear gradients, 17 excluded FP32 layers,
+  save/load verified, artifact reload **max |Δ logit| 0.0, argmax 1.0**.
+- Mixed artifact: 79 BitLinear layers + 17 FP32 FFN layers, expected ~1.10 GB;
+  effective ~1.00 bit/quantized weight, ~14.7 bits/model parameter.
+
+### Blocked
+- The controlled pilot (control vs mixed, 2k/500 steps) was queued and canceled
+  because the GPU node had all 96 CPUs assigned and no free GPU slot. Command to
+  run when a slot frees: `qsub cluster/qat_ffn_pilot.pbs`. No mixed WER exists.
+
+---
+
 ## v1.5.2 — Final status closure
 
 **Scope:** status/documentation only. **No measurements changed.**

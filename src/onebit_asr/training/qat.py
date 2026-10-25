@@ -40,6 +40,7 @@ import hashlib
 import json
 import math
 import subprocess
+import warnings
 from pathlib import Path
 
 import torch
@@ -54,13 +55,17 @@ FEATURE_EXTRACTOR_PATH = "wav2vec2_conformer.feature_extractor"
 # --- Model assembly ---------------------------------------------------------
 
 def setup_qat_model(model, layers: dict, scale_mode: str = "per_tensor_mean_abs",
-                    ste_clip: float | None = None):
+                    ste_clip: float | None = None, exclude_layers: list[str] | None = None):
     """Replace selected Linear layers with BitLinear, keeping FP32 masters.
 
+    ``exclude_layers`` keeps exact selected layers at FP32 for mixed precision.
     ``model`` must already be loaded from the fine-tuned FP32 checkpoint.
     Returns ``(model, replacement_report)``.
     """
-    report = replace_linears(model, layers, scale_mode=scale_mode, ste_clip=ste_clip)
+    report = replace_linears(
+        model, layers, scale_mode=scale_mode, ste_clip=ste_clip,
+        exclude_layers=exclude_layers,
+    )
     return model, report
 
 
@@ -255,7 +260,11 @@ def resolve_warmup_steps(training: dict, train_num_samples: int | None, smoke: b
     if ratio <= 0:
         return 0
     eff_batch = max(1, int(training["batch_size"]) * int(training.get("gradient_accumulation_steps", 1)))
-    if smoke:
+    # A pilot/full run can cap the number of optimizer steps explicitly. When it
+    # does, use that cap for warmup; otherwise estimate from epochs.
+    if training.get("max_steps") is not None:
+        total_steps = int(training["max_steps"])
+    elif smoke:
         total_steps = int(training.get("max_steps", 8))
     else:
         if not train_num_samples:
@@ -312,6 +321,10 @@ def build_training_arguments(training: dict, output_dir: str, smoke: bool = Fals
         remove_unused_columns=remove_unused_columns,
         dataloader_num_workers=0,
     )
+    # Pilot runs set `qat.training.max_steps`; pass it through. Full runs leave it
+    # unset and use the epoch budget. (Before this, only `smoke` honored it.)
+    if training.get("max_steps") is not None:
+        kwargs["max_steps"] = int(training["max_steps"])
     if smoke:
         kwargs["num_train_epochs"] = 1.0
         kwargs["max_steps"] = int(training.get("max_steps", 8))
@@ -320,17 +333,26 @@ def build_training_arguments(training: dict, output_dir: str, smoke: bool = Fals
     return TrainingArguments(**kwargs)
 
 
-def build_trainer(model, train_dataset, collator, training_args, loss_recorder=None):
-    """Create a stock ``Trainer`` (unmodified)."""
+def build_trainer(model, train_dataset, collator, training_args, loss_recorder=None,
+                  extra_callbacks=None):
+    """Create a stock ``Trainer`` (unmodified).
+
+    ``extra_callbacks`` lets the training entry point attach a dev-WER /
+    best-checkpoint callback without subclassing the Trainer.
+    """
     from transformers import Trainer
 
-    callbacks = [loss_recorder] if loss_recorder is not None else None
+    callbacks = []
+    if loss_recorder is not None:
+        callbacks.append(loss_recorder)
+    if extra_callbacks:
+        callbacks.extend(extra_callbacks)
     return Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         data_collator=collator,
-        callbacks=callbacks,
+        callbacks=callbacks or None,
     )
 
 
@@ -339,11 +361,22 @@ def build_trainer(model, train_dataset, collator, training_args, loss_recorder=N
 CHECKPOINT_FORMAT = "fp32_master_weights"
 
 
-def save_qat_checkpoint(model: nn.Module, out_dir: str | Path) -> dict:
+def save_qat_checkpoint(model: nn.Module, out_dir: str | Path, *,
+                        layers: dict | None = None,
+                        scale_mode: str = "per_tensor_mean_abs",
+                        ste_clip: float | None = None,
+                        config_path: str | None = None,
+                        init_from: str | None = None,
+                        exclude_layers: list[str] | None = None) -> dict:
     """Save FP32 master weights + an explicit manifest.
 
     The saved file is a normal FP32 checkpoint. It is **not** bit-packed; the
     1-bit behavior only exists at forward time (see ``expected_reconstruction``).
+
+    The manifest records the exact layer selection and quantization settings so
+    a checkpoint can be reconstructed without guessing. Old callers that pass
+    only ``model, out_dir`` still work; their manifests omit the new fields and
+    loaders warn rather than raise.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -351,6 +384,11 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path) -> dict:
 
     weight_files = sorted(p for p in out_dir.glob("*.safetensors")) + \
         sorted(p for p in out_dir.glob("pytorch_model.bin"))
+    granularity = (
+        "per_output_channel"
+        if scale_mode == "per_output_channel_mean_abs"
+        else "per_tensor"
+    )
     manifest = {
         "format": CHECKPOINT_FORMAT,
         "is_1bit_packed": False,
@@ -364,6 +402,14 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path) -> dict:
             "Wav2Vec2ConformerForCTC.from_pretrained(dir) then replace_linears(...) "
             "with the same layer selection; forward() binarizes from these masters."
         ),
+        "layers": dict(layers) if layers is not None else None,
+        "exclude_layers": sorted(exclude_layers or []),
+        "mixed_precision": bool(exclude_layers),
+        "scale_mode": scale_mode,
+        "ste_clip": ste_clip,
+        "quantization_granularity": granularity,
+        "config_path": str(config_path) if config_path else None,
+        "init_from": init_from,
         "bitlinear_layers": sum(1 for m in model.modules() if isinstance(m, BitLinear)),
         "total_params": sum(p.numel() for p in model.parameters()),
         "files": [p.name for p in weight_files],
@@ -375,10 +421,59 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path) -> dict:
 
 def load_qat_checkpoint(out_dir: str | Path, model_cls, layers: dict,
                         scale_mode: str = "per_tensor_mean_abs",
-                        ste_clip: float | None = None):
-    """Reload FP32 masters and reconstruct the binarized model."""
+                        ste_clip: float | None = None,
+                        exclude_layers: list[str] | None = None):
+    """Reload FP32 masters and reconstruct the binarized model.
+
+    New checkpoints carry the exact layer selection, excluded mixed-precision
+    layers, and scale mode in ``checkpoint_manifest.json``. We verify the
+    selection before loading and raise on a mismatch; a scale-mode mismatch is a
+    warning because the scale is derived at forward time and a different mode
+    can be an intentional ablation. Old manifests without these fields warn
+    (backward compatibility).
+    """
+    out_dir = Path(out_dir)
+    manifest_path = out_dir / "checkpoint_manifest.json"
+    requested_excluded = sorted(exclude_layers or [])
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text())
+        manifest_layers = manifest.get("layers")
+        if manifest_layers is None:
+            warnings.warn(
+                f"{manifest_path} has no 'layers' field (old checkpoint); "
+                "cannot verify the layer selection against the config."
+            )
+        elif dict(manifest_layers) != dict(layers):
+            raise ValueError(
+                "checkpoint layer selection does not match the requested config:\n"
+                f"  checkpoint: {manifest_layers}\n"
+                f"  requested : {layers}\n"
+                "Refusing to load a mismatched 1-bit model."
+            )
+        if "exclude_layers" in manifest:
+            manifest_excluded = sorted(manifest.get("exclude_layers") or [])
+            if manifest_excluded != requested_excluded:
+                raise ValueError(
+                    "checkpoint mixed-precision exclusion does not match the config:\n"
+                    f"  checkpoint: {manifest_excluded}\n"
+                    f"  requested : {requested_excluded}\n"
+                    "Refusing to load a mismatched mixed-precision model."
+                )
+        manifest_scale = manifest.get("scale_mode")
+        if manifest_scale is not None and manifest_scale != scale_mode:
+            warnings.warn(
+                f"checkpoint was trained with scale_mode={manifest_scale!r}, "
+                f"loading with {scale_mode!r}; results are not the trained arm."
+            )
+    else:
+        warnings.warn(
+            f"{out_dir} has no checkpoint_manifest.json; cannot verify layers/scale."
+        )
     model = model_cls.from_pretrained(out_dir)
-    model, report = setup_qat_model(model, layers, scale_mode=scale_mode, ste_clip=ste_clip)
+    model, report = setup_qat_model(
+        model, layers, scale_mode=scale_mode, ste_clip=ste_clip,
+        exclude_layers=requested_excluded,
+    )
     return model, report
 
 

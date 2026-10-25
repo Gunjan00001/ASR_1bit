@@ -1,0 +1,45 @@
+# Mixed-precision FFN QAT: keep the 17 most sensitive FFN layers FP32.
+#
+# Selection is NOT hand-picked by position. It is the union of:
+#   - top 12 FFN layers by relative L2 logit perturbation in
+#     results/layer_sensitivity_ffn.json (32 dev utts, one-layer PTQ screen);
+#   - top 8 FFN layers by WER delta in the same screen.
+# The union is 17 unique layers (14 ffn_in, 3 ffn_out). The screen is a
+# screening result, not a QAT result; this config is the hypothesis to test.
+#
+# Size cost: 17 x 4.19M params x 4 bytes = 285.2 MB of FP32 weights that stay
+# unquantized. Estimated packed artifact: 0.813 GB + 0.285 GB ≈ 1.10 GB,
+# still well below the 1.983 GB attention-only artifact.
+#
+# Everything else is the FFN-only control: per-tensor mean-abs scale, pass-through
+# STE, 10k train.100, 3 epochs, batch 4 x accum 4, lr 2e-5.
+extends: qat_ffn.yaml
+
+compute_profile: cloud-gpu
+
+quantization:
+  scale: per_tensor_mean_abs
+  ste: pass_through
+  ste_clip: null
+  # Exact module names; `replace_linears` validates that every entry is a
+  # selected linear layer and raises on a typo.
+  exclude_layers:
+    # top-12 by relative L2 (late/middle sensitive layers)
+    - wav2vec2_conformer.encoder.layers.18.ffn1.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.18.ffn1.output_dense
+    - wav2vec2_conformer.encoder.layers.23.ffn1.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.17.ffn1.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.19.ffn1.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.17.ffn2.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.18.ffn2.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.20.ffn1.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.23.ffn1.output_dense
+    - wav2vec2_conformer.encoder.layers.19.ffn1.output_dense
+    - wav2vec2_conformer.encoder.layers.21.ffn1.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.22.ffn1.intermediate_dense
+    # top-8 by WER delta not already in the L2 list
+    - wav2vec2_conformer.encoder.layers.15.ffn1.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.11.ffn1.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.8.ffn2.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.10.ffn2.intermediate_dense
+    - wav2vec2_conformer.encoder.layers.6.ffn2.intermediate_dense

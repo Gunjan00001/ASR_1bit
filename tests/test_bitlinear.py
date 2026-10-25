@@ -164,3 +164,28 @@ def test_repeated_forwards_are_deterministic(linear):
         a = bit(x)
         b = bit(x)
     assert torch.equal(a, b)
+
+
+# --- Per-output-channel BitLinear ------------------------------------------
+
+def test_per_channel_forward_matches_manual_broadcast(linear):
+    bit = BitLinear.from_linear(linear, scale_mode="per_output_channel_mean_abs")
+    x = _rand_input()
+    alpha = bit.weight.abs().mean(dim=1, keepdim=True)
+    expected = torch.nn.functional.linear(x, alpha * torch.sign(bit.weight), bit.bias)
+    assert torch.allclose(bit(x), expected, atol=1e-6)
+
+
+def test_per_channel_gradient_reaches_master(linear):
+    bit = BitLinear.from_linear(linear, scale_mode="per_output_channel_mean_abs")
+    bit(_rand_input()).sum().backward()
+    assert bit.weight.grad is not None
+    assert torch.isfinite(bit.weight.grad).all()
+    assert bit.weight.grad.abs().sum() > 0
+
+
+def test_per_channel_effective_weight_is_row_scaled(linear):
+    bit = BitLinear.from_linear(linear, scale_mode="per_output_channel_mean_abs")
+    wq = bit.effective_weight()
+    alpha = bit.weight.abs().mean(dim=1, keepdim=True)
+    assert torch.allclose(wq, alpha * torch.sign(bit.weight))

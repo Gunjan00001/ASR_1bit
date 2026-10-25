@@ -102,6 +102,16 @@ ARM_DEFS = {
         "config": "configs/qat_ffn.yaml",
         "checkpoint": "checkpoints/qat_ffn_a100",
     },
+    "qat_ffn_control_devsel": {
+        "kind": "qat",
+        "config": "configs/qat_ffn.yaml",
+        "checkpoint": "checkpoints/qat_ffn_control_devsel",
+    },
+    "qat_ffn_per_channel": {
+        "kind": "qat",
+        "config": "configs/qat_ffn_per_channel.yaml",
+        "checkpoint": "checkpoints/qat_ffn_per_channel",
+    },
     "qat_attn_ffn": {
         "kind": "qat",
         "config": "configs/qat_attn_ffn.yaml",
@@ -173,17 +183,22 @@ def build_arm(name: str, arm: dict, model_id: str, device: torch.device) -> tupl
             raise FileNotFoundError(checkpoint)
         cfg = load_config(cfg_path)
         quant = cfg.get("quantization", {})
+        exclude_layers = list(quant.get("exclude_layers") or [])
         model, report = load_qat_checkpoint(
             checkpoint, Wav2Vec2ConformerForCTC, cfg["layers"],
             scale_mode=quant.get("scale", "per_tensor_mean_abs"),
             ste_clip=quant.get("ste_clip"),
+            exclude_layers=exclude_layers,
         )
         info = {
             "kind": "qat",
             "layers": cfg["layers"],
             "scale_mode": quant.get("scale", "per_tensor_mean_abs"),
+            "exclude_layers": exclude_layers,
             "n_replaced": report["n_replaced"],
+            "n_excluded": report["n_excluded"],
             "replaced_params": report["replaced_params"],
+            "excluded_params": report["excluded_params"],
             "checkpoint": str(arm["checkpoint"]),
             "config": arm["config"],
         }

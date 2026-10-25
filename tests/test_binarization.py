@@ -54,3 +54,48 @@ def test_quantize_weight_is_differentiable(weight):
     assert w.grad is not None
     assert torch.isfinite(w.grad).all()
     assert w.grad.abs().sum() > 0
+
+
+# --- Per-output-channel scaling (the new mode) -----------------------------
+
+from onebit_asr.quantization.scaling import per_output_channel_mean_abs
+
+PER_CHANNEL = "per_output_channel_mean_abs"
+
+
+def test_per_channel_scale_shape_and_values(weight):
+    alpha = compute_scale(weight, PER_CHANNEL)
+    assert alpha.shape == (weight.shape[0], 1)
+    assert torch.allclose(alpha, weight.abs().mean(dim=1, keepdim=True))
+    assert torch.allclose(alpha, per_output_channel_mean_abs(weight))
+
+
+def test_per_channel_quantized_weight_uses_row_scale(weight):
+    wq, alpha = quantize_weight(weight, PER_CHANNEL)
+    assert wq.shape == weight.shape
+    assert alpha.shape == (weight.shape[0], 1)
+    assert torch.allclose(wq, alpha * torch.sign(weight))
+
+
+def test_per_channel_zero_row_is_safe():
+    w = torch.tensor([[1.0, -2.0], [0.0, 0.0], [3.0, 4.0]])
+    wq, alpha = quantize_weight(w, PER_CHANNEL)
+    assert torch.isfinite(wq).all()
+    assert torch.equal(alpha[1], torch.zeros(1))
+    assert torch.equal(wq[1], torch.zeros(2))
+
+
+def test_per_channel_gradient_reaches_master(weight):
+    w = weight.clone().requires_grad_(True)
+    wq, alpha = quantize_weight(w, PER_CHANNEL)
+    assert alpha.shape == (w.shape[0], 1)
+    wq.sum().backward()
+    assert w.grad is not None
+    assert torch.isfinite(w.grad).all()
+    assert w.grad.abs().sum() > 0
+
+
+def test_per_tensor_default_is_unchanged(weight):
+    _wq, alpha = quantize_weight(weight)
+    assert alpha.dim() == 0
+    assert torch.allclose(alpha, weight.abs().mean())

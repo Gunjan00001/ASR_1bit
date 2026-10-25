@@ -1,5 +1,6 @@
 """Training: FP baseline train loop, QAT assembly (Phase 11), distillation."""
 
+from onebit_asr.training.callbacks import DevWERCallback
 from onebit_asr.training.distillation import (
     DistillationCollator,
     DistillationDataset,
@@ -56,4 +57,5 @@ __all__ = [
     "DistillationCollator",
     "build_distillation_trainer",
     "teacher_logits_cache_path",
+    "DevWERCallback",
 ]

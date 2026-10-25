@@ -174,6 +174,7 @@ def main() -> int:
     quant_cfg = cfg.get("quantization", {})
     scale_mode = quant_cfg.get("scale", "per_tensor_mean_abs")
     ste_clip = quant_cfg.get("ste_clip", None)
+    exclude_layers = list(quant_cfg.get("exclude_layers") or [])
     training = resolve_training(cfg, args.smoke)
 
     if training["split"] == eval_cfg.get("split"):
@@ -250,7 +251,8 @@ def main() -> int:
     print("Building 1-bit student ...")
     model = Wav2Vec2ConformerForCTC.from_pretrained(student_id)
     model, replacement = setup_qat_model(
-        model, cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip
+        model, cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip,
+        exclude_layers=exclude_layers,
     )
     print(report_replacement(replacement))
     if cfg["qat"].get("freeze_feature_extractor", True):
@@ -319,11 +321,18 @@ def main() -> int:
     metrics = evaluate_model(model, processor, samples)
 
     # FP32 masters, not a packed artifact. `pack_qat_model.py` builds the
-    # deployable 1-bit file from this checkpoint.
-    manifest = save_qat_checkpoint(model, checkpoint_dir)
+    # deployable 1-bit file from this checkpoint. Record the layer selection and
+    # scale mode so the loader can verify them.
+    manifest = save_qat_checkpoint(
+        model, checkpoint_dir,
+        layers=cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip,
+        config_path=cfg.get("_config_path"), init_from=student_id,
+        exclude_layers=exclude_layers,
+    )
     reloaded, _ = load_qat_checkpoint(
         checkpoint_dir, Wav2Vec2ConformerForCTC, cfg["layers"],
         scale_mode=scale_mode, ste_clip=ste_clip,
+        exclude_layers=exclude_layers,
     )
     model_device = next(model.parameters()).device
     reloaded = reloaded.to(model_device)
@@ -374,12 +383,21 @@ def main() -> int:
         },
         "student": {
             "layers": cfg["layers"],
-            "quantization": {"scale": scale_mode, "ste": quant_cfg.get("ste"), "ste_clip": ste_clip},
+            "quantization": {
+                "scale": scale_mode,
+                "ste": quant_cfg.get("ste"),
+                "ste_clip": ste_clip,
+                "exclude_layers": exclude_layers,
+                "mixed_precision": bool(exclude_layers),
+            },
             "replacement": {
                 "n_replaced": replacement["n_replaced"],
                 "n_retained": replacement["n_retained"],
+                "n_excluded": replacement["n_excluded"],
                 "replaced_params": replacement["replaced_params"],
                 "retained_params": replacement["retained_params"],
+                "excluded_params": replacement["excluded_params"],
+                "exclude_layers": replacement["exclude_layers"],
                 "replaced_categories": sorted({e["category"] for e in replacement["replaced"]}),
                 "retained_categories": sorted({e["category"] for e in replacement["retained"]}),
             },

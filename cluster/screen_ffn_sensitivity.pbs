@@ -1,0 +1,50 @@
+#!/bin/bash
+#PBS -N screen_ffn_sens
+#PBS -q gpu
+#PBS -l select=1:ncpus=4:ngpus=1:mem=64gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+#
+# Layer-sensitivity screen for the FFN-only configuration.
+#
+# For each of the 96 FFN Linear layers: leave the rest of the model FP32,
+# replace only that layer with the 1-bit BitLinear, and measure logit/KL/argmax
+# perturbation plus greedy WER on a fixed 32-utterance dev subset. No training.
+#
+# This is a screening experiment. It ranks layers; it does not claim that keeping
+# a layer FP will improve QAT WER. The mixed-precision QAT run is a separate,
+# later experiment.
+
+set -uo pipefail
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"
+cd "$REPO" || exit 1
+# shellcheck disable=SC1091
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile
+export PYTHONUNBUFFERED=1
+export HF_HUB_DISABLE_PROGRESS_BARS=1
+export TOKENIZERS_PARALLELISM=false
+
+LOG="logs/screen_ffn_sensitivity.log"
+mkdir -p logs results
+: > "$LOG"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== job $PBS_JOBID on $(hostname) at $(date -Is) ==="
+nvidia-smi --query-gpu=index,name,memory.used,memory.total,utilization.gpu \
+    --format=csv,noheader
+PY=".venv/bin/python"
+$PY - <<'PY'
+import torch
+assert torch.cuda.is_available(), "CUDA not available"
+print("torch", torch.__version__, "cuda", torch.version.cuda,
+      "device", torch.cuda.get_device_name(0), "count", torch.cuda.device_count())
+PY
+if [ $? -ne 0 ]; then echo "ABORT: CUDA preflight failed"; exit 3; fi
+
+$PY scripts/screen_layer_sensitivity.py \
+    --config configs/qat_ffn.yaml \
+    --n 32 \
+    --output results/layer_sensitivity_ffn.json
+echo "screen exit code: $?"
+echo "=== finished at $(date -Is) ==="

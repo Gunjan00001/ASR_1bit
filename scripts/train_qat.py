@@ -52,6 +52,7 @@ from onebit_asr.data.collator import DataCollatorCTCWithPadding
 from onebit_asr.data.dataset import build_ctc_train_dataset, load_dev_subset
 from onebit_asr.evaluation.evaluate import evaluate_model, print_summary
 from onebit_asr.models.replace_layers import report_replacement
+from onebit_asr.training.callbacks import DevWERCallback
 from onebit_asr.training.qat import (
     CHECKPOINT_FORMAT,
     build_training_arguments,
@@ -92,9 +93,11 @@ def git_commit() -> str:
 
 
 def resolve_training(cfg: dict, smoke: bool, probe: bool = False,
-                     probe_steps: int | None = None) -> dict:
-    """Merge smoke/probe overrides over the full training block."""
+                     probe_steps: int | None = None, pilot: bool = False) -> dict:
+    """Merge pilot/smoke/probe overrides over the full training block."""
     training = copy.deepcopy(cfg["qat"]["training"])
+    if pilot:
+        training.update(cfg["qat"].get("pilot", {}))
     if smoke:
         training.update(cfg["qat"].get("smoke", {}))
     if probe:
@@ -112,6 +115,8 @@ def main() -> int:
                         help="tiny CPU dry run (recommended before any GPU run)")
     parser.add_argument("--probe", action="store_true",
                         help="short timed/VRAM probe; gates the full run (Phase 11 §7b)")
+    parser.add_argument("--pilot", action="store_true",
+                        help="short controlled WER pilot (2k subset, 500 steps, dev eval)")
     parser.add_argument("--probe-steps", type=int, default=None,
                         help="override the configured probe step count")
     parser.add_argument("--output", default=None)
@@ -126,16 +131,19 @@ def main() -> int:
         output = probe_output
     elif args.smoke:
         output = RESULTS / "qat_smoke.json"
+    elif args.pilot:
+        output = RESULTS / "qat_pilot.json"
     else:
         output = RESULTS / "qat.json"
-    checkpoint_dir = Path(args.checkpoint_dir or
-                          (ROOT / "checkpoints" / ("qat_smoke" if args.smoke else "qat")))
+    default_ckpt = "qat_smoke" if args.smoke else ("qat_pilot" if args.pilot else "qat")
+    checkpoint_dir = Path(args.checkpoint_dir or (ROOT / "checkpoints" / default_ckpt))
 
     eval_cfg = cfg["eval"]
     quant_cfg = cfg.get("quantization", {})
     scale_mode = quant_cfg.get("scale", "per_tensor_mean_abs")
     ste_clip = quant_cfg.get("ste_clip", None)
-    training = resolve_training(cfg, args.smoke, args.probe, args.probe_steps)
+    exclude_layers = list(quant_cfg.get("exclude_layers") or [])
+    training = resolve_training(cfg, args.smoke, args.probe, args.probe_steps, args.pilot)
 
     # Leakage guard: training must never use the evaluation split. This is a hard
     # error, not a warning: a QAT run that trains on validation would invalidate
@@ -151,7 +159,10 @@ def main() -> int:
     model = Wav2Vec2ConformerForCTC.from_pretrained(model_id)
     if model.config.pad_token_id is None:
         raise SystemExit("model.config.pad_token_id is None; CTC blank unknown")
-    model, replacement = setup_qat_model(model, cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip)
+    model, replacement = setup_qat_model(
+        model, cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip,
+        exclude_layers=exclude_layers,
+    )
     print(report_replacement(replacement))
 
     if cfg["qat"].get("freeze_feature_extractor", True):
@@ -169,13 +180,33 @@ def main() -> int:
         seed=training["seed"], processor=processor,
     )
 
+    # Fixed dev subset for validation-based checkpoint selection. This is the
+    # *same* pinned protocol as the final evaluation; test-clean is never used
+    # for selection. The pilot uses fewer utterances to keep each eval cheap.
+    n_dev = int(training.get("eval_utterances", eval_cfg["subset_size"]))
+    dev_samples = load_dev_subset(
+        subset_size=eval_cfg["subset_size"], seed=eval_cfg["seed"]
+    )[:n_dev]
+    eval_every = int(training.get("eval_every_steps", 500))
+    dev_cb = None
+    if not args.probe:
+        def _eval_dev(current_model):
+            # evaluate_model forces eval mode and restores the model's mode.
+            return evaluate_model(current_model, processor, dev_samples, verbose=False)
+
+        dev_cb = DevWERCallback(_eval_dev, eval_every_steps=eval_every)
+        print(f"Dev selection: {len(dev_samples)} utterances every {eval_every} steps")
+
     collator = DataCollatorCTCWithPadding(processor=processor)
     training_args = build_training_arguments(
         training, str(checkpoint_dir), smoke=(args.smoke or args.probe),
         train_num_samples=len(train_dataset),
     )
     recorder = make_loss_recorder()
-    trainer = build_trainer(model, train_dataset, collator, training_args, recorder)
+    trainer = build_trainer(
+        model, train_dataset, collator, training_args, recorder,
+        extra_callbacks=[dev_cb] if dev_cb is not None else None,
+    )
 
     # Move the model before the probe. The stock Trainer would move it at
     # train() time; without this the probe runs on CPU (slow and not
@@ -192,7 +223,7 @@ def main() -> int:
 
     masters_before = master_weight_snapshot(model)
 
-    mode = "probe" if args.probe else ("smoke" if args.smoke else "full")
+    mode = "probe" if args.probe else ("smoke" if args.smoke else ("pilot" if args.pilot else "full"))
     print(f"Training ({mode}): "
           f"lr={training['learning_rate']} epochs={training.get('epochs')} "
           f"max_steps={training.get('max_steps')} "
@@ -296,6 +327,13 @@ def main() -> int:
 
     trainer.train()
 
+    # The callback restored the best dev state at `on_train_end` (if it ran any
+    # dev eval). Everything below therefore measures/saves the selected state.
+    dev_summary = dev_cb.summary() if dev_cb is not None else {}
+    if dev_summary.get("best_dev_wer") is not None:
+        print(f"Best dev WER: {dev_summary['best_dev_wer']:.4f} at step "
+              f"{dev_summary['best_step']} (restored={dev_summary['restored_best']})")
+
     masters_after = master_weight_snapshot(model)
     master_update = master_weight_delta(masters_before, masters_after)
     print(f"Master weights updated: {master_update['digest_changed']} "
@@ -303,25 +341,31 @@ def main() -> int:
           f"binary fraction {master_update['fraction_exactly_pm1_after']:.2e})")
 
     # --- Evaluation under the pinned protocol ---
-    n_eval = training.get("eval_utterances", eval_cfg["subset_size"]) if args.smoke else eval_cfg["subset_size"]
-    samples = load_dev_subset(subset_size=eval_cfg["subset_size"], seed=eval_cfg["seed"])[:n_eval]
-    print(f"Evaluating on {len(samples)} dev utterances (pinned protocol) ...")
+    # Use the same dev samples that drove selection. For a pilot this is the
+    # smaller dev slice; for full/smoke it is the pinned 256/8-utterance subset.
+    print(f"Evaluating on {len(dev_samples)} dev utterances (pinned protocol) ...")
     model.eval()  # pinned protocol is inference; ensure dropout is off
-    metrics = evaluate_model(model, processor, samples)
+    metrics = evaluate_model(model, processor, dev_samples)
 
     # --- Checkpoint (FP master weights; not packed) + save/load verification ---
     # The checkpoint is ordinary FP32/FP16 masters. The packed 1-bit deploy
     # artifact is a separate step (`scripts/pack_qat_model.py`); do not confuse
     # the checkpoint size with the deploy size.
-    manifest = save_qat_checkpoint(model, checkpoint_dir)
+    manifest = save_qat_checkpoint(
+        model, checkpoint_dir,
+        layers=cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip,
+        config_path=cfg.get("_config_path"), init_from=model_id,
+        exclude_layers=exclude_layers,
+    )
     reloaded, _ = load_qat_checkpoint(
         checkpoint_dir, Wav2Vec2ConformerForCTC, cfg["layers"],
         scale_mode=scale_mode, ste_clip=ste_clip,
+        exclude_layers=exclude_layers,
     )
     device = next(model.parameters()).device
     reloaded = reloaded.to(device)
     reloaded.eval()
-    inp = processor(samples[0]["audio"], sampling_rate=16_000,
+    inp = processor(dev_samples[0]["audio"], sampling_rate=16_000,
                     return_tensors="pt").input_values.to(device)
     # Compare reloaded model against the trained model on one utterance.
     model.eval()
@@ -352,7 +396,10 @@ def main() -> int:
     baseline_wer, ptq_wer = baseline.get("wer"), ptq.get("wer")
 
     result = {
-        "phase": "Phase 11 QAT (smoke)" if args.smoke else "Phase 11 QAT (full)",
+        "phase": (
+            "Phase 11 QAT (smoke)" if args.smoke
+            else ("Phase 11 QAT (pilot)" if args.pilot else "Phase 11 QAT (full)")
+        ),
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "platform": platform.platform(),
         "compute_profile": "local" if not torch.cuda.is_available() else "cloud-gpu",
@@ -360,13 +407,27 @@ def main() -> int:
         "git_commit": git_commit(),
         "model_id": model_id,
         "init_from": model_id,
-        "quantization": {"scale": scale_mode, "ste": quant_cfg.get("ste"), "ste_clip": ste_clip},
+        "quantization": {
+            "scale": scale_mode,
+            "granularity": (
+                "per_output_channel"
+                if scale_mode == "per_output_channel_mean_abs"
+                else "per_tensor"
+            ),
+            "ste": quant_cfg.get("ste"),
+            "ste_clip": ste_clip,
+            "exclude_layers": exclude_layers,
+            "mixed_precision": bool(exclude_layers),
+        },
         "layers": cfg["layers"],
         "replacement": {
             "n_replaced": replacement["n_replaced"],
             "n_retained": replacement["n_retained"],
+            "n_excluded": replacement["n_excluded"],
             "replaced_params": replacement["replaced_params"],
             "retained_params": replacement["retained_params"],
+            "excluded_params": replacement["excluded_params"],
+            "exclude_layers": replacement["exclude_layers"],
             "replaced_categories": sorted({e["category"] for e in replacement["replaced"]}),
             "retained_categories": sorted({e["category"] for e in replacement["retained"]}),
         },
@@ -395,8 +456,19 @@ def main() -> int:
             "final_train_loss": next(
                 (e["loss"] for e in reversed(trainer.state.log_history) if "loss" in e), None
             ),
+            # The final logged loss belongs to the last step, which may not be
+            # the selected best state. Keep it labeled rather than implying it
+            # describes the saved weights.
+            "final_train_loss_is_last_step": True,
             "train_loss_history": recorder.history,
+            "eval_every_steps": eval_every,
+            "dev_utterances": len(dev_samples),
+            "best_dev_wer": dev_summary.get("best_dev_wer"),
+            "best_step": dev_summary.get("best_step"),
+            "final_dev_wer": dev_summary.get("final_dev_wer"),
+            "restored_best": dev_summary.get("restored_best", False),
         },
+        "dev_selection": dev_summary,
         "gradient_flow": gradient_flow,
         "master_weights": master_update,
         "eval": {
@@ -425,6 +497,9 @@ def main() -> int:
             "format": CHECKPOINT_FORMAT,
             "is_1bit_packed": False,
             "manifest": manifest,
+            "best_dev_wer": dev_summary.get("best_dev_wer"),
+            "best_step": dev_summary.get("best_step"),
+            "restored_best": dev_summary.get("restored_best", False),
             "save_load_verified": save_load_ok,
             "save_load_argmax_agreement": argmax_agreement,
             "save_load_max_abs_logit_diff": logit_max_abs_diff,
@@ -449,7 +524,7 @@ def main() -> int:
     print_summary(metrics)
     print(f"trainable params: {freeze['trainable_params']:,} | frozen: {freeze['frozen_params']:,}")
     print(f"save/load verified: {save_load_ok}")
-    print(f"WER (QAT {'smoke' if args.smoke else 'full'}): {metrics['wer']:.4f} "
+    print(f"WER (QAT {mode}): {metrics['wer']:.4f} "
           f"| vs FP32 baseline: {baseline_wer}")
     print(f"Saved to {output}")
     if not save_load_ok:

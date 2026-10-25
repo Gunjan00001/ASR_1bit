@@ -201,3 +201,33 @@ def test_get_parent_module_returns_owner():
     parent, attr = get_parent_module(model, "encoder.layers.0.self_attn.linear_q")
     assert attr == "linear_q"
     assert parent is model.encoder.layers[0].self_attn
+
+
+# --- Mixed precision: exclude an exact layer -------------------------------
+
+def test_exclude_layer_keeps_selected_layer_fp32():
+    model = _SyntheticConformer(n_layers=1)
+    name = "encoder.layers.0.ffn1.intermediate_dense"
+    report = replace_linears(model, ALL_LAYERS, exclude_layers=[name])
+    assert report["n_replaced"] == 7
+    assert report["n_excluded"] == 1
+    assert report["excluded"][0]["name"] == name
+    assert report["exclude_layers"] == [name]
+    assert type(model.encoder.layers[0].ffn1.intermediate_dense) is nn.Linear
+    assert isinstance(model.encoder.layers[0].ffn2.intermediate_dense, BitLinear)
+
+
+def test_exclude_unknown_layer_raises():
+    model = _SyntheticConformer(n_layers=1)
+    with pytest.raises(ValueError, match="exclude_layers"):
+        replace_linears(model, ALL_LAYERS, exclude_layers=["not.a.real.layer"])
+
+
+def test_exclude_layer_not_in_selection_raises():
+    model = _SyntheticConformer(n_layers=1)
+    # feature_projection is retained (False), so it cannot be excluded.
+    with pytest.raises(ValueError, match="exclude_layers"):
+        replace_linears(
+            model, ALL_LAYERS,
+            exclude_layers=["feature_projection.projection"],
+        )

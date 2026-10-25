@@ -1,0 +1,24 @@
+# FFN-only QAT with per-output-channel scales (the first WER experiment).
+#
+# Hypothesis: the FFN rows have heterogeneous magnitudes, so one scale per
+# matrix (`alpha = mean(|W|)`) leaves reconstruction error on the table. Using
+# `alpha_i = mean_j |W[i,j]|` gives each output row its own scale:
+#
+#     Wq[i,j] = alpha_i * sign(W[i,j])
+#
+# Everything else is inherited from qat_ffn.yaml -> qat.yaml -> binary.yaml:
+# FFN-only layer selection, train.100 10k, 3 epochs, batch 4 x accum 4, lr 2e-5,
+# per-tensor STE. Only the scale granularity changes; the per-tensor FFN-only
+# run is the control.
+#
+# Size impact (FFN-only): 48*4096 + 48*1024 = 245,760 FP32 scales (~0.98 MB)
+# instead of 384 bytes. The artifact grows by ~0.12%; the packed payload is
+# unchanged.
+extends: qat_ffn.yaml
+
+compute_profile: cloud-gpu
+
+quantization:
+  scale: per_output_channel_mean_abs
+  ste: pass_through
+  ste_clip: null

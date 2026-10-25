@@ -45,6 +45,7 @@ def replace_linears(
     layer_cls: type[nn.Linear] = BitLinear,
     scale_mode: str = "per_tensor_mean_abs",
     ste_clip: float | None = None,
+    exclude_layers: list[str] | None = None,
 ) -> dict:
     """Replace selected ``nn.Linear`` layers in-place with ``layer_cls``.
 
@@ -57,21 +58,40 @@ def replace_linears(
             does). Defaults to :class:`BitLinear`.
         scale_mode / ste_clip: quantization configuration passed to the
             replacement layer.
+        exclude_layers: exact module names to keep at FP32 even though their
+            category is selected. Used for mixed precision. Every name must be
+            a selected linear layer; a typo raises instead of silently leaving
+            an unintended layer quantized (or vice versa).
 
     Returns:
-        A report dict with ``replaced`` / ``retained`` lists, counts, and the
-        parameter count of each group.
+        A report dict with ``replaced`` / ``retained`` / ``excluded`` lists,
+        counts, and the parameter count of each group.
     """
     # Resolve names BEFORE mutating the tree. `select_by_category` walks the
     # current modules; doing it inside the loop would mix pristine and replaced
     # layers and make the count depend on traversal order.
     selected_names = {name for name, _m, _c in select_by_category(model, selection)}
+    excluded_set = set(exclude_layers or [])
+    unknown_excluded = sorted(excluded_set - selected_names)
+    if unknown_excluded:
+        raise ValueError(
+            "exclude_layers contains names that are not selected linear layers: "
+            f"{unknown_excluded}"
+        )
+    selected_names -= excluded_set
 
-    replaced, retained = [], []
+    replaced, retained, excluded = [], [], []
     # Materialize first: we mutate the module tree during the loop.
     for name, module in list(iter_linears(model)):
         category = categorize(name)
-        if name in selected_names:
+        if name in excluded_set:
+            # Mixed-precision policy: keep this exact layer FP32. It stays an
+            # nn.Linear and its parameters remain in the non-quantized artifact.
+            excluded.append({
+                **_describe(name, module, category),
+                "note": "excluded by config (kept FP32)",
+            })
+        elif name in selected_names:
             if isinstance(module, layer_cls):
                 # Idempotency: running the same replacement twice must not wrap
                 # a BitLinear in another BitLinear (which would quantize twice).
@@ -89,10 +109,14 @@ def replace_linears(
     return {
         "replaced": replaced,
         "retained": retained,
+        "excluded": excluded,
         "n_replaced": len(replaced),
         "n_retained": len(retained),
+        "n_excluded": len(excluded),
         "replaced_params": sum(r["params"] for r in replaced),
         "retained_params": sum(r["params"] for r in retained),
+        "excluded_params": sum(r["params"] for r in excluded),
+        "exclude_layers": sorted(excluded_set),
         "scale_mode": scale_mode,
         "ste_clip": ste_clip,
         "layer_cls": layer_cls.__name__,
@@ -117,6 +141,11 @@ def report_replacement(report: dict) -> str:
         f"  replaced: {report['n_replaced']} layers, {report['replaced_params']:,} params",
         f"  retained: {report['n_retained']} layers, {report['retained_params']:,} params",
     ]
+    if report.get("n_excluded"):
+        lines.append(
+            f"  excluded (kept FP32): {report['n_excluded']} layers, "
+            f"{report['excluded_params']:,} params"
+        )
     for label in ("replaced", "retained"):
         by_cat = summarize_by_category(report[label])
         if not by_cat:

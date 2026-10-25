@@ -473,6 +473,73 @@ distilling from a quantized teacher. None of these are measured yet.
 
 ---
 
+## 8b. Mixed precision and layer sensitivity (research checkpoint)
+
+This section documents the v1.6 research extension. It does **not** change the
+measured WER table; the pilot has not run.
+
+### 8b.1 Per-output-channel scaling
+
+Instead of one scale per matrix, use one per output row:
+
+```
+alpha_i = (1/in) * Σ_j |W[i,j]|
+Wq[i,j] = alpha_i * sign(W[i,j])
+```
+
+This is a small, opt-in change (`per_output_channel_mean_abs`). Before spending
+GPU time, we measured the weight-reconstruction error on all 96 FFN matrices:
+
+| Weights | Per-tensor error | Per-channel error | Gain |
+|---|---:|---:|---:|
+| FFN-only QAT masters | 0.6458 | 0.6306 | 2.28% |
+| FP32 starting weights | 0.6508 | 0.6343 | 2.43% |
+
+The row-norm CV was ~0.17: FFN rows are fairly homogeneous, so per-channel
+scaling removes only ~2% of the error. The pre-registered gate required 10%.
+**The experiment stopped there; no per-channel QAT was run.** The quantizer
+itself is implemented and tested, and its packed artifact reloads exactly; it is
+kept for future use.
+
+### 8b.2 Layer sensitivity
+
+One-layer-at-a-time quantization gives a cheap ranking. For each FFN Linear:
+leave the rest of the model FP32, replace only that layer with `BitLinear`, and
+measure relative L2 logit change, KL, argmax agreement, and WER on 32 dev
+utterances. This is **screening**, not QAT: it cannot tell you what QAT would
+recover.
+
+Key result: `ffn_in` (`intermediate_dense`, 1024→4096) is ~1.9× more sensitive
+than `ffn_out` (mean ΔWER 0.00342 vs 0.00183). The most sensitive layers are not
+the first or last; they are specific middle/late layers (18, 17, 19, 11, 8, 6,
+10, 15). The screen records every layer and metric in
+`results/layer_sensitivity_ffn.json`.
+
+### 8b.3 Mixed-precision FFN
+
+The measured policy keeps 17 layers FP32: the union of the top 12 by relative L2
+and the top 8 by WER delta (14 `ffn_in`, 3 `ffn_out`). The other 79 FFN layers
+stay 1-bit. The exact list is in `configs/qat_ffn_mixed.yaml`; `replace_linears`
+validates every name and raises on a typo.
+
+Size: 17 × 4.19M × 4 B ≈ 285 MB of FP32 weights remain, so the expected artifact
+is ~1.10 GB — still well under the attention-only 1.983 GB. The implementation
+was validated on CPU: 79/79 quantized layers get gradients, the 17 FP layers stay
+FP, save/load works, and the packed artifact reloads with max |Δ logit| 0.
+
+**No mixed WER is claimed.** The controlled GPU pilot was blocked by the shared
+cluster being fully allocated. When a slot frees, run:
+
+```bash
+qsub cluster/qat_ffn_pilot.pbs
+```
+
+It runs the per-tensor FFN control and the mixed arm with the same 2k/500-step
+pilot, dev-only selection, and best-state restore. Only if the mixed dev WER is
+not worse should it be promoted to the 10k/1,875-step full run.
+
+---
+
 ## 9. Size accounting and packing
 
 ### 9.1 Three different numbers

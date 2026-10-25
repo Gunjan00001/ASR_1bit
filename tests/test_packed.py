@@ -102,3 +102,79 @@ def test_packed_model_size_report_counts_storage_not_masters():
     assert report["packed_weight_bytes"] == int(np.ceil(8 * 4 / 8))
     assert report["fp_scale_and_bias_bytes"] == 4 + 4 * 4  # alpha fp32 + 4 fp32 biases
     assert report["non_packed_fp_param_bytes"] == 4 * 2 * 4 + 2 * 4  # b.weight + b.bias
+
+
+# --- Per-output-channel packed / artifact path -----------------------------
+
+PER_CHANNEL = "per_output_channel_mean_abs"
+
+
+def test_packed_per_channel_matches_bitlinear():
+    torch.manual_seed(0)
+    bit = BitLinear(4, 3, bias=True, scale_mode=PER_CHANNEL)
+    with torch.no_grad():
+        bit.weight.copy_(_nonzero_weight((3, 4)))
+        bit.bias.copy_(torch.randn(3))
+    packed = PackedBitLinear.from_bitlinear(bit, scale_mode=PER_CHANNEL)
+    x = torch.randn(5, 4)
+    with torch.no_grad():
+        assert torch.allclose(bit(x), packed(x), atol=1e-6)
+    assert packed.alpha.shape == (3, 1)
+
+
+def test_pack_model_per_channel_preserves_output():
+    class _Model(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = BitLinear(4, 3, scale_mode=PER_CHANNEL)
+            self.b = nn.Linear(3, 2)
+
+        def forward(self, x):
+            return self.b(torch.relu(self.a(x)))
+
+    torch.manual_seed(1)
+    model = _Model()
+    x = torch.randn(6, 4)
+    with torch.no_grad():
+        before = model(x)
+    _, info = pack_model(model, scale_mode=PER_CHANNEL)
+    assert info["scale_mode"] == PER_CHANNEL
+    assert model.a.alpha.shape == (3, 1)
+    with torch.no_grad():
+        after = model(x)
+    assert torch.allclose(before, after, atol=1e-6)
+
+
+def test_artifact_tensors_roundtrip_per_channel():
+    from onebit_asr.evaluation.model_size import build_packed_tensors
+
+    class _Model(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = BitLinear(4, 3, scale_mode=PER_CHANNEL)
+            self.b = nn.Linear(3, 2)
+
+        def forward(self, x):
+            return self.b(torch.relu(self.a(x)))
+
+    torch.manual_seed(2)
+    model = _Model()
+    x = torch.randn(6, 4)
+    with torch.no_grad():
+        expected = model(x)
+
+    tensors, stats = build_packed_tensors(model, scale_mode=PER_CHANNEL)
+    assert stats["scale_mode"] == PER_CHANNEL
+    assert stats["fp_scale_element_count"] == 3          # one per output row
+    assert stats["fp_scale_bytes"] == 3 * 4
+    assert tensors["a.weight_scale"].shape == (3, 1)
+    assert stats["effective_bits_per_quantized_param"] > 1.0
+
+    # Rebuild just the BitLinear from artifact tensors (the non-quantized
+    # `b` is loaded separately in the real script).
+    rebuilt = PackedBitLinear.from_artifact(
+        tensors["a.weight_packed"], (3, 4), tensors["a.weight_scale"], tensors["a.bias"]
+    )
+    with torch.no_grad():
+        got = model.b(torch.relu(rebuilt(x)))
+    assert torch.allclose(expected, got, atol=1e-6)

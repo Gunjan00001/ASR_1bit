@@ -1,0 +1,85 @@
+#!/bin/bash
+#PBS -N final_eval_a100
+#PBS -q gpu
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
+#PBS -l walltime=03:00:00
+#PBS -j oe
+#
+# Phase 12/14/15/16/17/18/19 — final evaluation and benchmark pass.
+#
+# Runs after the training jobs have produced their checkpoints. Missing arms are
+# skipped explicitly by run_final_eval.py, so this job is safe to run before
+# every experiment has finished (and can be re-run later).
+#
+# 1. dev-clean, 256 utterances: all available arms (accuracy + performance)
+# 2. test-clean, 256 utterances: baseline + final candidate arms
+# 3. packed-1-bit storage/inference benchmark (Phase 18)
+# 4. chunked streaming demo on the best 1-bit checkpoint (Phase 19)
+
+set -uo pipefail
+
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"
+cd "$REPO" || exit 1
+
+# shellcheck disable=SC1091
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export HF_HUB_DISABLE_PROGRESS_BARS=1
+export HF_DATASETS_DISABLE_PROGRESS_BARS=1
+
+LOG="logs/final_eval_a100.log"
+mkdir -p logs results
+: > "$LOG"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== job $PBS_JOBID on $(hostname) at $(date -Is) ==="
+nvidia-smi --query-gpu=index,name,memory.used,memory.total,utilization.gpu \
+    --format=csv,noheader
+
+PY=".venv/bin/python"
+$PY - <<'PY'
+import torch
+assert torch.cuda.is_available(), "CUDA not available"
+print("torch", torch.__version__, "cuda", torch.version.cuda,
+      "device", torch.cuda.get_device_name(0), "count", torch.cuda.device_count())
+PY
+if [ $? -ne 0 ]; then echo "ABORT: CUDA preflight failed"; exit 3; fi
+
+DEV_ARMS="fp32,ptq_attention,ptq_ffn,ptq_full,ptq_full_plus_fproj,ptq_all_linears,qat_attention_a100,qat_ffn_a100,qat_attn_ffn,distill_attn_ffn,distill_attn_ffn_kd01"
+TEST_ARMS="fp32,ptq_full,qat_attention_a100,qat_ffn_a100,qat_attn_ffn,distill_attn_ffn,distill_attn_ffn_kd01"
+
+echo "=== Phase 12/14/15/17: dev-clean 256 ==="
+$PY scripts/run_final_eval.py --split dev --n 256 --arms "$DEV_ARMS"
+echo "dev eval exit: $?"
+
+echo "=== Phase 12: test-clean 256 ==="
+$PY scripts/run_final_eval.py --split test --n 256 --arms "$TEST_ARMS"
+echo "test eval exit: $?"
+
+echo "=== Phase 18: packed inference / binary-compute boundary ==="
+if [ -d checkpoints/qat_attn_ffn ]; then
+    $PY scripts/benchmark_packed.py \
+        --config configs/qat_attn_ffn.yaml \
+        --checkpoint checkpoints/qat_attn_ffn \
+        --n 4 \
+        --output results/packed_inference_benchmark.json
+    echo "packed benchmark exit: $?"
+else
+    echo "SKIP packed benchmark: checkpoints/qat_attn_ffn missing"
+fi
+
+echo "=== Phase 19: chunked streaming demo (1-bit checkpoint) ==="
+if [ -d checkpoints/qat_attn_ffn ]; then
+    $PY scripts/stream_infer.py \
+        --config configs/qat_attn_ffn.yaml \
+        --checkpoint checkpoints/qat_attn_ffn \
+        --sample-index 2 --chunk 2.0 --overlap 0.5 \
+        --output results/streaming_demo_qat_attn_ffn.json
+    echo "streaming demo exit: $?"
+else
+    echo "SKIP streaming demo: checkpoints/qat_attn_ffn missing"
+fi
+
+echo "=== finished at $(date -Is) ==="

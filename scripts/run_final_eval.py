@@ -71,10 +71,20 @@ ARM_DEFS = {
         **BASE_LAYERS, "attention_q": True, "attention_k": True,
         "attention_v": True, "attention_output": True,
         "ffn_in": True, "ffn_out": True, "feature_projection": True}},
+    "ptq_all_linears": {"kind": "ptq", "layers": {
+        **BASE_LAYERS, "attention_q": True, "attention_k": True,
+        "attention_v": True, "attention_output": True,
+        "ffn_in": True, "ffn_out": True,
+        "feature_projection": True, "ctc_head": True}},
     "qat_attention_a100": {
         "kind": "qat",
         "config": "configs/qat_attn.yaml",
         "checkpoint": "checkpoints/qat_attn_a100",
+    },
+    "qat_ffn_a100": {
+        "kind": "qat",
+        "config": "configs/qat_ffn.yaml",
+        "checkpoint": "checkpoints/qat_ffn_a100",
     },
     "qat_attn_ffn": {
         "kind": "qat",
@@ -85,6 +95,11 @@ ARM_DEFS = {
         "kind": "qat",
         "config": "configs/distill_attn_ffn.yaml",
         "checkpoint": "checkpoints/distill_attn_ffn",
+    },
+    "distill_attn_ffn_kd01": {
+        "kind": "qat",
+        "config": "configs/distill_attn_ffn_kd01.yaml",
+        "checkpoint": "checkpoints/distill_attn_ffn_kd01",
     },
 }
 
@@ -97,6 +112,18 @@ def git_commit() -> str:
         ).strip()
     except Exception:  # noqa: BLE001
         return "unknown"
+
+
+def checkpoint_is_complete(path: Path) -> bool:
+    """A QAT checkpoint is usable only if its weights file exists.
+
+    The Trainer creates ``output_dir`` as soon as a job starts, so an
+    ``is_dir()`` check is not enough: a concurrently training job would look
+    like a valid checkpoint and ``from_pretrained`` would fail mid-evaluation.
+    """
+    return path.is_dir() and any(
+        (path / name).is_file() for name in ("model.safetensors", "pytorch_model.bin")
+    )
 
 
 def build_arm(name: str, arm: dict, model_id: str, device: torch.device) -> tuple:
@@ -126,7 +153,7 @@ def build_arm(name: str, arm: dict, model_id: str, device: torch.device) -> tupl
     elif arm["kind"] == "qat":
         cfg_path = ROOT / arm["config"]
         checkpoint = ROOT / arm["checkpoint"]
-        if not checkpoint.is_dir():
+        if not checkpoint_is_complete(checkpoint):
             raise FileNotFoundError(checkpoint)
         cfg = load_config(cfg_path)
         quant = cfg.get("quantization", {})
@@ -192,8 +219,12 @@ def main() -> int:
         try:
             model, info = build_arm(name, arm, model_id, device)
         except FileNotFoundError as exc:
-            print(f"SKIP: checkpoint missing ({exc})")
+            print(f"SKIP: checkpoint missing or incomplete ({exc})")
             skipped.append({"arm": name, "reason": f"missing checkpoint: {exc}"})
+            continue
+        except Exception as exc:  # noqa: BLE001 - one bad arm must not abort the run
+            print(f"SKIP: {type(exc).__name__}: {exc}")
+            skipped.append({"arm": name, "reason": f"{type(exc).__name__}: {exc}"})
             continue
 
         report = benchmark_and_evaluate(

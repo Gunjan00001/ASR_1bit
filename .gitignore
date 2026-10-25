@@ -52,3 +52,6 @@ configs/cluster_effective_*.yaml
 
 # Cluster run logs (results JSONs are the durable, committed artifacts)
 logs/
+
+# PBS job stdout/stderr files written in the submission directory
+/*.o[0-9]*

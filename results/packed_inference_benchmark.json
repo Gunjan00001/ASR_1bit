@@ -1,0 +1,39 @@
+{
+  "phase": "Phase 18 packed 1-bit inference",
+  "timestamp_utc": "2026-10-25T13:38:17.775018+00:00",
+  "platform": "Linux-4.18.0-477.27.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "config_path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/configs/qat_attn_ffn.yaml",
+  "checkpoint": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_attn_ffn",
+  "n_utterances_timed": 4,
+  "storage": {
+    "fp32_state_bytes": 2373507712,
+    "n_packed_layers": 192,
+    "packed_weight_bytes": 62914560,
+    "scale_bytes": 768,
+    "note": "Total deploy bytes = packed weights + FP scales/biases + non-packed FP params. No FP32 master weights are retained.",
+    "fp_scale_and_bias_bytes": 1377024,
+    "non_packed_fp_param_bytes": 358865536,
+    "total_fp_param_bytes": 360242560,
+    "total_params": 90060640
+  },
+  "inference": {
+    "bitlinear_forward_s": 2.8756564809009433,
+    "packed_forward_s": 2.8137635895982385,
+    "packed_slowdown_ratio": 0.9784769524059029,
+    "device": "cpu",
+    "note": "Packing saves storage; expanding bits costs time on CPU."
+  },
+  "binary_compute_boundary": {
+    "shape": {
+      "m": 64,
+      "k": 256,
+      "n_bits": 1024
+    },
+    "xnor_popcount_matches_float_dot": true,
+    "xnor_popcount_seconds": 0.006269306130707264,
+    "float_matmul_seconds": 0.00034426916390657426,
+    "xnor_vs_float_ratio": 18.210478276842103,
+    "note": "One-bit \u00d7 one-bit only. The ASR model has FP activations, so this kernel cannot replace BitLinear without also binarizing activations (a different model with different accuracy)."
+  },
+  "conclusion": "1-bit storage is real (packed payload); compute is not accelerated for this model because activations are FP and the runtime expands weights before F.linear. XNOR+popcount works only for 1-bit\u00d71-bit."
+}

@@ -29,6 +29,8 @@ def test_short_audio_is_one_chunk():
     assert len(chunks) == 1
     assert chunks[0]["start_sample"] == 0
     assert chunks[0]["end_sample"] == len(audio)
+    assert chunks[0]["start_s"] == 0.0
+    assert chunks[0]["end_s"] == 1.0
 
 
 def test_invalid_overlap_rejected():

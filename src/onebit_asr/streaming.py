@@ -46,7 +46,13 @@ def chunk_audio(
         raise ValueError("chunk/overlap produce a non-positive window or step")
 
     if n <= size:
-        return [{"start_sample": 0, "end_sample": n, "audio": audio}]
+        return [{
+            "start_sample": 0,
+            "end_sample": n,
+            "start_s": 0.0,
+            "end_s": n / sample_rate,
+            "audio": audio,
+        }]
 
     starts = list(range(0, n - size + 1, step))
     tail_start = n - size

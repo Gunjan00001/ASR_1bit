@@ -33,8 +33,14 @@ PBS sets `CUDA_VISIBLE_DEVICES` to an **empty string**, hiding every GPU, and it
 does not pin GPUs to a job. `pick_gpu.sh`:
 
 1. unsets `CUDA_VISIBLE_DEVICES`;
-2. queries all 8 GPUs for `(utilization, memory.used)`;
-3. exports the least-busy index before the Python process starts.
+2. queries all 8 GPUs and orders them by **free memory first**, then utilization;
+3. claims the chosen GPU for 5 minutes in `~/.onebit_gpu_reservations` (an
+   atomic `mkdir` lock serializes concurrent picks);
+4. exports the chosen index before the Python process starts.
+
+The reservation prevents two jobs submitted at the same instant from both
+choosing the same idle A100 before either has allocated memory. Claims expire
+after 5 minutes, and a fallback picks the least-used GPU if the lock is busy.
 
 This is why a job can start immediately even when some A100s are busy; it never
 waits for a specific device. It does not migrate a job that starts on a GPU
@@ -46,7 +52,9 @@ which later becomes busy.
 |---|---|---:|---|
 | `qat_attn_ffn.pbs` | Phase 11: attention+FFN QAT (the decisive experiment) | 8 | `results/qat_attn_ffn.json`, `checkpoints/qat_attn_ffn*` |
 | `qat_attn_a100.pbs` | Phase 12/14: attention-only QAT re-run for a like-for-like A100 arm | 4 | `results/qat_attn_a100.json`, `checkpoints/qat_attn_a100*` |
-| `distill_attn_ffn.pbs` | Phase 13: FP32 teacher → attention+FFN 1-bit student | 4 | `results/distill_attn_ffn.json`, `checkpoints/distill_attn_ffn*` |
+| `qat_ffn_a100.pbs` | Phase 15: FFN-only QAT sensitivity arm | 1 | `results/qat_ffn_a100.json`, `checkpoints/qat_ffn_a100*` |
+| `distill_attn_ffn.pbs` | Phase 13: FP32 teacher → attention+FFN 1-bit student | 1 | `results/distill_attn_ffn.json`, `checkpoints/distill_attn_ffn*` |
+| `final_eval_a100.pbs` | Phase 12/14/15/17/18/19: final comparison, packed and streaming benchmarks | 1 | `results/final_comparison_*.{json,md}`, `results/packed_inference_benchmark.json`, `results/streaming_demo_qat_attn_ffn.json` |
 
 Each job writes a live log under `logs/` on the shared home filesystem (PBS
 buffers its own `-o` output, so `tee` is used instead), runs `pack_qat_model.py`

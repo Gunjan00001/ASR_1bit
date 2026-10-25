@@ -4,15 +4,16 @@ Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
 
-**Current checkpoint:** `v1.4.0` — **the real cloud-GPU attention-only 1-bit QAT
-run has been executed** on a Kaggle Tesla T4 and measured under the pinned
-256-utterance dev-clean protocol: **WER 0.0392 / CER 0.0125** vs the FP32
-baseline 0.0202 and the full PTQ collapse of 1.0000. Attention-only QAT therefore
-recovers attention binarization from the 44.4% PTQ diagnostic to near-baseline
-accuracy. The FFN remains FP32, so the current packed artifact (≈1.98 GB vs
-2.374 GB FP32) is **not** the compression target — see §27b and §31. Results are
-real measurements; nothing in this README is estimated. The full research history
-(including failed experiments and infrastructure failures) is in
+**Current checkpoint:** `v1.5.0` — Phases 12–19 have been executed on an
+8×A100-80GB cluster. The decisive attention+FFN QAT run reaches **WER 0.2080
+(dev) / 0.2029 (test-clean)** at a **0.423 GB** packed artifact (5.6× smaller
+than FP32), versus the full-PTQ collapse (1.0000) and the FP32 baseline
+(0.0202 / 0.0162). Attention-only QAT remains the accuracy leader among 1-bit
+arms (**0.0421 / 0.0439** at 1.983 GB); FFN-only QAT gives **0.1190 / 0.1095**
+at 0.813 GB. Distillation at λ_kd=0.5 did not improve the attention+FFN result
+(0.2232); a λ_kd=0.1 follow-up is running. The complete measured comparison is
+in [`RESULTS.md`](RESULTS.md). No number here is estimated; failed and negative
+results are kept, and the full research history is in
 [`planning.md`](planning.md).
 
 > This README is written for an engineer joining at this checkpoint. It states
@@ -47,27 +48,27 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (85 tests) | ✅ green |
+| 7 | Test gate (87 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
 | 11 | QAT (infrastructure + tests + CPU smoke) | ✅ done (local) |
 | 11 | **QAT (real cloud-GPU training run, attention-only)** | ✅ **measured — WER 3.92%** |
 | 11 | QAT clean reproduction / Kaggle packing | 🔄 in progress (`results/qat_attn_repro.json`) |
-| 11 | **attention+FFN QAT (A100 cluster)** | 🔄 running (`results/qat_attn_ffn.json`) |
-| 12 | QAT evaluation (full comparison) | 🔧 implemented (`scripts/run_final_eval.py`) |
-| 13 | Knowledge distillation | 🔧 implemented, cluster run in progress |
-| 14 | Controlled experiments (A–D) | 🔧 implemented (final comparison runner) |
-| 15 | Layer-sensitivity sweep | 🔧 implemented (PTQ variants + QAT arms) |
-| 16 | Binary storage / packing | 🔧 per-run packing wired into cluster jobs |
-| 17 | Inference benchmarking | 🔧 implemented (`evaluation/latency.py`) |
-| 18 | Binary compute | 🔧 packed-inference prototype + kernel boundary measured |
-| 19 | Streaming ASR | 🔧 chunked pseudo-streaming prototype |
+| 11 | **attention+FFN QAT (A100 cluster)** | ✅ **measured — WER 0.2080 dev / 0.2029 test** |
+| 12 | QAT evaluation (full comparison) | ✅ measured (`RESULTS.md`) |
+| 13 | Knowledge distillation | ✅ measured (λ_kd=0.5: 0.2232; λ_kd=0.1 follow-up running) |
+| 14 | Controlled experiments (A–D) | ✅ measured (FP32 / PTQ / QAT / QAT+KD) |
+| 15 | Layer-sensitivity sweep | ✅ measured (PTQ + QAT variants, dev/test) |
+| 16 | Binary storage / packing | ✅ measured (artifacts: 1.983 / 0.813 / 0.423 GB) |
+| 17 | Inference benchmarking | ✅ measured (A100 RTF, latency, VRAM) |
+| 18 | Binary compute | ✅ investigated (packed storage; XNOR boundary measured) |
+| 19 | Streaming ASR | ✅ prototype measured (chunked WER/RTF) |
 
-> **v1.5.0 work is running on the local 8×A100 PBS cluster** (see
+> **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes
-> *implemented* from *measured*: a phase is only marked measured once its
-> results JSON is committed. The cluster stack is torch 2.11.0+cu126 /
+> *implemented* from *measured*; the full measured tables are in
+> [`RESULTS.md`](RESULTS.md). The cluster stack is torch 2.11.0+cu126 /
 > transformers 4.57.6, which differs from the pinned Kaggle stack; every result
 > records its actual versions and no number is extrapolated across profiles.
 
@@ -168,6 +169,53 @@ baseline. *(Historical note: `baseline.json` predates the dual-size schema and
 records the full-download figure — 4.75 GB, which double-counts the duplicate
 `.bin`. It is left byte-for-byte unchanged; newer runs record both figures. See
 §24 and `CHANGELOG.md`.)*
+
+## 8b. v1.5.0 measured results — accuracy/size trade-off
+
+All numbers below are from the pinned greedy-CTC protocol on fixed
+256-utterance subsets (seed 42), measured on an A100-SXM4-80GB. The full
+per-arm tables, sizes, and benchmark details are in [`RESULTS.md`](RESULTS.md);
+raw data is in `results/final_comparison_{dev,test}_n256.json`.
+
+### Dev-clean (256 utterances)
+
+| Arm | WER | CER | Packed deploy size | vs FP32 size |
+|---|---:|---:|---:|---:|
+| FP32 baseline | **0.0202** | **0.0049** | 2.374 GB | 1.0× |
+| 1-bit PTQ attention-only | 0.4454 | 0.2180 | 1.983 GB | 1.2× |
+| 1-bit PTQ FFN-only | 1.0000 | 1.0000 | 0.813 GB | 2.9× |
+| 1-bit PTQ attention+FFN | 1.0000 | 1.0000 | 0.423 GB | 5.6× |
+| **QAT attention-only (A100)** | **0.0421** | **0.0128** | 1.983 GB | 1.2× |
+| **QAT FFN-only (A100)** | **0.1190** | **0.0338** | 0.813 GB | 2.9× |
+| **QAT attention+FFN (A100)** | **0.2080** | **0.0640** | **0.423 GB** | **5.6×** |
+| QAT + distillation (λ_kd=0.5) | 0.2232 | 0.0712 | 0.423 GB | 5.6× |
+
+### Test-clean (256 utterances, same seed)
+
+| Arm | WER | CER | Packed deploy size |
+|---|---:|---:|---:|
+| FP32 baseline | **0.0162** | **0.0044** | 2.374 GB |
+| 1-bit PTQ attention+FFN | 1.0000 | 1.0000 | 0.423 GB |
+| QAT attention-only (A100) | 0.0439 | 0.0131 | 1.983 GB |
+| QAT FFN-only (A100) | 0.1095 | 0.0318 | 0.813 GB |
+| QAT attention+FFN (A100) | 0.2029 | 0.0648 | 0.423 GB |
+| QAT + distillation (λ_kd=0.5) | 0.2167 | 0.0706 | 0.423 GB |
+
+**Reading the result.** QAT recovers binarization in every isolated case:
+attention-only from 44.54% (PTQ) to 4.21%, FFN-only from 100% to 11.90%, and
+attention+FFN from 100% to 20.80%. The combined attention+FFN arm is **worse
+than either isolated arm**, so the two binarizations interact; the 5.6×
+compression target is reachable, but at a large accuracy cost on this recipe.
+The size/accuracy frontier from this work is: 1.2× at ~2× WER, 2.9× at ~6× WER,
+or 5.6× at ~10× WER (relative to FP32). Distillation at λ_kd=0.5 did not
+improve the combined arm; its summed KL term dominated the CTC term by ~8×
+(measured loss components: KD 6107 vs CTC 726), and the λ_kd=0.1 controlled
+follow-up is reported separately.
+
+**Not a speed result.** All arms run at essentially the same warmed-up A100
+latency/RTF (≈0.006–0.007 end-to-end; difference <10%). The 1-bit runtime
+expands `alpha·sign(W)` to FP before `F.linear`, so binarization buys **disk
+size**, not wall-clock speed. See §25 and `RESULTS.md` §5.
 
 ## 9. Phase 4 — BitLinear design
 
@@ -294,7 +342,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **85 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **87 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -321,6 +369,8 @@ This is an experimental choice, not a permanent rule.
   packed-vs-BitLinear output equivalence, module replacement, size accounting.
 - `test_streaming.py` (8) — chunk coverage/overlap, short audio, invalid
   settings, word-overlap merge semantics.
+- `test_latency.py` (2) — warmed-up benchmark wrapper and comparison-table
+  rendering on a tiny synthetic model.
 
 ## 19. Phase 8 replacement behavior (measured on the real model)
 
@@ -434,22 +484,27 @@ parameters and removing FP master weights from deployment state are future work.
 
 ## 25. What has NOT been implemented yet
 
-- **Only the attention-only QAT model is trained.** A real cloud-GPU run exists
-  and recovered WER to 0.0392 (§27b), but **the FFN remains FP32** — the
-  attention+FFN configuration that collapsed under PTQ has **not** been
-  QAT-trained, so the core accuracy-vs-size question is still open (§31).
-- **No knowledge distillation** (Phase 13).
-- **No CUDA kernels / custom bitwise ops** (Phases 17–18).
-- **No actual binary hardware acceleration** — inference expands weights back
-  to FP (`alpha·sign(W)`) before `F.linear`; the model is *smaller on disk*,
-  not *faster to run*.
-- **No full test-clean evaluation** — QAT was evaluated on the pinned
-  256-utterance dev-clean subset only.
-- No streaming ASR (Phase 19).
-- `evaluate` is pinned but unused (metrics are computed with `jiwer`);
-  `features/audio.py`, `decoding/decode.py`, `evaluation/latency.py`,
-  `evaluation/benchmark.py`, `training/train.py`, `training/distillation.py`,
-  and several `scripts/*` remain intentional placeholders.
+- **No bitwise compute kernel is integrated into the model.** Phase 18
+  implements packed 1-bit storage and a measured XNOR+popcount reference, but
+  the ASR runtime still expands `alpha·sign(W)` to FP before `F.linear`. The
+  XNOR kernel is 2.3× faster than float for 1-bit×1-bit, yet that requires
+  1-bit activations — a different model with different accuracy.
+- **No hardware acceleration.** Confirmed by measurement: all arms have
+  essentially the same warmed-up A100 RTF (§8b, `RESULTS.md`). Binarization buys
+  disk size, not wall-clock speed.
+- **No full test-clean evaluation** — the test result is a fixed 256-utterance
+  test-clean subset, not the full 2620-utterance set.
+- **No true streaming encoder** — `streaming.py` is chunked pseudo-streaming
+  (full encoder per overlapping window). Its chunked WER is much worse than the
+  full-utterance WER on the demo (Phase 19).
+- **No 2-bit / INT8 arm**, no LM beam-search decoding, no per-channel scaling,
+  no learned alpha.
+- **Distillation did not improve the attention+FFN arm at λ_kd=0.5** (0.2232 vs
+  0.2080). The λ_kd=0.1 follow-up is reported separately.
+- Placeholder modules remain: `features/audio.py`, `decoding/decode.py`,
+  `training/train.py`, and several `scripts/*`; `evaluate` is pinned but unused
+  (metrics are computed with `jiwer`). `evaluation/latency.py`,
+  `evaluation/benchmark.py`, and `training/distillation.py` are now implemented.
 
 ## 26. Honest claims policy
 
@@ -460,23 +515,24 @@ Reused vs. ours, measured vs. theoretical vs. planned:
   the pretrained checkpoint itself.
 - **Our implementation:** `BitLinear`, binarization, scaling, STE, layer
   replacement + taxonomy, PTQ pipeline, evaluation runner, size/packing
-  accounting, QAT assembly (freeze/probe/trainer wiring/checkpoint), tests.
+  accounting, QAT assembly, distillation, packed inference, streaming, tests.
 - **Measured (real numbers in `results/`):** baseline WER/CER/RTF, PTQ
-  WER/CER, replacement counts, packed artifact size, latency/RSS, QAT smoke
-  gradient-flow/freeze/master-update checks and smoke WER, and the real
-  attention-only QAT WER/CER/RTF/size (`results/qat_attn.json`).
+  WER/CER on 256 dev utterances, A100 QAT WER/CER for attention-only,
+  FFN-only, attention+FFN, and distillation, test-clean QAT WER/CER, packed
+  artifact sizes, A100 latency/RTF/VRAM, packed-inference timings, XNOR kernel
+  timings, and the chunked-streaming demo.
 - **Theoretical (labeled as such):** 1-bit payload = 62,914,560 B; FP32 weight
   bytes = params × 4.
-- **Planned (not implemented):** attention+FFN QAT, distillation, binary compute
-  kernels, hardware acceleration, streaming.
+- **Planned (not implemented):** true bitwise kernels, hardware acceleration,
+  full test-clean evaluation, 2-bit/INT8, LM decoding, true streaming state.
 
 No performance claim in this README is unsupported by a file in `results/`.
 
-## 27. Phase 11 — QAT infrastructure (implemented) and smoke run (measured)
+## 27. Phase 11 — QAT infrastructure (implemented) and cloud runs (measured)
 
-> The real cloud-GPU QAT run **has been executed** (attention-only) and is
-> measured in §27b. The attention+FFN configuration remains `NOT YET RUN`; see
-> §31. This section documents the infrastructure and the CPU smoke run.
+> Both the attention-only (Kaggle T4, §27b) and the attention+FFN / FFN-only /
+> distillation arms (A100, §27c and `RESULTS.md`) have been executed. This
+> section documents the infrastructure and the CPU smoke run.
 
 ### Design (preserves every approved decision)
 
@@ -586,6 +642,11 @@ project's first real 1-bit accuracy recovery.
 projections) are binarized; the FP32 FFN dominates the artifact. This is **not**
 the compression target (`results/qat_attn_size_report.json`).
 
+> **v1.5.0 update:** the FFN-inclusive arms now exist. Attention+FFN QAT packs to
+> **0.423 GB** at **WER 0.2080** (dev) / **0.2029** (test); FFN-only packs to
+> **0.813 GB** at **0.1190** / **0.1095**. See §8b and [`RESULTS.md`](RESULTS.md).
+> The attention-only arm remains the accuracy leader at 1.983 GB.
+
 > **Infrastructure note.** The original Kaggle run ended with status `ERROR`
 > because the pre-fix save/load check (`torch.allclose(atol=1e-5)` on raw
 > logits) returned a false negative on GPU, causing `train_qat.py` to exit 1 and
@@ -597,7 +658,7 @@ the compression target (`results/qat_attn_size_report.json`).
 
 ## 27c. Cluster execution (A100, Phase 12–19)
 
-The v1.5.0 work runs on the local 8×A100-80GB PBS cluster. The full execution
+The v1.5.0 work ran on the local 8×A100-80GB PBS cluster. The full execution
 guide is [`cluster/README.md`](cluster/README.md); the scientific configs stay
 in `configs/` and hardware settings are generated as git-ignored
 `configs/cluster_effective_*.yaml`.
@@ -616,7 +677,10 @@ between them.
 |---|---|---|
 | `cluster/qat_attn_ffn.pbs` | 11 | attention+FFN QAT (the decisive FFN experiment) |
 | `cluster/qat_attn_a100.pbs` | 12/14 | attention-only QAT re-run for a like-for-like A100 arm |
-| `cluster/distill_attn_ffn.pbs` | 13 | FP32 teacher → attention+FFN 1-bit student |
+| `cluster/qat_ffn_a100.pbs` | 15 | FFN-only QAT sensitivity arm |
+| `cluster/distill_attn_ffn.pbs` | 13 | FP32 teacher → attention+FFN 1-bit student (λ_kd=0.5) |
+| `cluster/distill_attn_ffn_kd01.pbs` | 13/14 | controlled distillation follow-up (λ_kd=0.1, cached teacher logits) |
+| `cluster/final_eval_a100.pbs` | 12/14/15/17/18/19 | final comparison + packed/streaming benchmarks |
 
 New tooling in this checkpoint:
 
@@ -643,7 +707,7 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 63 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 87 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
@@ -663,7 +727,7 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 63 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 87 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
@@ -674,76 +738,61 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ## 30. Known limitations / issues
 
-- **WER collapse under PTQ** (expected; §23). QAT is the intended remedy.
-- **QAT recovery is measured only for attention-only binarization** (WER 0.0392,
-  §27b). The FFN — the decisive sensitivity — is still FP32, so the core
-  accuracy-vs-size question is open (§31).
-- **Smoke-run loss rose** (907 → 1137 over 8 steps): expected on 16 utterances
-  at lr 2e-5 against an already-collapsed model; it is a pipeline check, not an
-  accuracy experiment.
-- **FFN sensitivity:** binarizing FFN alone already destroys output; the
-  shipped config quantizes the whole candidate pool. Per-layer/per-component
-  sensitivity is Phase 15.
-- **Binarized inference is slower on CPU**, not faster (§22, §25).
-- **Master weights dominate memory:** the PTQ/QAT model keeps ~2.01 GB of FP
-  master weights that are not needed for pure inference; deployment-state
-  accounting excludes them, but an in-memory model still holds them. QAT
-  training peak RSS measured ~7.5 GB locally (optimizer state).
-- **Local training is not viable at scale:** `local` CPU profile is for smoke
-  runs only.
+- **PTQ collapses** (expected; §23): attention-only 44.5%, FFN-only 100%,
+  attention+FFN 100% on 256 dev utterances.
+- **QAT recovers all three selections but not to FP32**: attention-only 4.21%
+  (A100), FFN-only 11.90%, attention+FFN 20.80% (dev). The combined arm is
+  **worse than either isolated arm**, so attention and FFN binarization interact;
+  that interaction is the main open research question.
+- **Distillation at λ_kd=0.5 did not improve** the combined arm (22.32%). Its
+  summed KL dominated the CTC term by ~8× (6107 vs 726); the λ_kd=0.1 controlled
+  follow-up is reported separately.
+- **No speedup from binarization** (measured on A100): all arms have similar
+  warmed-up RTF (≈0.006–0.007 end-to-end). Packed storage is real; packed
+  inference is 1.10× slower than BitLinear on CPU because it expands bits.
+- **Save/load booleans are strict-tolerance diagnostics.** The old 1e-2 logit
+  tolerance produced false negatives on GPU (argmax agreement 1.000, max
+  |Δ logit| 0.028–0.063). The criterion is now `atol/rtol=1e-1` plus argmax
+  agreement ≥0.99; historical JSONs keep their original boolean and record the
+  measured agreement.
+- **Master weights dominate memory:** the QAT model keeps ~2.01 GB of FP32
+  masters (attention+FFN) that are not needed for pure inference; deployment
+  accounting excludes them, but an in-memory model still holds them.
+- **Local training is not viable at scale**; cluster runs use 1–8 CPUs because
+  of a per-user CPU quota, which slows the 1-CPU 10k-utterance jobs.
 - **`results/baseline.json` uses the pre-`v1.1.0` size schema** (single
   `checkpoint_bytes` = full download, 4.75 GB). It is intentionally immutable;
   treat `checkpoint_bytes_safetensors` in newer files as canonical.
 - **Single scale mode / single STE mode** implemented (per-tensor mean-abs,
-  pass-through default). No per-channel scaling, no learned alpha yet.
-- No LM decoding; WER figures are greedy-only and therefore not directly
+  pass-through default). No per-channel scaling, no learned alpha, no 2-bit or
+  INT8 arm.
+- **No LM decoding**; WER figures are greedy-only and therefore not directly
   comparable to LM-assisted ASR leaderboards.
+- **The cluster stack differs from the Kaggle stack** (torch 2.11.0+cu126 /
+  transformers 4.57.6 vs 2.14.0 / 5.17.0). Results are labelled by profile and
+  never extrapolated across them.
 
-## 31. Next substantive experiment — attention+FFN QAT (NOT YET RUN)
+## 31. Next experiments (after v1.5.0)
 
-The attention-only QAT run (§27b) is done. The **attention+FFN** configuration —
-the one that collapsed to 100% WER under PTQ — has **not** been QAT-trained.
-That is the next experiment, and it is the one that determines whether the
-project's compression objective (FFN dominates size) is achievable.
+The attention+FFN QAT run is done. The open questions and next experiments are:
 
-**Why attention+FFN next:** PTQ showed catastrophic FFN sensitivity; attention-only
-QAT proved QAT can recover accuracy; the compression target requires addressing
-the FFN.
+1. **Improve the attention+FFN recipe** — longer training, LR/early-stop sweep,
+   and KD tuning (λ_kd=0.1 / mean-normalized KL) to test whether the combined
+   arm can approach the FFN-only result.
+2. **True binary compute** — integrate an XNOR+popcount kernel with 1-bit
+   activations. The measured 1-bit×1-bit kernel is 2.3× faster than float, but
+   the current model has FP activations, so it cannot use that kernel directly.
+3. **2-bit / INT8 and per-channel / learned scaling** — the current
+   implementation is exactly 1-bit, per-tensor, non-learned alpha.
+4. **Full test-clean (2620 utterances) and LM decoding** — current numbers are
+   a fixed 256-utterance subset with greedy CTC.
+5. **A true streaming encoder** with cached convolution/attention state — the
+   current chunked prototype loses ~54 pp WER versus full-utterance decoding on
+   the demo (Phase 19).
+6. **Distillation follow-up** — the λ_kd=0.1 run and teacher-logit compression.
 
-**Procedure (same gate as before, unchanged):**
-
-### Step 1 — mandatory probe (measures VRAM + time/step)
-
-```powershell
-# On the Kaggle T4, via kaggle/kernel.py (or a GPU host):
-.venv\Scripts\python.exe scripts/train_qat.py --config configs/qat_attn_ffn.yaml --probe
-```
-
-The full run proceeds **only if** the probe reports ≥15% VRAM headroom
-(`vram_headroom.passes == true`). Otherwise enable
-`qat.training.gradient_checkpointing: true` (and/or a smaller micro-batch) and
-re-probe. On T4 set `fp16: true`, `bf16: false` (Turing has no bf16). Note:
-attention+FFN roughly doubles the quantized parameter count vs attention-only, so
-expect **less** headroom than the 16.9% measured for attention-only.
-
-### Step 2 — full run (only after the probe passes)
-
-```powershell
-.venv\Scripts\python.exe scripts/train_qat.py --config configs/qat_attn_ffn.yaml `
-    --output results/qat_attn_ffn.json --checkpoint-dir checkpoints/qat_attn_ffn
-```
-
-- Full mode uses `training.*`: `train.100`, `subset_size` 10000, lr 2e-5,
-  3 epochs, then evaluates on the full pinned 256-utterance dev subset.
-- Outputs: `results/qat_attn_ffn.json` (commit it) and
-  `checkpoints/qat_attn_ffn/` (FP32 masters + manifest; git-ignored), plus the
-  packed artifact via `scripts/pack_qat_model.py`.
-- Then and only then: Phase 12 full evaluation / Phase 13 (distillation).
-- **Acceptance is a measured WER**, reported exactly as measured.
-
-> A `configs/qat_attn_ffn.yaml` does not exist yet; it must be added (FFN
-> enabled) before this experiment. It is **out of scope** for the current
-> cleanup task.
+Acceptance remains a measured WER, artifact size, and RTF; no theoretical
+speedup is reported as a measurement.
 
 ## Layout
 
@@ -769,12 +818,15 @@ one-bit-asr/
 │                       README.md (cloud T4 execution + pack-only recovery)
 ├── cluster/            pick_gpu.sh + PBS jobs (attention/FFN QAT, attention-only
 │                       A100 arm, distillation), README.md (A100 execution)
-├── tests/              85 tests (STE, binarization, BitLinear, replacement, QAT,
-│                       evaluate, config, distillation, packed, streaming)
+├── tests/              87 tests (STE, binarization, BitLinear, replacement, QAT,
+│                       evaluate, config, distillation, packed, streaming, latency)
 ├── results/            env, model_inspection, baseline, ptq_binary,
 │                       size_report, ptq_collapse_diagnostic, qat_smoke,
 │                       qat_attn, qat_attn_size_report, qat_attn_repro,
-│                       distillation_smoke, and the v1.5.0 cluster runs
+│                       distillation_smoke, and the v1.5.0 A100 runs
+│                       (qat_attn_a100, qat_ffn_a100, qat_attn_ffn,
+│                       distill_attn_ffn, final_comparison_*)
+├── RESULTS.md          generated measured tables (no hand-entered numbers)
 ├── checkpoints/        (git-ignored)
 ├── planning.md                          living research history & execution plan
 └── one_bit_asr_implementation_plan.md   original (unchanged) specification

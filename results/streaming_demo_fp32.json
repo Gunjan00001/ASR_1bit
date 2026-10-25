@@ -1,0 +1,47 @@
+{
+  "phase": "Phase 19 chunked streaming demo",
+  "timestamp_utc": "2026-10-25T11:44:25.255722+00:00",
+  "platform": "Linux-4.18.0-477.10.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "model": "facebook/wav2vec2-conformer-rope-large-960h-ft (FP32)",
+  "sample_id": "1988-24833-0026",
+  "audio_seconds": 2.595,
+  "chunk_s": 2.0,
+  "overlap_s": 0.5,
+  "text": "I'VE DECIDED TO ENLIST IN THE ARMY",
+  "n_chunks": 2,
+  "total_audio_s": 4.0,
+  "total_processing_s": 44.52032742090523,
+  "rtf": 11.130081855226308,
+  "partials": [
+    {
+      "chunk": 0,
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "chunk_text": "I'VE DECIDED TO ENLIST IN THE ARMY",
+      "merged_text": "I'VE DECIDED TO ENLIST IN THE ARMY",
+      "chunk_processing_s": 22.065540628507733,
+      "chunk_rtf": 11.032770314253867
+    },
+    {
+      "chunk": 1,
+      "start_s": 0.595,
+      "end_s": 2.595,
+      "chunk_text": "DECIDED TO ENLIST IN THE ARMY",
+      "merged_text": "I'VE DECIDED TO ENLIST IN THE ARMY",
+      "chunk_processing_s": 22.4547867923975,
+      "chunk_rtf": 11.22739339619875
+    }
+  ],
+  "scope": "chunked pseudo-streaming: full encoder per overlapping window; not a true streaming encoder",
+  "wall_clock_s": 44.52366034500301,
+  "full_utterance": {
+    "text": "I'VE DECIDED TO ENLIST IN THE ARMY",
+    "processing_s": 20.513327671214938,
+    "rtf": 7.90494322590171
+  },
+  "reference": "ive decided to enlist in the army",
+  "chunked_wer": 0.0,
+  "chunked_cer": 0.0,
+  "full_utterance_wer": 0.0,
+  "full_utterance_cer": 0.0
+}

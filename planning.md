@@ -340,11 +340,12 @@ task stops after the clean Phase-11 reproduction and documentation.
 
 ---
 
-## 10. v1.5.0 — Phase 12–19 execution on the A100 cluster (in progress)
+## 10. v1.5.0 — Phase 12–19 execution on the A100 cluster (measured)
 
 This section records the second execution profile: the local PBS cluster
 (8 × A100-SXM4-80GB, one GPU node). The execution layer lives in `cluster/` and
-is documented in `cluster/README.md`.
+is documented in `cluster/README.md`. Every number below is backed by a JSON
+under `results/`; the generated tables are in `RESULTS.md`.
 
 ### 10.1 Why a second profile
 
@@ -352,7 +353,7 @@ The Kaggle T4 runs produced the first real QAT result (attention-only 3.92%),
 but the project's decisive question — whether **FFN** binarization is recoverable
 — needs more compute than a 16 GB T4 comfortably provides, and the Kaggle GPU
 quota was exhausted. The A100 node gives 80 GB per GPU, so attention+FFN QAT and
-distillation can run without gradient checkpointing.
+distillation run without gradient checkpointing.
 
 ### 10.2 Environment (measured, not assumed)
 
@@ -368,48 +369,127 @@ distillation can run without gradient checkpointing.
 ### 10.3 GPU selection
 
 PBS sets `CUDA_VISIBLE_DEVICES` to an **empty string** and does not pin GPUs.
-`cluster/pick_gpu.sh` unsets it and exports the least-busy of the 8 GPUs by
-`(utilization, memory.used)` before Python starts. A job therefore starts on
-whatever A100 is free rather than waiting for a particular device.
+`cluster/pick_gpu.sh` unsets it, orders the 8 GPUs by free memory then
+utilization, claims the chosen device for 5 minutes in
+`~/.onebit_gpu_reservations` (atomic `mkdir` lock), and exports it before Python
+starts. The reservation was added after two simultaneous jobs both selected the
+same idle A100; it prevents that class of co-location.
 
-### 10.4 Jobs
+### 10.4 Jobs (final status)
 
-| Job | Phase | CPUs | Status |
+| Job | Phase | CPUs | Result |
 |---|---|---:|---|
-| `qat_attn_ffn.pbs` | 11 — attention+FFN QAT | 8 | running |
-| `qat_attn_a100.pbs` | 12/14 — attention-only A100 re-run | 4 | queued |
-| `distill_attn_ffn.pbs` | 13 — FP32 teacher → 1-bit student | 4 | queued |
+| `qat_attn_ffn.pbs` | 11 — attention+FFN QAT | 8 | `0.2082 → 0.2080` dev WER, 1875 steps, packed 423.3 MB |
+| `qat_attn_a100.pbs` | 12/14 — attention-only re-run | 4 | `0.0421` dev / `0.0439` test, packed 1,983.6 MB |
+| `qat_ffn_a100.pbs` | 15 — FFN-only QAT | 1 | `0.1186 → 0.1190` dev / `0.1095` test, packed 813.3 MB |
+| `distill_attn_ffn.pbs` | 13 — distillation, λ_kd=0.5 | 1 | `0.2232` dev / `0.2167` test, packed 423.3 MB |
+| `distill_attn_ffn_kd01.pbs` | 13/14 — λ_kd=0.1 follow-up | 1 | running (teacher cache reused) |
+| `final_eval_a100.pbs` | 12/14/15/17/18/19 | 1 | dev+test comparison, packed and streaming results |
 
-Per-user CPU quota is 16; jobs are sized so at most 16 CPUs are requested at
-once (including the user's pre-existing job).
+The CPU quota (≈14–16 CPUs for this user, including a pre-existing 4-CPU job)
+was the scheduler bottleneck, not GPU availability. Resizing the distillation and
+FFN-only jobs to **1 CPU** let them run concurrently; the FFN-only job still
+completed 1875 steps in 50:48.
 
-### 10.5 Implementation status (no measured claims yet)
+### 10.5 Measured — accuracy/size trade-off
 
-- `IMPLEMENTED` Phase 13: `training/distillation.py`, `scripts/train_distillation.py`,
-  9 unit tests, CPU smoke run (`results/distillation_smoke.json`, 8 steps,
-  save/load verified).
-- `IMPLEMENTED` Phase 12/14/15/17: `scripts/run_final_eval.py` evaluates and
-  benchmarks all available arms under one protocol and writes a combined table.
-- `IMPLEMENTED` Phase 16: each cluster job packs its checkpoint with
-  `scripts/pack_qat_model.py` and records the measured artifact size.
-- `IMPLEMENTED` Phase 18: `quantization/packed.py` + `scripts/benchmark_packed.py`;
-  packed storage is real, packed inference is explicitly storage-only, and the
-  XNOR+popcount kernel is scoped to 1-bit×1-bit.
-- `IMPLEMENTED` Phase 19: `streaming.py` + `scripts/stream_infer.py` (chunked
-  pseudo-streaming, not a true streaming encoder).
-- `NOT YET MEASURED`: attention+FFN QAT WER, attention-only A100 WER,
-  distillation WER, final comparison table, packed-inference timings, streaming
-  WER. These will be added to this section only when their JSONs are committed.
+Pinned protocol: fixed 256-utterance greedy-CTC subsets, seed 42, normalized
+text. The dev numbers below are the final-eval pass (the training-script eval
+differs by ≤0.0004 from floating-point nondeterminism and is kept in its own
+JSON). Test numbers are a fixed 256-utterance test-clean subset.
 
-### 10.6 Planned comparisons
+| Arm | Dev WER | Dev CER | Test WER | Test CER | Deploy size | vs FP32 |
+|---|---:|---:|---:|---:|---:|---:|
+| FP32 | 0.0202 | 0.0049 | 0.0162 | 0.0044 | 2.374 GB | 1.0× |
+| PTQ attention-only | 0.4454 | 0.2180 | — | — | 1.983 GB | 1.2× |
+| PTQ FFN-only | 1.0000 | 1.0000 | — | — | 0.813 GB | 2.9× |
+| PTQ attention+FFN | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 0.423 GB | 5.6× |
+| QAT attention-only | **0.0421** | **0.0128** | **0.0439** | **0.0131** | 1.983 GB | 1.2× |
+| QAT FFN-only | **0.1190** | **0.0338** | **0.1095** | **0.0318** | 0.813 GB | 2.9× |
+| QAT attention+FFN | **0.2080** | **0.0640** | **0.2029** | **0.0648** | 0.423 GB | 5.6× |
+| QAT + KD (λ_kd=0.5) | 0.2232 | 0.0712 | 0.2167 | 0.0706 | 0.423 GB | 5.6× |
 
-1. FP32 vs PTQ attention-only vs PTQ FFN-only vs PTQ full (fixed dev subset).
-2. Attention-only QAT (A100) vs attention+FFN QAT (A100) — the FFN question.
-3. QAT attention+FFN vs QAT+distillation — Phase 14 arm D.
-4. Fixed 256-utterance test-clean evaluation for the final table.
-5. Size: FP32 vs packed artifacts for every trained arm.
-6. Latency/RTF/VRAM on the A100 with warmup and synchronized timings.
-7. Packed-storage inference vs BitLinear vs FP32 (storage-only conclusion).
-8. Chunked streaming WER/RTF vs full-utterance decode on a fixed sample.
+**The scientific result.** QAT recovers every isolated selection: attention-only
+from 44.5% to 4.21%, FFN-only from 100% to 11.90%. The combined attention+FFN
+arm recovers from 100% to 20.80%, which is **worse than either isolated arm** —
+the two binarizations interfere. The 5.6× compression target is reachable, but
+at ~10× the FP32 WER on this recipe. The best accuracy/size points measured are:
+
+- 1.2× smaller at 4.21% WER (attention-only),
+- 2.9× smaller at 11.90% WER (FFN-only),
+- 5.6× smaller at 20.80% WER (attention+FFN).
+
+Distillation at λ_kd=0.5 did **not** improve the combined arm (22.32%). The
+logged loss components explain the failure mode: the summed KL term averaged
+6107 vs CTC 726, so the student optimized almost entirely the teacher
+distribution. The λ_kd=0.1 controlled follow-up (same teacher/logits, same
+budget) is running.
+
+### 10.6 Measured — PTQ layer sensitivity (256 dev utterances)
+
+| Selection | WER | CER | Deploy size |
+|---|---:|---:|---:|
+| attention-only | 0.4454 | 0.2180 | 1.983 GB |
+| FFN-only | 1.0000 | 1.0000 | 0.813 GB |
+| attention+FFN | 1.0000 | 1.0000 | 0.423 GB |
+| + feature_projection | 1.0000 | 1.0000 | 0.421 GB |
+| + ctc_head (all linears) | 1.0000 | 1.0000 | 0.421 GB |
+
+This is the full 256-utterance confirmation of the earlier 16-utterance
+diagnostic: FFN-only PTQ already destroys the output, and adding
+feature_projection/ctc_head changes nothing (the model is already collapsed).
+
+### 10.7 Measured — performance, packed inference, streaming
+
+- **Performance (A100, warmed-up):** every arm has RTF ≈0.006–0.007 end-to-end,
+  p50 ≈0.035–0.046 s, peak VRAM ≈4.4 GB (dev) / ≈6.0 GB (test). Binarization
+  does not accelerate inference; the runtime expands `alpha·sign(W)` before
+  `F.linear`. The small RTF differences track model/parameter count, not
+  precision.
+- **Phase 18:** 192 packed layers, 62.9 MB packed weights (vs 358.9 MB
+  non-packed FP + 1.38 MB scales/biases). BitLinear CPU forward 1.657 s vs
+  PackedBitLinear 1.826 s (**1.10× slower**). The XNOR+popcount reference
+  exactly matches the ±1 dot product and is **2.3× faster than float** for
+  1-bit×1-bit, but this model has FP activations, so it cannot use that kernel.
+- **Phase 19:** 4.45 s sample, 2 s chunks / 0.5 s overlap, 3 chunks. Chunked
+  WER **0.6923** / CER 0.5072 vs full-utterance **0.1538** / 0.0580; chunked
+  RTF 0.175. The merge duplicates words when the overlap does not cover a word;
+  this is an honest pseudo-streaming prototype, not a streaming encoder.
+
+### 10.8 Failure log additions (A100 work)
+
+1. **Final-eval crash on an in-progress checkpoint directory**
+   (`FAILURE CAUSED BY INFRASTRUCTURE/BUG`). `Trainer` creates `output_dir` when
+   a job starts, so `is_dir()` treated a concurrently training arm as usable;
+   `from_pretrained` raised `OSError` and aborted the whole dev comparison.
+   *Fix:* require `model.safetensors`/`pytorch_model.bin`, and catch per-arm
+   errors so one bad arm cannot abort the table.
+2. **Distillation probe device mismatch** (`FAILURE CAUSED BY INFRASTRUCTURE/BUG`).
+   The probe moved the batch to CUDA while the student was still on CPU.
+   *Fix:* derive the device from the model and move the student before the probe.
+   The same change makes the QAT probe run on GPU instead of silently on CPU.
+3. **Save/load false negatives** (`FAILURE CAUSED BY INFRASTRUCTURE/BUG`). The
+   1e-2 logit tolerance rejected functionally identical checkpoints: argmax
+   agreement was 1.000 while max |Δ logit| was 0.028–0.063. *Fix:* 1e-1
+   tolerance + argmax agreement ≥0.99. Historical JSONs keep their boolean and
+   record the agreement; the checkpoints are functionally identical.
+4. **GPU selection race** (`FAILURE CAUSED BY INFRASTRUCTURE/BUG`). Two jobs
+   submitted together both selected GPU 5 before either allocated memory.
+   *Fix:* atomic reservation directory + free-memory-first ordering.
+5. **CPU quota, not GPU availability, was the bottleneck**
+   (`FAILURE CAUSED BY INFRASTRUCTURE/BUG`). Jobs queued with “Insufficient
+   ncpus” while A100s were free. *Fix:* resize GPU-bound jobs to 1 CPU and run
+   them concurrently.
+
+### 10.9 What remains after v1.5.0
+
+- λ_kd=0.1 distillation result (running).
+- A recipe that improves the attention+FFN arm (longer training, LR/early-stop
+  sweep, mean-normalized KD, layer-wise selection).
+- True binary compute (XNOR+popcount with 1-bit activations), 2-bit/INT8,
+  per-channel/learned scaling.
+- Full 2620-utterance test-clean and LM decoding.
+- A true streaming encoder with cached state.
+
 
 

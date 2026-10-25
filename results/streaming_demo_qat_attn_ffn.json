@@ -1,0 +1,56 @@
+{
+  "phase": "Phase 19 chunked streaming demo",
+  "timestamp_utc": "2026-10-25T13:38:39.475923+00:00",
+  "platform": "Linux-4.18.0-477.27.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "model": "checkpoints/qat_attn_ffn",
+  "sample_id": "6345-93302-0010",
+  "audio_seconds": 4.45,
+  "chunk_s": 2.0,
+  "overlap_s": 0.5,
+  "text": "THE KAME WIND THRUST IT SO UST ITSELF EVEN INSIDE THE HIGH CALL INSIDE THE HIGH CALLOR OF HER JACKET",
+  "n_chunks": 3,
+  "total_audio_s": 6.0,
+  "total_processing_s": 0.6735856924206018,
+  "rtf": 0.11226428207010031,
+  "partials": [
+    {
+      "chunk": 0,
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "chunk_text": "THE KAME WIND THRUST IT SO",
+      "merged_text": "THE KAME WIND THRUST IT SO",
+      "chunk_processing_s": 0.613229101523757,
+      "chunk_rtf": 0.3066145507618785
+    },
+    {
+      "chunk": 1,
+      "start_s": 1.5,
+      "end_s": 3.5,
+      "chunk_text": "UST ITSELF EVEN INSIDE THE HIGH CALL",
+      "merged_text": "THE KAME WIND THRUST IT SO UST ITSELF EVEN INSIDE THE HIGH CALL",
+      "chunk_processing_s": 0.030197788029909134,
+      "chunk_rtf": 0.015098894014954567
+    },
+    {
+      "chunk": 2,
+      "start_s": 2.45,
+      "end_s": 4.45,
+      "chunk_text": "INSIDE THE HIGH CALLOR OF HER JACKET",
+      "merged_text": "THE KAME WIND THRUST IT SO UST ITSELF EVEN INSIDE THE HIGH CALL INSIDE THE HIGH CALLOR OF HER JACKET",
+      "chunk_processing_s": 0.03015880286693573,
+      "chunk_rtf": 0.015079401433467865
+    }
+  ],
+  "scope": "chunked pseudo-streaming: full encoder per overlapping window; not a true streaming encoder",
+  "wall_clock_s": 0.6756199281662703,
+  "full_utterance": {
+    "text": "THE KAMG WIND THRUST ITSELF EVEN INSIDE THE HIGH COLLOR OF HER JACKET",
+    "processing_s": 0.19368649646639824,
+    "rtf": 0.043525055385707466
+  },
+  "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+  "chunked_wer": 0.6923076923076923,
+  "chunked_cer": 0.5072463768115942,
+  "full_utterance_wer": 0.15384615384615385,
+  "full_utterance_cer": 0.057971014492753624
+}

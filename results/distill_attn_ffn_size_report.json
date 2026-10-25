@@ -1,0 +1,35 @@
+{
+  "scale_mode": "per_tensor_mean_abs",
+  "n_bitlinear_layers": 192,
+  "quantized_weight_count": 503316480,
+  "non_quantized_param_count": 90060448,
+  "theoretical_payload_bytes_1bit": 62914560,
+  "naive_binary_bytes": 503316480,
+  "packed_payload_bytes": 62914560,
+  "fp_scale_bytes": 768,
+  "non_quantized_fp_param_bytes": 360241792,
+  "fp_master_bytes_excluded_from_artifact": 2013265920,
+  "packed_artifact_components_bytes": 423157120,
+  "packed_artifact_path": "checkpoints/distill_attn_ffn_packed/model_packed.safetensors",
+  "packed_artifact_bytes_measured": 423289296,
+  "container_overhead_bytes": 132176,
+  "timestamp_utc": "2026-10-25T13:18:35.534176+00:00",
+  "platform": "Linux-4.18.0-477.27.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "checkpoint": "checkpoints/distill_attn_ffn",
+  "config_path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/configs/cluster_effective_distill_attn_ffn.yaml",
+  "layers": {
+    "attention_q": true,
+    "attention_k": true,
+    "attention_v": true,
+    "attention_output": true,
+    "ffn_in": true,
+    "ffn_out": true,
+    "feature_projection": false,
+    "ctc_head": false
+  },
+  "replacement": {
+    "n_replaced": 192,
+    "n_retained": 2
+  },
+  "note": "Deployable packed artifact = packed binary weights + FP32 scales + non-quantized FP params. FP32 master weights are training-time state and are excluded."
+}

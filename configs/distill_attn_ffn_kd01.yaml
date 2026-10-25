@@ -1,0 +1,13 @@
+# Phase 13/14 follow-up — distillation with a CTC/KD-balanced loss weight.
+#
+# The first distillation arm (configs/distill_attn_ffn.yaml, lambda_kd=0.5)
+# measured WER 0.2232 vs QAT 0.2082. Its logged loss components showed why: the
+# summed KL term (6107) dominated the CTC term (726), so the student optimized
+# almost entirely the teacher distribution. This controlled follow-up changes
+# only lambda_kd (0.5 -> 0.1), keeping the teacher, temperature, subset, LR,
+# epochs, and layers identical. The precomputed teacher logits are reused via
+# the same cache key (n=10000, seed=42).
+extends: distill_attn_ffn.yaml
+
+distillation:
+  lambda_kd: 0.1

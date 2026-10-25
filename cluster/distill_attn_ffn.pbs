@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N distill_attn_ffn
 #PBS -q gpu
-#PBS -l select=1:ncpus=4:ngpus=1:mem=64gb
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
 #PBS -l walltime=06:00:00
 #PBS -j oe
 #
@@ -11,8 +11,9 @@
 # Teacher logits are precomputed once and cached under checkpoints/ (git-ignored),
 # so all 3 epochs reuse the same teacher pass.
 #
-# 4 CPUs: the cluster enforces a per-user 16-CPU quota and other QAT jobs are
-# already running/queued. The job is GPU-bound, so 4 CPUs is sufficient.
+# 1 CPU: the cluster's per-user CPU quota is the bottleneck, not the GPUs. The
+# job is GPU-bound (teacher precompute + training), so a single CPU is enough
+# and lets this run alongside the other QAT jobs instead of waiting.
 
 set -uo pipefail
 

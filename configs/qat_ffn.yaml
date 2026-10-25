@@ -1,0 +1,23 @@
+# Phase 15 — FFN-only QAT (layer-sensitivity arm).
+#
+# PTQ showed FFN-only binarization is already catastrophic (100% WER on the
+# 16-utterance diagnostic). This arm asks the other half of the question: can
+# QAT recover an FFN-only 1-bit model? It uses the same training budget as the
+# attention-only and attention+FFN arms, changing only the quantized categories.
+extends: qat.yaml
+
+compute_profile: cloud-gpu
+
+layers:
+  attention_q: false
+  attention_k: false
+  attention_v: false
+  attention_output: false
+  ffn_in: true
+  ffn_out: true
+  feature_projection: false
+  ctc_head: false
+
+qat:
+  training:
+    subset_size: 10000

@@ -1,0 +1,2150 @@
+{
+  "label": "distill_attn_ffn",
+  "accuracy": {
+    "sample_ids": [
+      "1988-24833-0026",
+      "2428-83699-0039",
+      "6345-93302-0010",
+      "2078-142845-0048",
+      "2035-152373-0007",
+      "2902-9006-0017",
+      "5694-64029-0000",
+      "251-137823-0017",
+      "1988-147956-0008",
+      "1462-170142-0024",
+      "652-130737-0011",
+      "3081-166546-0008",
+      "652-130737-0010",
+      "1993-147149-0022",
+      "7976-110124-0015",
+      "1988-24833-0001",
+      "5536-43363-0010",
+      "1462-170145-0006",
+      "7850-281318-0005",
+      "7976-110124-0023",
+      "1462-170138-0001",
+      "6345-64257-0004",
+      "5338-284437-0015",
+      "5694-64038-0010",
+      "2277-149897-0010",
+      "2277-149897-0012",
+      "7850-281318-0010",
+      "6241-66616-0009",
+      "2277-149897-0035",
+      "2412-153948-0003",
+      "2078-142845-0010",
+      "6345-93306-0006",
+      "2902-9006-0001",
+      "1919-142785-0008",
+      "1919-142785-0015",
+      "174-168635-0007",
+      "652-129742-0009",
+      "6313-76958-0003",
+      "652-130737-0000",
+      "6295-64301-0025",
+      "1993-147964-0002",
+      "1462-170145-0001",
+      "7850-281318-0008",
+      "8297-275155-0001",
+      "1272-141231-0008",
+      "3853-163249-0048",
+      "2277-149874-0007",
+      "2078-142845-0013",
+      "3752-4943-0014",
+      "5338-284437-0006",
+      "2078-142845-0026",
+      "6319-275224-0002",
+      "6345-93302-0016",
+      "1673-143396-0011",
+      "2803-161169-0015",
+      "3576-138058-0031",
+      "3752-4944-0050",
+      "3536-23268-0001",
+      "2902-9008-0016",
+      "5895-34615-0002",
+      "7976-110523-0002",
+      "84-121123-0004",
+      "1919-142785-0049",
+      "1462-170145-0021",
+      "1272-135031-0012",
+      "2428-83705-0007",
+      "1462-170142-0037",
+      "251-136532-0005",
+      "3081-166546-0063",
+      "6319-57405-0011",
+      "3752-4943-0021",
+      "1462-170138-0014",
+      "2277-149896-0017",
+      "251-137823-0025",
+      "6345-93302-0021",
+      "3853-163249-0022",
+      "6313-66125-0022",
+      "8297-275155-0011",
+      "174-168635-0010",
+      "6345-93306-0015",
+      "8297-275154-0025",
+      "174-50561-0018",
+      "1988-148538-0012",
+      "3536-23268-0007",
+      "6345-93302-0006",
+      "84-121123-0017",
+      "6319-57405-0003",
+      "174-168635-0019",
+      "2086-149220-0046",
+      "1993-147964-0004",
+      "3576-138058-0005",
+      "5338-24615-0010",
+      "2035-147961-0016",
+      "777-126732-0035",
+      "3752-4943-0023",
+      "84-121550-0027",
+      "3853-163249-0054",
+      "3853-163249-0004",
+      "6345-93306-0000",
+      "3752-4943-0025",
+      "2078-142845-0019",
+      "1673-143397-0004",
+      "3536-8226-0001",
+      "3752-4944-0025",
+      "174-50561-0007",
+      "652-129742-0016",
+      "6295-244435-0013",
+      "3170-137482-0044",
+      "2803-154328-0009",
+      "652-129742-0003",
+      "3170-137482-0040",
+      "2035-147961-0001",
+      "652-130737-0001",
+      "5338-24615-0009",
+      "3853-163249-0053",
+      "6295-64301-0028",
+      "6295-64301-0027",
+      "5694-64025-0010",
+      "2277-149896-0028",
+      "5338-284437-0007",
+      "8297-275155-0028",
+      "8842-302196-0002",
+      "3536-8226-0014",
+      "6313-76958-0002",
+      "3000-15664-0010",
+      "7976-110124-0010",
+      "84-121123-0021",
+      "84-121123-0025",
+      "251-118436-0008",
+      "1988-147956-0014",
+      "7976-105575-0004",
+      "5895-34622-0003",
+      "3170-137482-0028",
+      "1462-170145-0014",
+      "2428-83705-0029",
+      "251-118436-0012",
+      "174-50561-0004",
+      "2035-152373-0011",
+      "1462-170142-0039",
+      "2035-147961-0026",
+      "1462-170145-0012",
+      "6319-275224-0020",
+      "1462-170145-0016",
+      "6313-76958-0007",
+      "5895-34629-0010",
+      "7850-111771-0006",
+      "2277-149896-0008",
+      "6313-66125-0024",
+      "5338-284437-0033",
+      "6313-66129-0028",
+      "6241-61946-0004",
+      "8297-275155-0017",
+      "6345-93302-0023",
+      "84-121550-0020",
+      "5895-34629-0023",
+      "2412-153954-0006",
+      "2428-83699-0004",
+      "3536-23268-0016",
+      "2086-149214-0003",
+      "777-126732-0038",
+      "2803-154328-0021",
+      "6295-244435-0015",
+      "5694-64029-0022",
+      "1993-147149-0000",
+      "5895-34622-0000",
+      "3081-166546-0019",
+      "174-84280-0015",
+      "174-84280-0004",
+      "777-126732-0001",
+      "1462-170145-0015",
+      "5536-43363-0013",
+      "6295-64301-0032",
+      "2412-153948-0002",
+      "3536-23268-0010",
+      "5536-43358-0010",
+      "3576-138058-0037",
+      "174-84280-0006",
+      "6313-76958-0020",
+      "777-126732-0081",
+      "6345-93302-0012",
+      "2035-152373-0001",
+      "6295-244435-0008",
+      "777-126732-0049",
+      "2902-9008-0014",
+      "1919-142785-0022",
+      "3752-4943-0029",
+      "2035-147961-0037",
+      "2428-83705-0026",
+      "174-50561-0009",
+      "1993-147965-0005",
+      "2902-9006-0015",
+      "3000-15664-0004",
+      "3536-23268-0012",
+      "7850-281318-0015",
+      "3081-166546-0037",
+      "1919-142785-0029",
+      "8842-304647-0001",
+      "3081-166546-0045",
+      "777-126732-0028",
+      "1272-135031-0018",
+      "7850-281318-0020",
+      "3853-163249-0042",
+      "1673-143396-0009",
+      "1462-170145-0010",
+      "8842-302196-0008",
+      "7850-286674-0011",
+      "777-126732-0025",
+      "3576-138058-0035",
+      "7850-286674-0006",
+      "1919-142785-0013",
+      "1272-128104-0000",
+      "6295-64301-0014",
+      "2086-149220-0015",
+      "422-122949-0033",
+      "84-121550-0028",
+      "6313-66125-0003",
+      "2428-83705-0013",
+      "1272-128104-0013",
+      "3081-166546-0023",
+      "3170-137482-0000",
+      "5536-43358-0019",
+      "2086-149220-0037",
+      "652-129742-0019",
+      "6241-61943-0000",
+      "1462-170138-0013",
+      "84-121550-0004",
+      "3536-23268-0015",
+      "3853-163249-0021",
+      "2803-161169-0000",
+      "422-122949-0007",
+      "3752-4943-0028",
+      "3081-166546-0009",
+      "3000-15664-0041",
+      "3170-137482-0033",
+      "2086-149220-0009",
+      "3000-15664-0037",
+      "5536-43363-0014",
+      "777-126732-0012",
+      "251-136532-0000",
+      "3170-137482-0035",
+      "2803-154328-0020",
+      "84-121550-0019",
+      "1673-143396-0017",
+      "7850-281318-0019",
+      "1462-170138-0003",
+      "2277-149874-0005",
+      "3000-15664-0045",
+      "6313-66129-0004",
+      "5536-43358-0016",
+      "6241-66616-0005",
+      "2902-9008-0007",
+      "251-137823-0018",
+      "2035-152373-0018",
+      "777-126732-0005",
+      "5694-64038-0021",
+      "5895-34629-0001"
+    ],
+    "n_utterances": 256,
+    "wer": 0.2231833910034602,
+    "cer": 0.07115848608160179,
+    "total_audio_s": 1882.4098125,
+    "total_processing_s": 13.339413467794657,
+    "rtf": 0.007086349305669409,
+    "throughput_utt_per_s": 19.19124859710367,
+    "throughput_audio_s_per_s": 141.11638544263596,
+    "latency_s": {
+      "mean": 0.05210708385857288,
+      "p50": 0.04438296519219875,
+      "p95": 0.09195451438426971,
+      "max": 0.1661529690027237
+    },
+    "peak_rss_mb": 2853.715968,
+    "total_params": 593376928,
+    "fp32_weight_bytes": 2373507712,
+    "utterances": [
+      {
+        "id": "1988-24833-0026",
+        "reference": "ive decided to enlist in the army",
+        "hypothesis": "ive desided to inlissin the army",
+        "latency_s": 0.041218288242816925,
+        "audio_s": 2.595
+      },
+      {
+        "id": "2428-83699-0039",
+        "reference": "i tolled the bell again",
+        "hypothesis": "i told the bell again",
+        "latency_s": 0.03586564026772976,
+        "audio_s": 1.98
+      },
+      {
+        "id": "6345-93302-0010",
+        "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+        "hypothesis": "the kane wind thrust itself even inside the high coller of her jacket",
+        "latency_s": 0.04689360782504082,
+        "audio_s": 4.45
+      },
+      {
+        "id": "2078-142845-0048",
+        "reference": "seventeen thirty four",
+        "hypothesis": "seventeen thirty foure",
+        "latency_s": 0.030546478927135468,
+        "audio_s": 2.2
+      },
+      {
+        "id": "2035-152373-0007",
+        "reference": "the only conflicts that occurred on irish soil with a pictish or an anglo saxon force if we except those who formed a contingent of congals army at moira occurred in the time of the hospitable finnacta",
+        "hypothesis": "the only conflicts that accured on irish soil with a piptish orn anglo sax and force if we axept those who formed a contincion of congles army at mra occured in the time of the hospitable finapta",
+        "latency_s": 0.07907616347074509,
+        "audio_s": 12.94
+      },
+      {
+        "id": "2902-9006-0017",
+        "reference": "climate bad example and the luxury of power degraded them in one century into a race of helpless and debauched slave holders doomed to utter extermination before the semi gothic armies of belisarius and with them vanished the last chance that the gothic races would exercise on the eastern world the same stern yet wholesome discipline under which the western had been restored to life",
+        "hypothesis": "climat bad example and the luggury of power degraded them in one century into a race of holpless and deboched slave holders doomed to utter extarmination before the samin gothic armis and belicarious and with them vanished the last chanse that the got the graces would excercise on the eastern world the same starn yet holsone discupln under which the western had been restored to life",
+        "latency_s": 0.1265717651695013,
+        "audio_s": 23.76
+      },
+      {
+        "id": "5694-64029-0000",
+        "reference": "we remained several months but soon we were on the tramp again",
+        "hypothesis": "we remained several month but soon we were on the tramp again",
+        "latency_s": 0.039411911740899086,
+        "audio_s": 4.005
+      },
+      {
+        "id": "251-137823-0017",
+        "reference": "anyhow we want to help got a job for us",
+        "hypothesis": "anyhow we want to help got a job for us",
+        "latency_s": 0.03463686257600784,
+        "audio_s": 3.855
+      },
+      {
+        "id": "1988-147956-0008",
+        "reference": "she made missus shimerda understand the friendly intention of our visit and the bohemian woman handled the loaves of bread and even smelled them and examined the pies with lively curiosity exclaiming much good much thank",
+        "hypothesis": "she made missurs smar to understand the friendly intention of or visit and the bohemian woman handled the loves of bread and even smelld them and examined the pise with lively curiosity exclaiming much good much think",
+        "latency_s": 0.08549186773598194,
+        "audio_s": 14.92
+      },
+      {
+        "id": "1462-170142-0024",
+        "reference": "after the very first",
+        "hypothesis": "after the very first",
+        "latency_s": 0.03006591647863388,
+        "audio_s": 2.155
+      },
+      {
+        "id": "652-130737-0011",
+        "reference": "vintage years have much to do with the quality of wines",
+        "hypothesis": "vinteg yers have much to do with the quality of wines",
+        "latency_s": 0.04060888849198818,
+        "audio_s": 3.965
+      },
+      {
+        "id": "3081-166546-0008",
+        "reference": "george",
+        "hypothesis": "or",
+        "latency_s": 0.026254521682858467,
+        "audio_s": 1.77
+      },
+      {
+        "id": "652-130737-0010",
+        "reference": "sauterne is a white bordeaux a strong luscious wine the best known varieties being",
+        "hypothesis": "so terin is a white bordo a strong luchious wine the best nown varieties being",
+        "latency_s": 0.04952958971261978,
+        "audio_s": 6.925
+      },
+      {
+        "id": "1993-147149-0022",
+        "reference": "so leaving kind messages to george and jane wilson and hesitating whether she might dare to send a few kind words to jem and deciding that she had better not she stepped out into the bright morning light so fresh a contrast to the darkened room where death had been",
+        "hypothesis": "so leaving kind messages to jorge and jane wilson and hesitating whether she might dar to send a fouw kind words to jem and desiding that she had better not she stupped out into the bright morning light so fresh a contrast to the darkend room where death had been",
+        "latency_s": 0.09041525237262249,
+        "audio_s": 16.54
+      },
+      {
+        "id": "7976-110124-0015",
+        "reference": "then she heard him go down the stairway and unbolt the heavy doors which led into the store",
+        "hypothesis": "then she heard him go down the starway and unbolt the heavy doors which led into the stor",
+        "latency_s": 0.04437021538615227,
+        "audio_s": 5.35
+      },
+      {
+        "id": "1988-24833-0001",
+        "reference": "somehow or other cat has taught them that hes in charge here and he just chases them for fun now and again when hes not busy sleeping",
+        "hypothesis": "somehow or other cat has taought them that he is in charge here and he jus chases them for fund nown again when he s not busy sleeping",
+        "latency_s": 0.05148082785308361,
+        "audio_s": 7.895
+      },
+      {
+        "id": "5536-43363-0010",
+        "reference": "no doubt many predictions have been colored to suit the new age and unquestionably false prophets fakirs and conjurers have become the pest of the tribes during the transition period",
+        "hypothesis": "no dout many prdicions had been colered to suot the new age and unquestionably false profits facors and condrs had become the pest of the tribes during a trandition period",
+        "latency_s": 0.06237374432384968,
+        "audio_s": 10.26
+      },
+      {
+        "id": "1462-170145-0006",
+        "reference": "if youd sent me a note or telephoned me or anything",
+        "hypothesis": "if you sent me a note or tellefone to me or anything",
+        "latency_s": 0.0341999065130949,
+        "audio_s": 3.46
+      },
+      {
+        "id": "7850-281318-0005",
+        "reference": "she was indeed a clever bird",
+        "hypothesis": "she was indeed a cleverbord",
+        "latency_s": 0.03044482134282589,
+        "audio_s": 2.27
+      },
+      {
+        "id": "7976-110124-0023",
+        "reference": "the cries and curses of the robbers filled the air",
+        "hypothesis": "the crys and curses of the robers filled the air",
+        "latency_s": 0.03504146449267864,
+        "audio_s": 3.44
+      },
+      {
+        "id": "1462-170138-0001",
+        "reference": "hughs written a delightful part for her and shes quite inexpressible",
+        "hypothesis": "he was ritten delightful part for her and he was quite inexpressible",
+        "latency_s": 0.040708230808377266,
+        "audio_s": 3.985
+      },
+      {
+        "id": "6345-64257-0004",
+        "reference": "this was her dream as nearly as she could recall it when she came to herself after waking from it with a cry",
+        "hypothesis": "this was her dream as nearly as she could recall it when she came to herself after waking from it with a cry",
+        "latency_s": 0.044837698340415955,
+        "audio_s": 6.05
+      },
+      {
+        "id": "5338-284437-0015",
+        "reference": "perhaps you are trying to ridicule me she continued regarding the sailors face closely",
+        "hypothesis": "perhaps you ere triing to rider til me she continued regarding the sailors face cosely",
+        "latency_s": 0.04437625780701637,
+        "audio_s": 5.33
+      },
+      {
+        "id": "5694-64038-0010",
+        "reference": "right before me i saw the long dry grass all bending toward a common center and i knew that it was an old well and that my comrade had fallen in it",
+        "hypothesis": "right before me i saw the long dry grass all bending tord a common senter and i knew that it was an old well and that my comrad had fallen in it",
+        "latency_s": 0.06125732883810997,
+        "audio_s": 9.38
+      },
+      {
+        "id": "2277-149897-0010",
+        "reference": "he was beaten for to night and he might just as well make the best of it",
+        "hypothesis": "he was beaten for to night and he might just as well make the best of it",
+        "latency_s": 0.03527580387890339,
+        "audio_s": 3.625
+      },
+      {
+        "id": "2277-149897-0012",
+        "reference": "if he only had that letter back he wouldnt send it",
+        "hypothesis": "if he only had that letter back he would nt send it",
+        "latency_s": 0.03354307450354099,
+        "audio_s": 3.09
+      },
+      {
+        "id": "7850-281318-0010",
+        "reference": "o wise mother magpie dear mother magpie they cried teach us how to build our nests like yours for it is growing night and we are tired and sleepy",
+        "hypothesis": "wise mother made py dear mother mae py they cried tich us hot a bilt our nest like yours for it is growing night and we are tired and sleepy",
+        "latency_s": 0.068959204480052,
+        "audio_s": 12.06
+      },
+      {
+        "id": "6241-66616-0009",
+        "reference": "wabi on the other hand was an indian in appearance from his moccasins to the crown of his head swarthy sinewy as agile as a lynx and with every instinct in him crying for the life of the wild",
+        "hypothesis": "walby on the other hand was an indiant in appearance from his mockasins to the crown of his head swarthy sinuy and agile as a linx and with every instant in him crying for the life of the wild",
+        "latency_s": 0.06806551665067673,
+        "audio_s": 11.145
+      },
+      {
+        "id": "2277-149897-0035",
+        "reference": "very truly yours et cetera compromise",
+        "hypothesis": "very truely yours it setter compromise",
+        "latency_s": 0.0343946386128664,
+        "audio_s": 3.45
+      },
+      {
+        "id": "2412-153948-0003",
+        "reference": "i reached my destination in one of the last months of eighteen sixty eight but i dare not mention the season lest the reader should gather in which hemisphere i was",
+        "hypothesis": "i reached my destination and one of the last month of eighteen sixty aight but i dare not mention the season less the reader sould gather in which hems here i was",
+        "latency_s": 0.05519339628517628,
+        "audio_s": 8.515
+      },
+      {
+        "id": "2078-142845-0010",
+        "reference": "italian millet or great indian millet is cultivated in egypt and nubia where it is called dhourra and is used as human food as well as for the fermentation of beer",
+        "hypothesis": "italion mellat or great indian millit is coltivated in egept anubia where it is called dura and is used as human food as well as for the fermentation of bear",
+        "latency_s": 0.07924522086977959,
+        "audio_s": 14.41
+      },
+      {
+        "id": "6345-93306-0006",
+        "reference": "then she turned towards the quarter indicated and disappeared round the laurel bushes",
+        "hypothesis": "then she turned towards the corter indicated and disappeared round the loral bushes",
+        "latency_s": 0.04248669557273388,
+        "audio_s": 4.6
+      },
+      {
+        "id": "2902-9006-0001",
+        "reference": "in the present case that disadvantage is doubled for while the sins of the church however heinous were still such as admit of being expressed in words the sins of the heathen world against which she fought were utterly indescribable and the christian apologist is thus compelled for the sake of decency to state the churchs case far more weakly than the facts deserve",
+        "hypothesis": "and the present case that disadvantage is dubled for all the sends of the charge however hainous were still such as at met of being expressed in words the sens of the heathen world against which she fought were outterly indescribable and the cristion apolgest is thus compelled for the sake of decency to state the churchs case far more weakly than the facts deserve",
+        "latency_s": 0.12369371764361858,
+        "audio_s": 23.07
+      },
+      {
+        "id": "1919-142785-0008",
+        "reference": "put the sugar with one quarter pint of water in a saucepan over the fire remove the scum as it rises and add the lemon peel and ginger with the outside scraped off when the syrup is tolerably thick take it off the fire and when cold wipe the cucumbers dry and put them in",
+        "hypothesis": "but the shuger with one corter pint of water in a socpan over the fire removed the scume as it rises and ad the lomn peal and ginger with the outside sraped off when the serb is tolerbly thick take it off the fire and one cold whve the cucumbers dry and put them in",
+        "latency_s": 0.11072306334972382,
+        "audio_s": 20.285
+      },
+      {
+        "id": "1919-142785-0015",
+        "reference": "when it is sufficiently thick take it off as it should not boil",
+        "hypothesis": "when it is sufficiently thick take it off as it should not boil",
+        "latency_s": 0.04093169793486595,
+        "audio_s": 4.29
+      },
+      {
+        "id": "174-168635-0007",
+        "reference": "the man no longer produced on her the effect of being old or poor she thought jean valjean handsome just as she thought the hovel pretty",
+        "hypothesis": "the man no longer produced on her the affact of being older poor she thought shon shalshon handsome just as he thought the hoffle pritty",
+        "latency_s": 0.06363655813038349,
+        "audio_s": 10.21
+      },
+      {
+        "id": "652-129742-0009",
+        "reference": "celery and nut salad cut enough celery fine to measure two cups add one cup of finely shredded or shaved cabbage and one and one half cups of walnut meats broken in small pieces but not chopped",
+        "hypothesis": "sillary and not sella cut anof solary fine to measur two cups and one cup of finely shredded or shaved carbage and one in one half coups of wall mat meats broken in small pieces but not chopped",
+        "latency_s": 0.0798944104462862,
+        "audio_s": 13.97
+      },
+      {
+        "id": "6313-76958-0003",
+        "reference": "a loud laugh followed at chunkys expense",
+        "hypothesis": "aloud laugh followed at junkys expence",
+        "latency_s": 0.032915662974119186,
+        "audio_s": 2.975
+      },
+      {
+        "id": "652-130737-0000",
+        "reference": "never drink any hard liquors such as whisky brandy gin or cocktails with oysters or clams as it is liable to upset you for the rest of the evening",
+        "hypothesis": "never drink any hard lookers such as wisky brandy gin or carktailes with oysters or clams as it is lible to upset you for the rest of the evening",
+        "latency_s": 0.06336957402527332,
+        "audio_s": 9.99
+      },
+      {
+        "id": "6295-64301-0025",
+        "reference": "a sob like a bird new born burst from marys bosom",
+        "hypothesis": "a sob like a bird new born burst for marys bosom",
+        "latency_s": 0.044419143348932266,
+        "audio_s": 5.705
+      },
+      {
+        "id": "1993-147964-0002",
+        "reference": "i had wanted to get some picture books for yulka and antonia even yulka was able to read a little now",
+        "hypothesis": "i had wanted to get some picchr books for yulca an onea even youco is able to read a little now",
+        "latency_s": 0.04347953014075756,
+        "audio_s": 6.33
+      },
+      {
+        "id": "1462-170145-0001",
+        "reference": "over the fireplace there was a large old fashioned gilt mirror",
+        "hypothesis": "over the fire place there was a large old fashioned gilt mirror",
+        "latency_s": 0.04255549982190132,
+        "audio_s": 4.8250625
+      },
+      {
+        "id": "7850-281318-0008",
+        "reference": "then all the other birds chirped eagerly yes yes let us ask her to teach us",
+        "hypothesis": "then all the other birds thurped eagerly yes yes what is asker to de us",
+        "latency_s": 0.04427950084209442,
+        "audio_s": 6.11
+      },
+      {
+        "id": "8297-275155-0001",
+        "reference": "the new number of a popular weekly journal had that day been published randal bought it",
+        "hypothesis": "the new number of a popular weakly gernal had that day been published randl bought it",
+        "latency_s": 0.0491319727152586,
+        "audio_s": 6.625
+      },
+      {
+        "id": "1272-141231-0008",
+        "reference": "he was in reverie sliding along the borders of consciousness",
+        "hypothesis": "he was inrivery sliding o on the borders of conciousness",
+        "latency_s": 0.042389074340462685,
+        "audio_s": 4.595
+      },
+      {
+        "id": "3853-163249-0048",
+        "reference": "the roses are for they remind me of poor helen and the first work i did with david was arranging flowers like these for a dead babys little coffin",
+        "hypothesis": "the roses are for they remind me of poor hellan and the first work i did with dafid was arranging flwrs like these for a ded babis little colfon",
+        "latency_s": 0.05451691150665283,
+        "audio_s": 8.565
+      },
+      {
+        "id": "2277-149874-0007",
+        "reference": "the floors were covered with matting and the hall laid with a thin rag carpet",
+        "hypothesis": "the flors were covered with matting and the hall laid with a thin rage carpa",
+        "latency_s": 0.04131254926323891,
+        "audio_s": 4.4
+      },
+      {
+        "id": "2078-142845-0013",
+        "reference": "a yellow variety called golden millet is sold in the grocers shops for making puddings and is very delicate and wholesome",
+        "hypothesis": "a yellow variety called golden millat is sold in the grosers shaps for making puttings and his very delicat and holsome",
+        "latency_s": 0.06187497265636921,
+        "audio_s": 9.855
+      },
+      {
+        "id": "3752-4943-0014",
+        "reference": "you can guess what that unhappy boy has suffered",
+        "hypothesis": "you can gess what that unhappy boy has suffered",
+        "latency_s": 0.03352450765669346,
+        "audio_s": 2.99
+      },
+      {
+        "id": "5338-284437-0006",
+        "reference": "they seem very ignorant poor things said another in reply",
+        "hypothesis": "they seem very ignerant poor things said another in reply",
+        "latency_s": 0.042525531724095345,
+        "audio_s": 4.93
+      },
+      {
+        "id": "2078-142845-0026",
+        "reference": "to make dry toast",
+        "hypothesis": "to make dry tost",
+        "latency_s": 0.03046174719929695,
+        "audio_s": 2.475
+      },
+      {
+        "id": "6319-275224-0002",
+        "reference": "your cousin the wild convolvulus whom i left in the fields this morning does no such thing i assure you",
+        "hypothesis": "your cousin the wild convolvils whom i left in the fields this morning dos no such thing i asshore you",
+        "latency_s": 0.04898523539304733,
+        "audio_s": 7.455
+      },
+      {
+        "id": "6345-93302-0016",
+        "reference": "what opinion would he form of the purity of her mind the innocence of her soul if an incident like this failed to shock her deeply",
+        "hypothesis": "what opinion whuld he formd the purity of her mind the innicencse of her soul if an incident like this feiled to shack her deeply",
+        "latency_s": 0.04938654787838459,
+        "audio_s": 6.72
+      },
+      {
+        "id": "1673-143396-0011",
+        "reference": "a foetus that could increase from an invisible point to its full maturity a child that could attain the stature of perfect manhood without deriving any nourishment from the ordinary sources might continue to exist without repairing a daily waste by a daily supply of external matter",
+        "hypothesis": "a featice that could increase from an invisible point to its full maturity a childs that could attaine the statthere of perfect manhood without deriving any anourishment from the ordinary sources might continued to exist without repairing a daily wast by a daily supply of external matter",
+        "latency_s": 0.0890050120651722,
+        "audio_s": 16.415
+      },
+      {
+        "id": "2803-161169-0015",
+        "reference": "it was only a trouble to the gas makers who had no use for it and even threw it away until some one more thoughtful than the others found out that water would not pass through it",
+        "hypothesis": "it was only a trouble to the gas makers who had no use for it and even throwed away until some one mor thoughtful than the others found ou that water would not pass through it",
+        "latency_s": 0.07831118814647198,
+        "audio_s": 13.115
+      },
+      {
+        "id": "3576-138058-0031",
+        "reference": "what are you talking about man",
+        "hypothesis": "what are you talking about man",
+        "latency_s": 0.03284447081387043,
+        "audio_s": 2.8149375
+      },
+      {
+        "id": "3752-4944-0050",
+        "reference": "youre a dismissed officer of the government sir",
+        "hypothesis": "you are dismissed officer of the goverment sir",
+        "latency_s": 0.03319104015827179,
+        "audio_s": 2.72
+      },
+      {
+        "id": "3536-23268-0001",
+        "reference": "every time he beheld the object of his passion for he still continued his visits though not so frequently as heretofore he pleaded his cause with such ardour that miss woodley who was sometimes present and ever compassionate could not resist wishing him success",
+        "hypothesis": "every time he beheld the object of his passion for he still continued his visits though not so frequently as here tofore he pleated his cause with such arder that miss woodly who was sometimes present and ever compassionat could not resist wishing him suxcess",
+        "latency_s": 0.08929220028221607,
+        "audio_s": 15.905
+      },
+      {
+        "id": "2902-9008-0016",
+        "reference": "and why should that disturb me let him enter",
+        "hypothesis": "and wha i should that disturb me let him enter",
+        "latency_s": 0.03413759917020798,
+        "audio_s": 3.365
+      },
+      {
+        "id": "5895-34615-0002",
+        "reference": "had gwynplaine when a child been so worthy of attention that his face had been subjected to transmutation why not",
+        "hypothesis": "had gwinplain when a child been so worthy of attention that his face had been subjected to transmitation why not",
+        "latency_s": 0.05488730035722256,
+        "audio_s": 8.73
+      },
+      {
+        "id": "7976-110523-0002",
+        "reference": "oh you simpleton said she then we must all four die of hunger you had better plane the coffins for us",
+        "hypothesis": "o you simpleton said she then we must all for dy of hunger you had better plain the coffons for us",
+        "latency_s": 0.049762461334466934,
+        "audio_s": 7.12
+      },
+      {
+        "id": "84-121123-0004",
+        "reference": "davrigny rushed towards the old man and made him inhale a powerful restorative",
+        "hypothesis": "deven he rushed whors old man and made him in haill powerful restorative",
+        "latency_s": 0.04127933457493782,
+        "audio_s": 4.4
+      },
+      {
+        "id": "1919-142785-0049",
+        "reference": "it will be well to state in the beginning of this recipe that french forcemeat or quenelles consist of the blending of three separate processes namely panada udder and whatever meat you intend using panada",
+        "hypothesis": "i will be well to state in the begining of this recipy that french horse meat or conells consist of the blending of three seprprocicies namly panata outer and what ever meat you intend yousing panatta",
+        "latency_s": 0.08897686935961246,
+        "audio_s": 15.835
+      },
+      {
+        "id": "1462-170145-0021",
+        "reference": "alexander flushed angrily",
+        "hypothesis": "alexander flushed angrily",
+        "latency_s": 0.0305049866437912,
+        "audio_s": 2.555
+      },
+      {
+        "id": "1272-135031-0012",
+        "reference": "where is my brother now",
+        "hypothesis": "wars my brother now",
+        "latency_s": 0.030232688412070274,
+        "audio_s": 2.04
+      },
+      {
+        "id": "2428-83705-0007",
+        "reference": "the girl is fretting but you dont seem to notice it",
+        "hypothesis": "the girl is freading but you dont seem to notise it",
+        "latency_s": 0.03489910066127777,
+        "audio_s": 3.33
+      },
+      {
+        "id": "1462-170142-0037",
+        "reference": "i will ask the least imaginable but i must have something",
+        "hypothesis": "i wiull ask the least imagionable but i must have something",
+        "latency_s": 0.03980916365981102,
+        "audio_s": 4.325
+      },
+      {
+        "id": "251-136532-0005",
+        "reference": "the daily newscasts from terra showed a corresponding shift in interest at home",
+        "hypothesis": "the daily newse cass from tara showed a corresponding shift and interest at home",
+        "latency_s": 0.04460928589105606,
+        "audio_s": 5.755
+      },
+      {
+        "id": "3081-166546-0063",
+        "reference": "no doubt",
+        "hypothesis": "no doun",
+        "latency_s": 0.026945574209094048,
+        "audio_s": 1.74
+      },
+      {
+        "id": "6319-57405-0011",
+        "reference": "surely i do not know said deucalion",
+        "hypothesis": "shurely i do not know said youcadian",
+        "latency_s": 0.03526696749031544,
+        "audio_s": 3.71
+      },
+      {
+        "id": "3752-4943-0021",
+        "reference": "he had hardly uttered the words when the boy flung himself beneath the log",
+        "hypothesis": "he had hardly uttered the words when the boy flung himself beneath the long",
+        "latency_s": 0.04223209619522095,
+        "audio_s": 4.515
+      },
+      {
+        "id": "1462-170138-0014",
+        "reference": "he nodded curtly and made for the door dodging acquaintances as he went",
+        "hypothesis": "he notted curtly and made for the door douging acquintances as he went",
+        "latency_s": 0.04254741221666336,
+        "audio_s": 4.92
+      },
+      {
+        "id": "2277-149896-0017",
+        "reference": "at one thirty he went to rectors for lunch and when he returned a messenger was waiting for him",
+        "hypothesis": "at one thirty he went to recter s for lunsh and when he returned a messander was waiting for him",
+        "latency_s": 0.04263744503259659,
+        "audio_s": 4.985
+      },
+      {
+        "id": "251-137823-0025",
+        "reference": "male or female human or animal",
+        "hypothesis": "may or femail human or animal",
+        "latency_s": 0.035320283845067024,
+        "audio_s": 3.66
+      },
+      {
+        "id": "6345-93302-0021",
+        "reference": "do you think im not sorry now",
+        "hypothesis": "dou thingk had not sorry now",
+        "latency_s": 0.029378622770309448,
+        "audio_s": 2.165
+      },
+      {
+        "id": "3853-163249-0022",
+        "reference": "you will let me do it and in return i will marry you whenever you ask me answered christie sealing the promise with a kiss that silenced him",
+        "hypothesis": "you will let me do it and in returned i will merry you whenever you ask the answered cristy sealing the promise with ha ckiss that silenced him",
+        "latency_s": 0.055078331381082535,
+        "audio_s": 8.505
+      },
+      {
+        "id": "6313-66125-0022",
+        "reference": "lige leaning over the brink was able to follow the boys movements by the aid of the thin arc of light made by the torch in tads hand",
+        "hypothesis": "lige leaning over the brink was able to follow the boys movements by the aide of a thin ark of light made by the torch into his hand",
+        "latency_s": 0.05070686340332031,
+        "audio_s": 7.78
+      },
+      {
+        "id": "8297-275155-0011",
+        "reference": "but if these newspaper people waited to find out whether a report is true or false how much gossip would society get in its favorite newspapers",
+        "hypothesis": "but if these newspaper people waited to find out with a report is cur false how much gossip would socidy get in its favorit nese papers",
+        "latency_s": 0.06220691464841366,
+        "audio_s": 9.33
+      },
+      {
+        "id": "174-168635-0010",
+        "reference": "when these two souls perceived each other they recognized each other as necessary to each other and embraced each other closely",
+        "hypothesis": "when these two souls perciived each other they recognised each other as necessary to each other and imbraced each outher closely",
+        "latency_s": 0.06337427534162998,
+        "audio_s": 10.06
+      },
+      {
+        "id": "6345-93306-0015",
+        "reference": "well then i went into lodgings that wicked woman had left me one street suit and to day they turned me out because my money was all gone",
+        "hypothesis": "well then hi went into lodgings that wicked woman to lesh me one street soat and to day they turned me out ecous my money was all gone",
+        "latency_s": 0.05174886807799339,
+        "audio_s": 8.32
+      },
+      {
+        "id": "8297-275154-0025",
+        "reference": "she shall have your message all that i can do to persuade her shall be done",
+        "hypothesis": "she shall have your message all that i can do to persuade her shall be done",
+        "latency_s": 0.04267651028931141,
+        "audio_s": 4.88
+      },
+      {
+        "id": "174-50561-0018",
+        "reference": "bed time children",
+        "hypothesis": "entine children",
+        "latency_s": 0.030310874804854393,
+        "audio_s": 2.12
+      },
+      {
+        "id": "1988-148538-0012",
+        "reference": "they therefore entertain a calm sense of their superiority they do not dream of vaunting privileges which everyone perceives and no one contests and these things are not sufficiently new to them to be made topics of conversation",
+        "hypothesis": "he therefore entertaine a comsencse of their suprarity they do not dream a faunt and provlicious whith ever one perceeves at no one contusts and these things are not sufficiently new to them to be made topics of confersation",
+        "latency_s": 0.07958756200969219,
+        "audio_s": 13.655
+      },
+      {
+        "id": "3536-23268-0007",
+        "reference": "missus horton rose from her seat moved the decanters and fruit round the table stirred the fire and came back to her seat again before another word was uttered",
+        "hypothesis": "missus horton rose from her seat moved the decanters and fruod round the table stured the fire and came ac to her seet again before another word was uttered",
+        "latency_s": 0.06096290983259678,
+        "audio_s": 9.21
+      },
+      {
+        "id": "6345-93302-0006",
+        "reference": "the setting of the scene seemed to her all important",
+        "hypothesis": "the setting of the seen seemed to her all important",
+        "latency_s": 0.033651264384388924,
+        "audio_s": 3.065
+      },
+      {
+        "id": "84-121123-0017",
+        "reference": "my father has revealed the culprits name my father thirsts for revenge as much as you do yet even he conjures you as i do to keep this secret do you not father",
+        "hypothesis": "my father has revealed the copers name my father thirse for revene as much as you do had even he consures you as i do to keep the secret do you not father",
+        "latency_s": 0.061201829463243484,
+        "audio_s": 9.375
+      },
+      {
+        "id": "6319-57405-0003",
+        "reference": "but men kept on fighting and robbing even while the rain was pouring down and the sea was coming up over the land",
+        "hypothesis": "but men kept on fighting and robing even while the rain was poring down and the see was coming up over the land",
+        "latency_s": 0.05507882498204708,
+        "audio_s": 8.37
+      },
+      {
+        "id": "174-168635-0019",
+        "reference": "who knows whether jean valjean had not been on the eve of growing discouraged and of falling once more",
+        "hypothesis": "who knows whither shon falshon had not bein on the eave of growing discouraged and a falling once more",
+        "latency_s": 0.051458774134516716,
+        "audio_s": 8.0
+      },
+      {
+        "id": "2086-149220-0046",
+        "reference": "pray go to bed for i am sure you must need rest",
+        "hypothesis": "praygo to bed for i am sure you must need rest",
+        "latency_s": 0.035023532807826996,
+        "audio_s": 3.415
+      },
+      {
+        "id": "1993-147964-0004",
+        "reference": "on the white pages i grouped sunday school cards and advertising cards which i had brought from my old country",
+        "hypothesis": "on the way paces i grooped sunday scoolcards and advertising cards which i had brought from my old country",
+        "latency_s": 0.04902683198451996,
+        "audio_s": 7.3
+      },
+      {
+        "id": "3576-138058-0005",
+        "reference": "seeing this sancho got up and grappling with his master he gripped him with all his might in his arms giving him a trip with the heel stretched him on the ground on his back and pressing his right knee on his chest held his hands in his own so that he could neither move nor breathe",
+        "hypothesis": "seeing this sentul bot up and grapbling with his master he gripped him with all his might in his arms giving him a trip with the heel stretched him on the ground on his back and pressing his right an on his chest held his hands in his own so that he could nither rove nor breath",
+        "latency_s": 0.08914377726614475,
+        "audio_s": 16.655
+      },
+      {
+        "id": "5338-24615-0010",
+        "reference": "stables and other offices occupied another side of the square",
+        "hypothesis": "stables and other offices occupied another side of the square",
+        "latency_s": 0.040605904534459114,
+        "audio_s": 3.89
+      },
+      {
+        "id": "2035-147961-0016",
+        "reference": "without a word peter got up and lit his lantern",
+        "hypothesis": "without a word peter got up and lit his lantering",
+        "latency_s": 0.0348710510879755,
+        "audio_s": 3.265
+      },
+      {
+        "id": "777-126732-0035",
+        "reference": "his vision of truth had grown so intense that the sound of a strange voice failed to rout it this time",
+        "hypothesis": "his vision of truth had grown so intens that the sound of he strange voice failled to rad at this time",
+        "latency_s": 0.044462306424975395,
+        "audio_s": 5.585
+      },
+      {
+        "id": "3752-4943-0023",
+        "reference": "but kirkland kept steadily on for the river",
+        "hypothesis": "but curklan kept steadly on for the river",
+        "latency_s": 0.03287001699209213,
+        "audio_s": 3.055
+      },
+      {
+        "id": "84-121550-0027",
+        "reference": "look at me well in sooth im beatrice",
+        "hypothesis": "look at me well in sooth im beatrus",
+        "latency_s": 0.04055630974471569,
+        "audio_s": 3.995
+      },
+      {
+        "id": "3853-163249-0054",
+        "reference": "all watched with quickened breath and proud souls that living wave blue below and bright with a steely glitter above as it flowed down the street and away to join the sea of dauntless hearts that for months had rolled up against the south and ebbed back reddened with the blood of men like these",
+        "hypothesis": "all wached with quickend brath and proud souls sthat living waves blew below m bright with a steely glitter above as it flowed down the street and a way to join the see of doughtless heards that for months had rolled up against the self and e to back reddened with the blood of men like these",
+        "latency_s": 0.10566479153931141,
+        "audio_s": 18.5450625
+      },
+      {
+        "id": "3853-163249-0004",
+        "reference": "i feel like a boy out of school or rather a man out of prison and must enjoy my liberty in some way",
+        "hypothesis": "i feel like a boy out of scool or rather a man out of prison and must enjoy my liverty in some way",
+        "latency_s": 0.04361611790955067,
+        "audio_s": 5.85
+      },
+      {
+        "id": "6345-93306-0000",
+        "reference": "the last strains of the ill treated ill fated intermezzo had died away and after them had died away also the rumbling of the wheels of the murderous barrel organ that had so gaily executed that along with the nine other tunes of its repertory to the admiration of the housemaid at the window of the house opposite and the crowing delight of the two babies next door",
+        "hypothesis": "the last strains of the ill treated ill fated in ter meso had died away and after them had died away also the rumbling of the weels of the murderous faril organ that had so gayly executed that along with the nine other toons of hits repatory to the admoration of the house made at the window of the house opposit and the crowing delight of the two babies next dor",
+        "latency_s": 0.11388349905610085,
+        "audio_s": 20.995
+      },
+      {
+        "id": "3752-4943-0025",
+        "reference": "kirkland jumped for the jetty missed his footing and fell into the arms of the chaplain",
+        "hypothesis": "curklan jump for the jeddy missed his footing and fell into the arms of the chaplan",
+        "latency_s": 0.044219302013516426,
+        "audio_s": 5.245
+      },
+      {
+        "id": "2078-142845-0019",
+        "reference": "some of the preparations of maize flour are very good and when partaken in moderation suitable food for almost everybody",
+        "hypothesis": "some of the preporations of mase flower are very good and when partaken in moderation sutable food for almost every body",
+        "latency_s": 0.06229826807975769,
+        "audio_s": 9.405
+      },
+      {
+        "id": "1673-143397-0004",
+        "reference": "orestes complained but his just complaints were too quickly forgotten by the ministers of theodosius and too deeply remembered by a priest who affected to pardon and continued to hate the praefect of egypt",
+        "hypothesis": "arestis complained but his just complaintes were too quickly forgotten by the ministers of the adosias and too deeply remembered by a priase to affected to pardon and continued to hate the prefect of egipt",
+        "latency_s": 0.06913964822888374,
+        "audio_s": 12.07
+      },
+      {
+        "id": "3536-8226-0001",
+        "reference": "and now it had come to pass that his sole remaining ally mister samuel bozzle the ex policeman was becoming weary of his service",
+        "hypothesis": "and now it had come to pass that his sol remaining ally mister samial bossl the axt policeman was becoming weary of his service",
+        "latency_s": 0.055886607617139816,
+        "audio_s": 8.915
+      },
+      {
+        "id": "3752-4944-0025",
+        "reference": "but macklewain was tired and wanted to get home",
+        "hypothesis": "but makawaine was tired and wanted to get home",
+        "latency_s": 0.03535053692758083,
+        "audio_s": 3.735
+      },
+      {
+        "id": "174-50561-0007",
+        "reference": "she would not speak though we danced a week with her thoughts a thousand leagues over the water singer singer wandering singer o my honey sweet singer",
+        "hypothesis": "she would not speak that we danced a week with her thoughts of housand leags over the water singer singer wandering singer o by hunny sweet singer",
+        "latency_s": 0.06774315610527992,
+        "audio_s": 10.855
+      },
+      {
+        "id": "652-129742-0016",
+        "reference": "tomato baskets tomato baskets are charming accessories for holding vegetable salad chicken shrimps cold beans asparagus tips shredded celery cucumbers cut in cubes and minced peppers",
+        "hypothesis": "to madel baskots to mittle baskots are charming susseries for holding vegetable salad chicken shrimps cold beans asparigous tips shredded solery cucumbers cut in cubes and minced peppers",
+        "latency_s": 0.08912590704858303,
+        "audio_s": 15.99
+      },
+      {
+        "id": "6295-244435-0013",
+        "reference": "an extraordinary wave of emotion swept over the south carrying everybody with it",
+        "hypothesis": "an extrordinary wave of amotions swept over the south carryiing everybody with it",
+        "latency_s": 0.04928920790553093,
+        "audio_s": 6.71
+      },
+      {
+        "id": "3170-137482-0044",
+        "reference": "besides i found it very flattering to my vanity to become the subject of the speculative chattering of empty fools who having nothing else to do are always trying to find out the cause of every moral phenomenon they meet with which their narrow intellect cannot understand",
+        "hypothesis": "besides i found at very flattering to my vanity to become the subject of thespectative chattering of empty fools who having nothing ols the do and always trying to find out the cause of every morral pinomina they mate weth which their nerow intelect cannot understand",
+        "latency_s": 0.09195374138653278,
+        "audio_s": 16.705
+      },
+      {
+        "id": "2803-154328-0009",
+        "reference": "my lord whichever of us survives the other will fulfill the wish of lady helena and mary grant",
+        "hypothesis": "my lord which ever of us survives the other will fourfill the wish of lady heleder and marry grant",
+        "latency_s": 0.051762428134679794,
+        "audio_s": 8.3
+      },
+      {
+        "id": "652-129742-0003",
+        "reference": "cabbage salad chop or shave fine half a medium size head of cabbage that has been left in cold water until crisp then drain",
+        "hypothesis": "cabage sellat chop or shave fine half a mediom sise head of carbage that has been left in cold water until crisp than drain",
+        "latency_s": 0.062007782980799675,
+        "audio_s": 9.18
+      },
+      {
+        "id": "3170-137482-0040",
+        "reference": "but although believing fully in my oracles they were too kind hearted to think them the work of the devil and it suited their natural goodness better to believe my answers inspired by some heavenly spirit",
+        "hypothesis": "but although believing foully in my orcales they were too kind harded to think them the work of the dovele and assuted their natral goodness better to believe my answers enspired by some heavenly spirit",
+        "latency_s": 0.07849686406552792,
+        "audio_s": 13.255
+      },
+      {
+        "id": "2035-147961-0001",
+        "reference": "peter could give no very clear account of his transactions with cutter",
+        "hypothesis": "peter coulnd give no very clear account of his transactions with cutter",
+        "latency_s": 0.040218111127614975,
+        "audio_s": 4.415
+      },
+      {
+        "id": "652-130737-0001",
+        "reference": "with soup and fish serve white wines such as rhein wine sauterne or white burgundy",
+        "hypothesis": "with supan fish serve white wines such as rine wine so darn or white burgandy",
+        "latency_s": 0.04434843175113201,
+        "audio_s": 6.24
+      },
+      {
+        "id": "5338-24615-0009",
+        "reference": "neither did the front indicate absolute security from danger",
+        "hypothesis": "neither dod the frunt indicate absolute security from danger",
+        "latency_s": 0.03969842568039894,
+        "audio_s": 4.255
+      },
+      {
+        "id": "3853-163249-0053",
+        "reference": "a very simple little marriage feast but more love good will and tender wishes adorned the plain table than is often found at wedding breakfasts and better than any speech or song was lettys broken whisper as she folded her arms round davids empty chair when no one saw her heaven bless and keep and bring him back to us",
+        "hypothesis": "a very simple little marrage fheast but more lave good will and tender wishes and durn the plain table than nos olton found that welting brakfests and better than any speach her soung was let his frok and whisper a she folm tur arms round to dive and empthy char when no one saw her heaven bless and keep them bring him back to us",
+        "latency_s": 0.11305863410234451,
+        "audio_s": 20.64
+      },
+      {
+        "id": "6295-64301-0028",
+        "reference": "how it happened he never could tell but he brought down his violin with a crash against the piano then somehow stumbled and all but fell",
+        "hypothesis": "how it happened he never could tell but he brought down his violin with a crash against the piano that then somehows stumbled and all but fell",
+        "latency_s": 0.06623968109488487,
+        "audio_s": 10.65
+      },
+      {
+        "id": "6295-64301-0027",
+        "reference": "he started to conscious confusion only neither knowing where he was nor what he did",
+        "hypothesis": "he started to concious confusion only neither knowing where he was nor what he did",
+        "latency_s": 0.0444325041025877,
+        "audio_s": 6.4
+      },
+      {
+        "id": "5694-64025-0010",
+        "reference": "i had heard and read of battlefields seen pictures of battlefields of horses and men of cannon and wagons all jumbled together while the ground was strewn with dead and dying and wounded but i must confess that i never realized the pomp and circumstance of the thing called glorious war until i saw this",
+        "hypothesis": "i had heard and read of battle fiels seen pictures of battle fields of horses and man of canan wagons all jumbled together while the ground was strown with dead and dying and wounded but i must confess that i never realised the pomp and circumstance of the thing called glorious war untill i saw this",
+        "latency_s": 0.12025197222828865,
+        "audio_s": 21.62
+      },
+      {
+        "id": "2277-149896-0028",
+        "reference": "he put on his hat and looked around for his umbrella",
+        "hypothesis": "he put on his hat and looked around for his umbrella",
+        "latency_s": 0.03278984874486923,
+        "audio_s": 2.9
+      },
+      {
+        "id": "5338-284437-0007",
+        "reference": "the people must wait outside for there is no room for them in the palace",
+        "hypothesis": "the people must wea outside for there is no room for them in the palace",
+        "latency_s": 0.03439352102577686,
+        "audio_s": 3.7
+      },
+      {
+        "id": "8297-275155-0028",
+        "reference": "not at the hotel just now",
+        "hypothesis": "not at the hotel just now",
+        "latency_s": 0.0351304616779089,
+        "audio_s": 3.65
+      },
+      {
+        "id": "8842-302196-0002",
+        "reference": "the life blood of rhythmical translation is this commandment that a good poem shall not be turned into a bad one",
+        "hypothesis": "the lighte flood of rithinical translation is this commanments that a good pome shall not be turn into a bat one",
+        "latency_s": 0.048322251066565514,
+        "audio_s": 6.655
+      },
+      {
+        "id": "3536-8226-0014",
+        "reference": "but as for this here child b",
+        "hypothesis": "but as for this heur child be",
+        "latency_s": 0.030567189678549767,
+        "audio_s": 2.27
+      },
+      {
+        "id": "6313-76958-0002",
+        "reference": "not on the range why not demanded the boy",
+        "hypothesis": "not all the rage why not demanded the boy",
+        "latency_s": 0.0334290936589241,
+        "audio_s": 3.005
+      },
+      {
+        "id": "3000-15664-0010",
+        "reference": "every crystal dances responsive to the touches of the sun and currents of sap in the growing cells of all the vegetation are ever in a vital whirl and rush and though many feet and wings are folded how many are astir",
+        "hypothesis": "every cristal dances responsive to the tuches of the sun and the curnts of sap in the growing sells of all the vegitation or ever in a vital worl and rush and though many fee and wings are follen how many are a stir",
+        "latency_s": 0.08885820396244526,
+        "audio_s": 15.545
+      },
+      {
+        "id": "7976-110124-0010",
+        "reference": "however in spite of all she could say the elder sisters opened the door and admitted the beggar",
+        "hypothesis": "however in spite of all she could say the elder sisters opened the door and admitted the bigger",
+        "latency_s": 0.04918481223285198,
+        "audio_s": 6.61
+      },
+      {
+        "id": "84-121123-0021",
+        "reference": "but he stopped on the landing he had not the courage to again visit the death chamber",
+        "hypothesis": "but he stocked on the landing he had not the courage to again visit the death hamber",
+        "latency_s": 0.04114220663905144,
+        "audio_s": 4.815
+      },
+      {
+        "id": "84-121123-0025",
+        "reference": "the nearest said the district doctor is a good italian abbe who lives next door to you shall i call on him as i pass",
+        "hypothesis": "the nearest said the disteraug dactor is a good ittallion ub who lives nect or to ou shall i call on him as a pass",
+        "latency_s": 0.04325459897518158,
+        "audio_s": 6.255
+      },
+      {
+        "id": "251-118436-0008",
+        "reference": "with a long stained fingernail he mapped the constellations on the marble tiled floor",
+        "hypothesis": "with a long steene fingernaile he map the constellations on the marble tiled floor",
+        "latency_s": 0.04440560005605221,
+        "audio_s": 6.23
+      },
+      {
+        "id": "1988-147956-0014",
+        "reference": "ambrosch he make good farmer",
+        "hypothesis": "ambroch he may good farmer",
+        "latency_s": 0.03040020726621151,
+        "audio_s": 2.185
+      },
+      {
+        "id": "7976-105575-0004",
+        "reference": "not balaklava nor the alma saw such fighting it was a duel to the death",
+        "hypothesis": "not balaclava nor the alma saw such fighting it was the dool to the dath",
+        "latency_s": 0.04368015192449093,
+        "audio_s": 6.015
+      },
+      {
+        "id": "5895-34622-0003",
+        "reference": "from sixteen eighty to seventeen o four a great change had taken place",
+        "hypothesis": "from sixteen eighty to seventyen ow for a great change had taken place",
+        "latency_s": 0.04261251352727413,
+        "audio_s": 5.08
+      },
+      {
+        "id": "3170-137482-0028",
+        "reference": "delighted with such a fortunate result we lay down again",
+        "hypothesis": "dlighted with such affortunat resoult we lay down again",
+        "latency_s": 0.04064076393842697,
+        "audio_s": 3.9
+      },
+      {
+        "id": "1462-170145-0014",
+        "reference": "but when i came i thought i had been mistaken",
+        "hypothesis": "but when i came i thought i had been mistaken",
+        "latency_s": 0.03283672779798508,
+        "audio_s": 2.97
+      },
+      {
+        "id": "2428-83705-0029",
+        "reference": "i notice that they are generally persons who have already tendered their offerings",
+        "hypothesis": "i notised that they are generally persons who have already tenderd their offerings",
+        "latency_s": 0.04460897855460644,
+        "audio_s": 5.83
+      },
+      {
+        "id": "251-118436-0012",
+        "reference": "but at the urgent entreaty of the princess of khosala who loved bhunda chand vainly he gave her a lock of his long black hair as a token of remembrance",
+        "hypothesis": "uch at the urgent and treaty of the princes of cousella who loved bondarchand vy he gave her a lock of his long black hair as a tolkan of remembrance",
+        "latency_s": 0.067970871925354,
+        "audio_s": 11.105
+      },
+      {
+        "id": "174-50561-0004",
+        "reference": "the emperors daughter",
+        "hypothesis": "the afers aughter",
+        "latency_s": 0.029927730560302734,
+        "audio_s": 2.06
+      },
+      {
+        "id": "2035-152373-0011",
+        "reference": "the barren rock about three miles in length was covered with monastic buildings and its cemetery was already adorned with the tombs of saints and kings",
+        "hypothesis": "the barn rock about three miles and length was covered with a manastic bildings and it somitary was already endorned with the tooms of sans and kings",
+        "latency_s": 0.0671775359660387,
+        "audio_s": 10.465
+      },
+      {
+        "id": "1462-170142-0039",
+        "reference": "you see loving some one as i love you makes the whole world different",
+        "hypothesis": "you see loving some one as i love you makes the whole world different",
+        "latency_s": 0.0424092561006546,
+        "audio_s": 4.715
+      },
+      {
+        "id": "2035-147961-0026",
+        "reference": "they were within a few miles of their village now",
+        "hypothesis": "they were within a few miles of their village now",
+        "latency_s": 0.033434487879276276,
+        "audio_s": 2.875
+      },
+      {
+        "id": "1462-170145-0012",
+        "reference": "he bent his face over her hair",
+        "hypothesis": "he bent his face over her hear",
+        "latency_s": 0.03308125585317612,
+        "audio_s": 2.7
+      },
+      {
+        "id": "6319-275224-0020",
+        "reference": "i am not thinking about the garden mamma replied the young girl without lifting up her face we can plant new flowers and tie up even some of these afresh",
+        "hypothesis": "i am not thinking about the gard and mama replied the young girl without lifting up her face we can plant new flowers and tiy up even some of these a fresh",
+        "latency_s": 0.06777435913681984,
+        "audio_s": 11.94
+      },
+      {
+        "id": "1462-170145-0016",
+        "reference": "then when your manager added two more weeks i was already committed",
+        "hypothesis": "then whn your menanger added two more weeks i was already committed",
+        "latency_s": 0.03961164876818657,
+        "audio_s": 4.175
+      },
+      {
+        "id": "6313-76958-0007",
+        "reference": "weve got a hard drive before us and every man must be fit as a fiddle",
+        "hypothesis": "we have got a hard drife befor s and every man must be fit as a fittle",
+        "latency_s": 0.03435466066002846,
+        "audio_s": 3.7
+      },
+      {
+        "id": "5895-34629-0010",
+        "reference": "they began their performances",
+        "hypothesis": "they began their performances",
+        "latency_s": 0.029847465455532074,
+        "audio_s": 2.15
+      },
+      {
+        "id": "7850-111771-0006",
+        "reference": "the capture of lee was a far more difficult undertaking",
+        "hypothesis": "the capture of leave was a far more difficult undertaking",
+        "latency_s": 0.035277292132377625,
+        "audio_s": 3.83
+      },
+      {
+        "id": "2277-149896-0008",
+        "reference": "for some reason he felt as if something might come that way and was relieved when all the envelopes had been scanned and nothing suspicious noticed",
+        "hypothesis": "for some reason he felt as of something might come that way and was relieved when all the onvlobes had been scand ad nothing suspitious noticed",
+        "latency_s": 0.04969722777605057,
+        "audio_s": 6.94
+      },
+      {
+        "id": "6313-66125-0024",
+        "reference": "mebby you think hes having some sort of a picnic down there eh glared lige",
+        "hypothesis": "may be you think he sive some sort of a pikni down there blared lge",
+        "latency_s": 0.040244074538350105,
+        "audio_s": 4.41
+      },
+      {
+        "id": "5338-284437-0033",
+        "reference": "ill look in the great book first",
+        "hypothesis": "i look in the great book first",
+        "latency_s": 0.029859788715839386,
+        "audio_s": 2.075
+      },
+      {
+        "id": "6313-66129-0028",
+        "reference": "tad is an experienced rider",
+        "hypothesis": "ted is an experienced riter",
+        "latency_s": 0.03017522022128105,
+        "audio_s": 2.32
+      },
+      {
+        "id": "6241-61946-0004",
+        "reference": "we took our way through poor and sparse meadows which made a desperate effort every year to show a little green",
+        "hypothesis": "we took our way though poor and sparce mettows which made a desperat effor every year to show a little greem",
+        "latency_s": 0.044389672577381134,
+        "audio_s": 5.515
+      },
+      {
+        "id": "8297-275155-0017",
+        "reference": "when he and i happened to be left together he naturally wondered after having seen the beautiful wife where the lucky husband might be",
+        "hypothesis": "when he and i happen to be left together he naturally woandered after having seen the beutiful wife with lucky husband might be",
+        "latency_s": 0.05585603415966034,
+        "audio_s": 8.91
+      },
+      {
+        "id": "6345-93302-0023",
+        "reference": "i didnt think a decent man could do such things she was pulling on her gloves go home and gloat over it all",
+        "hypothesis": "i didnt thing a deesont men could do such things she was pulling on her loves go homan glowed over it all",
+        "latency_s": 0.04340323805809021,
+        "audio_s": 5.53
+      },
+      {
+        "id": "84-121550-0020",
+        "reference": "and when the car was opposite to me thunder was heard and all that folk august seemed to have further progress interdicted",
+        "hypothesis": "and when the car was opposite to me dunder was heard and all that folk augest seemed to have further progress interdited",
+        "latency_s": 0.05501903221011162,
+        "audio_s": 8.39
+      },
+      {
+        "id": "5895-34629-0023",
+        "reference": "at every performance the yard of the inn transformed into a pit was filled with a ragged and enthusiastic audience",
+        "hypothesis": "at every performance the yard of the en transformed into a pit was filled with a raggid and enthusiasic odiance",
+        "latency_s": 0.05137731321156025,
+        "audio_s": 7.895
+      },
+      {
+        "id": "2412-153954-0006",
+        "reference": "their expression was divine and as they glanced at me timidly but with parted lips in great bewilderment i forgot all thoughts of their conversion in feelings that were far more earthly",
+        "hypothesis": "ther expression was devine and as they glanced i me timidly but with parted lips and great belilderment i forgot all thoughts of their conversion and feelings that were far more earthly",
+        "latency_s": 0.0637362077832222,
+        "audio_s": 10.22
+      },
+      {
+        "id": "2428-83699-0004",
+        "reference": "the whole thing was a trifle odd",
+        "hypothesis": "the whole thing was a trifle lod",
+        "latency_s": 0.02721766009926796,
+        "audio_s": 1.88
+      },
+      {
+        "id": "3536-23268-0016",
+        "reference": "miss woodley obediently sat down and though her thoughts and heart were in the chamber of her friend she never marked by one impertinent word or by one line of her face the restraint she suffered",
+        "hypothesis": "mis woodly obediently sat down and though her thoughts and heart were in the thamber of her friend she never marched by one impertinent word or by one line of her face the restraint she suffered",
+        "latency_s": 0.06810646131634712,
+        "audio_s": 11.32
+      },
+      {
+        "id": "2086-149214-0003",
+        "reference": "if permitted by the historical connection which though slight was essential to his plan the author would very willingly have avoided anything of this nature",
+        "hypothesis": "if permitted by the historical condection which thouse light wis assential to his plan the althor would very willingly have avoided anything of this natrne",
+        "latency_s": 0.061241766437888145,
+        "audio_s": 8.9949375
+      },
+      {
+        "id": "777-126732-0038",
+        "reference": "he paused then added with modest firmness",
+        "hypothesis": "he pause and atded with a modest firmness",
+        "latency_s": 0.03370324522256851,
+        "audio_s": 3.1
+      },
+      {
+        "id": "2803-154328-0021",
+        "reference": "watch the savages outside said robert",
+        "hypothesis": "whats the savages outside said robert",
+        "latency_s": 0.032809725031256676,
+        "audio_s": 3.05
+      },
+      {
+        "id": "6295-244435-0015",
+        "reference": "colonel kenton writes wisely",
+        "hypothesis": "curnel kenton rihtes wisely",
+        "latency_s": 0.03006800450384617,
+        "audio_s": 2.235
+      },
+      {
+        "id": "5694-64029-0022",
+        "reference": "the leaden hail storm swept them off the field they fell back and re formed",
+        "hypothesis": "the lodden hailestorm swep them off the field they fell back and reformed",
+        "latency_s": 0.04133540764451027,
+        "audio_s": 4.9
+      },
+      {
+        "id": "1993-147149-0000",
+        "reference": "how infinite the wealth of love and hope garnered in these same tiny treasure houses and oh",
+        "hypothesis": "how infinent the welth of love and hope garnered in the seme tiny tresure houses and o",
+        "latency_s": 0.04926622472703457,
+        "audio_s": 6.715
+      },
+      {
+        "id": "5895-34622-0000",
+        "reference": "what true things are told in stories",
+        "hypothesis": "what true things are told in stories",
+        "latency_s": 0.03416525945067406,
+        "audio_s": 3.37
+      },
+      {
+        "id": "3081-166546-0019",
+        "reference": "i asked as soon as george had returned to my side",
+        "hypothesis": "i asked as soon as jorge had returned to my side",
+        "latency_s": 0.04054102674126625,
+        "audio_s": 3.9
+      },
+      {
+        "id": "174-84280-0015",
+        "reference": "she was destroyed not merely by the unconsidered undisciplined passions of her husband and her lover but by the vast tradition that sustains and enforces the subjugation of her sex",
+        "hypothesis": "she was destried not merely by the unconsidered undisciplined passions of her husband and her lover but by the vast credition that sustains and inforces the subpshegation of her sax",
+        "latency_s": 0.0794627033174038,
+        "audio_s": 13.73
+      },
+      {
+        "id": "174-84280-0004",
+        "reference": "and already this astounding blow begins to take its place among other events as a thing strange and terrible indeed but related to all the strangeness and mystery of life part of the universal mysteries of despair and futility and death that have troubled my consciousness since childhood",
+        "hypothesis": "and already this astounding blow begins to take his place among other revens s a thing strange and terrible indeed but related to all the strangeness and mistery of life part of the univorsal misteries of despair and futility and death that have troubled my conciousness ins childhord",
+        "latency_s": 0.11269023269414902,
+        "audio_s": 20.53
+      },
+      {
+        "id": "777-126732-0001",
+        "reference": "then why indulge in prophetic phantasies",
+        "hypothesis": "and wy indolge an pofhetic fantacies",
+        "latency_s": 0.030264535918831825,
+        "audio_s": 2.3
+      },
+      {
+        "id": "1462-170145-0015",
+        "reference": "ive been up in canada with my bridge and i arranged not to come to new york until after you had gone",
+        "hypothesis": "iave been up on canada with my brige and i arranged not to come to ne york intil after you had gone",
+        "latency_s": 0.04479374922811985,
+        "audio_s": 6.055
+      },
+      {
+        "id": "5536-43363-0013",
+        "reference": "another famous medicine man was born on the rum river about one hundred and fifty years ago and lived to be over a century old",
+        "hypothesis": "another famous medicin man was morn on the roumriver about one hundredan fifty years ofo and lived to be over a centry old",
+        "latency_s": 0.05015949346125126,
+        "audio_s": 7.425
+      },
+      {
+        "id": "6295-64301-0032",
+        "reference": "its just like him he murmured",
+        "hypothesis": "dislike him he murmered",
+        "latency_s": 0.033191101625561714,
+        "audio_s": 2.59
+      },
+      {
+        "id": "2412-153948-0002",
+        "reference": "no one who is himself honest will doubt my being so",
+        "hypothesis": "no one who is himself onest will dout my being so",
+        "latency_s": 0.035307133570313454,
+        "audio_s": 3.72
+      },
+      {
+        "id": "3536-23268-0010",
+        "reference": "and he walked immediately out of the apartment by another door",
+        "hypothesis": "and he walked immediatly out of the apparthment by another door",
+        "latency_s": 0.040570951998233795,
+        "audio_s": 3.905
+      },
+      {
+        "id": "5536-43358-0010",
+        "reference": "it was not then wholly from ignorance or improvidence that he failed to establish permanent towns and to develop a material civilization",
+        "hypothesis": "hit was not mhen holly from ignarence or inprovidence that he failed to establish perment touns and to develop a meterial sivilsation",
+        "latency_s": 0.05161242373287678,
+        "audio_s": 8.14
+      },
+      {
+        "id": "3576-138058-0037",
+        "reference": "the captains showed plainly the concern they felt the regents lady was downcast and the pilgrims did not at all enjoy seeing their property confiscated",
+        "hypothesis": "the captain showed plainly the concern they felt the regents lady was down cast and the pilgrams did not at all enjoising their property confiscated",
+        "latency_s": 0.06693889759480953,
+        "audio_s": 10.36
+      },
+      {
+        "id": "174-84280-0006",
+        "reference": "it was that idea of waste that dominated my mind in a strange interview i had with justin",
+        "hypothesis": "it was that idea of wast the dominated my mind and a strange interfu i had with justin",
+        "latency_s": 0.049676815047860146,
+        "audio_s": 7.03
+      },
+      {
+        "id": "6313-76958-0020",
+        "reference": "where are they asked the boy",
+        "hypothesis": "where are they asked the boy",
+        "latency_s": 0.03029368631541729,
+        "audio_s": 2.315
+      },
+      {
+        "id": "777-126732-0081",
+        "reference": "comfortable dear",
+        "hypothesis": "comfertable dear",
+        "latency_s": 0.026748457923531532,
+        "audio_s": 1.505
+      },
+      {
+        "id": "6345-93302-0012",
+        "reference": "she would have shared his sorrow and shown herself half wife half angel from heaven in this dark hour",
+        "hypothesis": "she would have shared his sorrow and shownd herself half wife haf angel from heaven in this dark ower",
+        "latency_s": 0.043459804728627205,
+        "audio_s": 5.925
+      },
+      {
+        "id": "2035-152373-0001",
+        "reference": "the ancestors of the present pretender congal surnamed the squint eyed had twice received and cherished the licentious bards when under the ban of tara and his popularity with that still powerful order was one prop of his ambition",
+        "hypothesis": "the encestors of the present pretender congle sernamed the squint ee and twice receved and charish the lecentious bards when under the ban of tarra and his popularity with that still powerful order was one prop of his ambition",
+        "latency_s": 0.0919568333774805,
+        "audio_s": 16.67
+      },
+      {
+        "id": "6295-244435-0008",
+        "reference": "the great state of virginia mother of presidents went out of the union at last and north carolina tennessee and arkansas followed her but maryland kentucky and missouri still hung in the balance",
+        "hypothesis": "the great state of urgenia mother of presidence went out of the union at last and north carolina tenecy in arcansal followed her the mariland contacki misury still hung in the balance",
+        "latency_s": 0.07896670140326023,
+        "audio_s": 13.4
+      },
+      {
+        "id": "777-126732-0049",
+        "reference": "this survey was unfavourable",
+        "hypothesis": "the survy was unfavorable",
+        "latency_s": 0.029554016888141632,
+        "audio_s": 2.25
+      },
+      {
+        "id": "2902-9008-0014",
+        "reference": "and her voice took a tone which made it somewhat uncertain whether in spite of all the lofty impassibility which she felt bound to possess she did not hate pelagia with a most human and mundane hatred",
+        "hypothesis": "and her voice took a tone which made it somewhat uncertain weather in spite of all the lofty impassibility which she felt bound to posess she did not hate polagia with a most human and mondain hatret",
+        "latency_s": 0.07930291816592216,
+        "audio_s": 13.49
+      },
+      {
+        "id": "1919-142785-0022",
+        "reference": "seasonable this should be made about easter as at this time eggs are plentiful and cheap",
+        "hypothesis": "seasonable this should be made about easter as at this time egsar plentiful and cheap",
+        "latency_s": 0.04939260892570019,
+        "audio_s": 6.77
+      },
+      {
+        "id": "3752-4943-0029",
+        "reference": "i wont have my men knocked up with flogging these rascals",
+        "hypothesis": "i wont have my men knocked up with flogg in these raskles",
+        "latency_s": 0.035417160019278526,
+        "audio_s": 3.835
+      },
+      {
+        "id": "2035-147961-0037",
+        "reference": "every one said peter kissed the cow before she was led away by her new owner",
+        "hypothesis": "every one said peter kissed the cow before she was led away by her new oner",
+        "latency_s": 0.04247610829770565,
+        "audio_s": 4.835
+      },
+      {
+        "id": "2428-83705-0026",
+        "reference": "of course there are some people with whom you cant be perfectly plain but i shall be as plain as i can theres a way and a manner of doing that kind of thing",
+        "hypothesis": "of course there are some people with whom you cant be perfectly plain but i shall be as plain as i can theres a way and a manner of doing that kind of thing",
+        "latency_s": 0.0635712631046772,
+        "audio_s": 10.205
+      },
+      {
+        "id": "174-50561-0009",
+        "reference": "the wandering singer",
+        "hypothesis": "the wandering singer",
+        "latency_s": 0.03021373599767685,
+        "audio_s": 2.04
+      },
+      {
+        "id": "1993-147965-0005",
+        "reference": "at about four oclock a visitor appeared mister shimerda wearing his rabbit skin cap and collar and new mittens his wife had knitted",
+        "hypothesis": "at about four oclock a visitor appeared mister shimurda wearing his ravits can cappan collor and newmans his waye had nitted",
+        "latency_s": 0.054645754396915436,
+        "audio_s": 8.66
+      },
+      {
+        "id": "2902-9006-0015",
+        "reference": "the countless treasures which five centuries of rapine had accumulated round the capitol had become the prey of men clothed in sheepskins and horse hide and the sister of an emperor had found her beauty virtue and pride of race worthily matched by those of the hard handed northern hero who led her away from italy as his captive and his bride to found new kingdoms in south france and spain and to drive the newly arrived vandals across the straits of gibraltar into the then blooming coast land of northern africa",
+        "hypothesis": "the coutless treashures which five centuries of rapin had accumilated around the capital had become the pray of men clothed in sheapskins and horsehide and the sister of an emperor had found her beuty virtu and pride of race wordily matched by those of the hard handed northern herow who led her away from itily as his captave and his bride to found new kingdoms in south france and spake and to drive the newly arrived vandiles across the straits of debralter into the then blooming chost land of northan africa",
+        "latency_s": 0.1661529690027237,
+        "audio_s": 32.485
+      },
+      {
+        "id": "3000-15664-0004",
+        "reference": "but it is far better to go afoot",
+        "hypothesis": "but it is for better to go a foot",
+        "latency_s": 0.03277554176747799,
+        "audio_s": 2.885
+      },
+      {
+        "id": "3536-23268-0012",
+        "reference": "it was not from any real cause of grief that she wept but there was a magnetic quality in tears which always attracted hers",
+        "hypothesis": "it was not from any real cause of greef that she wapped but there was a magnetic quality ind tears which always attracted hers",
+        "latency_s": 0.04997137933969498,
+        "audio_s": 7.255
+      },
+      {
+        "id": "7850-281318-0015",
+        "reference": "i thought that was the way to begin",
+        "hypothesis": "i thought that was the way to begin",
+        "latency_s": 0.03339702449738979,
+        "audio_s": 2.88
+      },
+      {
+        "id": "3081-166546-0037",
+        "reference": "the old mans eyes shot fire and unconsciously one foot slipped to the floor",
+        "hypothesis": "the old mans eyes shot fire and unconciously one wood slibed to the floor",
+        "latency_s": 0.04907337762415409,
+        "audio_s": 6.53
+      },
+      {
+        "id": "1919-142785-0029",
+        "reference": "lemon juice may be added at pleasure",
+        "hypothesis": "lemanjuse may be added at pleasore",
+        "latency_s": 0.03304029256105423,
+        "audio_s": 2.625
+      },
+      {
+        "id": "8842-304647-0001",
+        "reference": "quinci impara a stupirti",
+        "hypothesis": "uen she ampo stubirity",
+        "latency_s": 0.03305520489811897,
+        "audio_s": 2.7
+      },
+      {
+        "id": "3081-166546-0045",
+        "reference": "this sweetwater as they called him was i have since understood one of his proteges and more or less of a favourite",
+        "hypothesis": "this sweet water as they called him was i have sence understood one of his preterjas and more or less of a faverant",
+        "latency_s": 0.06241689622402191,
+        "audio_s": 9.485
+      },
+      {
+        "id": "777-126732-0028",
+        "reference": "you dont understand he began disdainfully but stopped short intimidated by the dead blackness of the cavernous eyes in the face turned slowly towards him with a blind stare as if guided only by the sound",
+        "hypothesis": "you dont understand he began toe stintly tut stock short intiminated by the dead blackness of the cavernous eyes in the face turned slowly towards him with tha blind stare as if got it only by the sound",
+        "latency_s": 0.07013670541346073,
+        "audio_s": 12.77
+      },
+      {
+        "id": "1272-135031-0018",
+        "reference": "oh no im quite sure he didnt",
+        "hypothesis": "o nor creature he did n",
+        "latency_s": 0.030721347779035568,
+        "audio_s": 2.4449375
+      },
+      {
+        "id": "7850-281318-0020",
+        "reference": "much luck may you have",
+        "hypothesis": "much luck may you have",
+        "latency_s": 0.029314840212464333,
+        "audio_s": 2.1749375
+      },
+      {
+        "id": "3853-163249-0042",
+        "reference": "as a married woman you will get on better as my wife you will be allowed to come to me if i need you and as my he stopped there for he could not add as my widow you will have my pension to support you",
+        "hypothesis": "as a married woman you will get on better as my wife you will be alouwd to come to me if i mead you and as my he stopped here for he could not ad as my widow you will have my pension to support you",
+        "latency_s": 0.07849871553480625,
+        "audio_s": 13.185
+      },
+      {
+        "id": "1673-143396-0009",
+        "reference": "he first appeared on the banks of the jordan in the form of perfect manhood but it was a form only and not a substance a human figure created by the hand of omnipotence to imitate the faculties and actions of a man and to impose a perpetual illusion on the senses of his friends and enemies",
+        "hypothesis": "he first appeared on the banxs of the jordn in the form of perfect manhood but it was a form only and not a sumstance a human figure crated by the hand of inipidence to imitate the faculties and actions of a man ands to impose a prpetial ellusion on the senses of his friends and anemes",
+        "latency_s": 0.09039689414203167,
+        "audio_s": 16.46
+      },
+      {
+        "id": "1462-170145-0010",
+        "reference": "alexander slipped his arm about her",
+        "hypothesis": "alexander slipped his arm about her",
+        "latency_s": 0.033642640337347984,
+        "audio_s": 2.945
+      },
+      {
+        "id": "8842-302196-0008",
+        "reference": "my notes which you have taken the trouble of revising are of course quite paltry and useless",
+        "hypothesis": "my nonts which you have taken the trouble a revising are of course quite poltry an useless",
+        "latency_s": 0.04432154446840286,
+        "audio_s": 5.31
+      },
+      {
+        "id": "7850-286674-0011",
+        "reference": "but sometimes he straightens the joint and holds his lip out before him and then its pincers catch hold of things he does this when he is hungry",
+        "hypothesis": "but sometimes he streated the joy and whold to slip out before him and then its pincers cach hold of things he dos this when he is hory",
+        "latency_s": 0.0618770569562912,
+        "audio_s": 9.15
+      },
+      {
+        "id": "777-126732-0025",
+        "reference": "michaelis the ticket of leave apostle smiled vaguely with his glued lips his pasty moon face drooped under the weight of melancholy assent",
+        "hypothesis": "macalius the tecativeleve a possl smiled vagly with his glood lips his pasty moon face strooped under the waite of melancolia sent",
+        "latency_s": 0.06205085292458534,
+        "audio_s": 9.18
+      },
+      {
+        "id": "3576-138058-0035",
+        "reference": "and if you have any desire to shorten the journey and put yourself easily in the way of salvation come with me and i will show you how to become a knight errant a calling wherein so many hardships and mishaps are encountered that if they be taken as penances they will lodge you in heaven in a trice",
+        "hypothesis": "and if you have any desire to shorten the journy and put yourself easily in the way of selvation come with me and i will show you how to become a night errant a calling where in so many hardships and mishaps ar encountered that if they be taken his penances they will loge you in heven in a trice",
+        "latency_s": 0.11198239587247372,
+        "audio_s": 20.725
+      },
+      {
+        "id": "7850-286674-0006",
+        "reference": "both lips asked the larvae",
+        "hypothesis": "ol flips asked the larby",
+        "latency_s": 0.03422863595187664,
+        "audio_s": 3.3
+      },
+      {
+        "id": "1919-142785-0013",
+        "reference": "beat the eggs stir to them the milk and pounded sugar and put the mixture into a jug",
+        "hypothesis": "beat the egs stir to them the molk anpounded shuger and put the mixture into a junk",
+        "latency_s": 0.043740157037973404,
+        "audio_s": 6.01
+      },
+      {
+        "id": "1272-128104-0000",
+        "reference": "mister quilter is the apostle of the middle classes and we are glad to welcome his gospel",
+        "hypothesis": "mister crulder is the apossil of the mittle classes and we are glad to welcome his gospl",
+        "latency_s": 0.04365226998925209,
+        "audio_s": 5.855
+      },
+      {
+        "id": "6295-64301-0014",
+        "reference": "they sat down and listened in silence",
+        "hypothesis": "hey sat down and listened in silence",
+        "latency_s": 0.04113802686333656,
+        "audio_s": 4.57
+      },
+      {
+        "id": "2086-149220-0015",
+        "reference": "they have known me much longer but never honor me with any familiarity though hardly a day passes without my bringing them food",
+        "hypothesis": "they have nown me much longer but never onor me with any fomiliarity though hardly a day passes without my bringing them plood",
+        "latency_s": 0.051678869873285294,
+        "audio_s": 8.19
+      },
+      {
+        "id": "422-122949-0033",
+        "reference": "i do not know he said hesitatingly perhaps the harpies have flown over my table",
+        "hypothesis": "i do not know he said hesitatingly perhaps the harpes as shlown over my table",
+        "latency_s": 0.044404080137610435,
+        "audio_s": 5.555
+      },
+      {
+        "id": "84-121550-0028",
+        "reference": "ye keep your watch in the eternal day so that nor night nor sleep can steal from you one step the ages make upon their path",
+        "hypothesis": "you keep your wach in the etternal day so that nor night nor sleep can steal from you one stupp the ages make upon their path",
+        "latency_s": 0.050221845507621765,
+        "audio_s": 7.64
+      },
+      {
+        "id": "6313-66125-0003",
+        "reference": "dont move around lie perfectly still warned the guide are you hurt",
+        "hypothesis": "dont live around lie perfectly still worned the gide are you heart",
+        "latency_s": 0.04122285544872284,
+        "audio_s": 4.58
+      },
+      {
+        "id": "2428-83705-0013",
+        "reference": "it is from her action in that matter that my suspicion springs",
+        "hypothesis": "it is from her action in that matter that my suspicion springs",
+        "latency_s": 0.0424653273075819,
+        "audio_s": 4.84
+      },
+      {
+        "id": "1272-128104-0013",
+        "reference": "mister quilter has missed his chance for he has failed even to make himself the tupper of painting",
+        "hypothesis": "mister coulder has missed his chance for his failed even to make himself the tupper of painting",
+        "latency_s": 0.04978638328611851,
+        "audio_s": 7.1
+      },
+      {
+        "id": "3081-166546-0023",
+        "reference": "he gave up work some time ago i have been told my husband went on but evidently a great case still has its allurement for him",
+        "hypothesis": "he gave up work sometime ago i have been told my husband went on but evidently a great case still has its alornment for him",
+        "latency_s": 0.067126939073205,
+        "audio_s": 10.285
+      },
+      {
+        "id": "3170-137482-0000",
+        "reference": "with an education which ought to have ensured me an honourable standing in the world with some intelligence wit good literary and scientific knowledge and endowed with those accidental physical qualities which are such a good passport into society i found myself at the age of twenty the mean follower of a sublime art in which if great talent is rightly admired mediocrity is as rightly despised",
+        "hypothesis": "with an education which all to have inchured me an onerable standing in the world with some intelligence wit good literary and siantific nowlege and endowed with those accidental fisical calities which are such a good passpord into society i found myself at the age of twenty the mean follower of a sublime hart in which of great tellant is rightly admired mediocrity is as rightly despised",
+        "latency_s": 0.15171106904745102,
+        "audio_s": 27.99
+      },
+      {
+        "id": "5536-43358-0019",
+        "reference": "the historians of the white race admit that the indian was never the first to repudiate his oath",
+        "hypothesis": "the historions of the white race of mit that the innion was never the first to repudiate his oath",
+        "latency_s": 0.04425177909433842,
+        "audio_s": 5.26
+      },
+      {
+        "id": "2086-149220-0037",
+        "reference": "since you are a friend of my cousin hepzibahs you should ask her to show you the picture",
+        "hypothesis": "since you are a friend of my cousin hepsibas you should ask her to sthaw you the picture",
+        "latency_s": 0.04245438054203987,
+        "audio_s": 4.835
+      },
+      {
+        "id": "652-129742-0019",
+        "reference": "when thickened strain and cool",
+        "hypothesis": "one thickened strain and cool",
+        "latency_s": 0.033280741423368454,
+        "audio_s": 2.785
+      },
+      {
+        "id": "6241-61943-0000",
+        "reference": "on the second of the month at two in the morning our precious cargo of luggage was taken on board the good ship valkyrie",
+        "hypothesis": "on the second of the month at two in the morning our precious cargo of luggage was taken on bord the good ship folery",
+        "latency_s": 0.04963270574808121,
+        "audio_s": 6.95
+      },
+      {
+        "id": "1462-170138-0013",
+        "reference": "the playwright gave mainhall a curious look out of his deep set faded eyes and made a wry face",
+        "hypothesis": "the play right gave manhall a curious look out of his deep set fated eyes and made a ry face",
+        "latency_s": 0.04968264326453209,
+        "audio_s": 7.02
+      },
+      {
+        "id": "84-121550-0004",
+        "reference": "ye are new comers and because i smile began she peradventure in this place elect to human nature for its nest",
+        "hypothesis": "e are new comers and becuse i smile began she per adventure in this place allect to human nature for its nest",
+        "latency_s": 0.05150064080953598,
+        "audio_s": 7.965
+      },
+      {
+        "id": "3536-23268-0015",
+        "reference": "niece i command you not to stir out of this room this evening",
+        "hypothesis": "nese i command you not to star out of the room this evening",
+        "latency_s": 0.040714213624596596,
+        "audio_s": 3.95
+      },
+      {
+        "id": "3853-163249-0021",
+        "reference": "i knew you would go i saw you getting ready and i made up my mind to follow",
+        "hypothesis": "i knew you would go i saw you getting ready and i made ut my mind to follow",
+        "latency_s": 0.040390267968177795,
+        "audio_s": 4.5
+      },
+      {
+        "id": "2803-161169-0000",
+        "reference": "once there was a father who thought he would build for his children a beautiful home putting into it every thing they could need or desire throughout their lives",
+        "hypothesis": "one tho with a father who thought he would bild for his children a beautiful home putting into it everything they could nead or desire throughout their lives",
+        "latency_s": 0.06726587563753128,
+        "audio_s": 11.7
+      },
+      {
+        "id": "422-122949-0007",
+        "reference": "according to slave morality therefore the evil man arouses fear according to master morality it is precisely the good man who arouses fear and seeks to arouse it while the bad man is regarded as the despicable being",
+        "hypothesis": "according to slave morality therefore the evl man arouse his fear according to master morality it is precisely the good man who arrouse his fear and seeks to arrouse it while the bad man is regarded as the despicable being",
+        "latency_s": 0.08321616053581238,
+        "audio_s": 14.93
+      },
+      {
+        "id": "3752-4943-0028",
+        "reference": "that last fellow you had ought to have been tied up himself",
+        "hypothesis": "that last vellow you had ought to have been tite of himself",
+        "latency_s": 0.035326628014445305,
+        "audio_s": 3.76
+      },
+      {
+        "id": "3081-166546-0009",
+        "reference": "have you ever thought that she might have been a suicide",
+        "hypothesis": "have you ever thought that she might have been a souicide",
+        "latency_s": 0.034606412053108215,
+        "audio_s": 3.78
+      },
+      {
+        "id": "3000-15664-0041",
+        "reference": "tracing the mc cloud to its highest springs and over the divide to the fountains of fall river near fort crook thence down that river to its confluence with the pitt on from there to the volcanic region about lassens butte through the big meadows among the sources of the feather river and down through forests of sugar pine to the fertile plains of chico this is a glorious saunter and imposes no hardship",
+        "hypothesis": "treating them a cloud to its highest springs and over the devine to the fountans of fall river ner fort crook thence down that river to his confulence with the pit on from there to the vocanic region about lassens beat through the big menows among the sources of the fether river and down through forests of shuger pind to the furtl plans of checo this is aglorious sonter and imposeds no hardship",
+        "latency_s": 0.15184812992811203,
+        "audio_s": 28.57
+      },
+      {
+        "id": "3170-137482-0033",
+        "reference": "the three friends were astounded",
+        "hypothesis": "the three friends were astounded",
+        "latency_s": 0.030448315665125847,
+        "audio_s": 2.465
+      },
+      {
+        "id": "2086-149220-0009",
+        "reference": "these feathered people had existed too long in their distinct variety a fact of which the present representatives judging by their lugubrious deportment seemed to be aware",
+        "hypothesis": "these fetherd people had existed too long and a distinct hariety affact of which the present representatives judging by the lucuprious deportment seemed to be away",
+        "latency_s": 0.06720300950109959,
+        "audio_s": 10.6
+      },
+      {
+        "id": "3000-15664-0037",
+        "reference": "the vivid green of the boulders beneath the water is very striking and colors the entire stream with the exception of the portions broken into foam",
+        "hypothesis": "the vivid green of the bolders beneath the water is very striking and colors the entire streem with the exception of the portions broken into form",
+        "latency_s": 0.0634434875100851,
+        "audio_s": 10.07
+      },
+      {
+        "id": "5536-43363-0014",
+        "reference": "at the age of about seventy five years he saved his band from utter destruction at the hands of their ancestral enemies by suddenly giving warning received in a dream of the approach of a large war party",
+        "hypothesis": "at the age of about seventy five years he saved his band from uter distruction at the hand of their incestral enemis by suddenly giving warning receved in a dream of the approach of large ware party",
+        "latency_s": 0.06813034787774086,
+        "audio_s": 11.345
+      },
+      {
+        "id": "777-126732-0012",
+        "reference": "struggle warfare was the condition of private ownership it was fatal",
+        "hypothesis": "struggle warfare was the condition of privet onership it was fatl",
+        "latency_s": 0.04253867268562317,
+        "audio_s": 4.835
+      },
+      {
+        "id": "251-136532-0000",
+        "reference": "they also found a martian calendar the year had been divided into ten more or less equal months and one of them had been doma",
+        "hypothesis": "they also found a marchin callander the year had been devided into ten mor less equl mush and one of them had been doma",
+        "latency_s": 0.0631802175194025,
+        "audio_s": 9.81
+      },
+      {
+        "id": "3170-137482-0035",
+        "reference": "he wrote the question and gave it to me i read it i could not understand either the subject or the meaning of the words but it did not matter i had to give an answer",
+        "hypothesis": "he rote the question and gave it to me i read it i could not understand either the subject ore the meeting of the words but it did not matter i had to give an answer",
+        "latency_s": 0.06331940926611423,
+        "audio_s": 9.9
+      },
+      {
+        "id": "2803-154328-0020",
+        "reference": "but softly as the name was breathed mary grant already awakened by the sounds in the hut slipped over toward glenarvan and seizing the hand all stained with earth she covered it with kisses",
+        "hypothesis": "but softly as he name was breave marry grand already awakend by the sound in the hud slipped over tward gonarvin and seasing the hand all staned with earth she covered it with cisss",
+        "latency_s": 0.07969546131789684,
+        "audio_s": 13.92
+      },
+      {
+        "id": "84-121550-0019",
+        "reference": "in rear of all the group here treated of two old men i beheld unlike in habit but like in gait each dignified and grave",
+        "hypothesis": "in rear of all the groop here treated of two old men i beheld anlike in habit but light in gate each dignified and grave",
+        "latency_s": 0.062045587226748466,
+        "audio_s": 9.2799375
+      },
+      {
+        "id": "1673-143396-0017",
+        "reference": "yet as the profound doctor had been terrified at his own rashness apollinaris was heard to mutter some faint accents of excuse and explanation",
+        "hypothesis": "yet as the profouned octor had been terified of his own rashness a polinaris was heard to mutter some faint axcente of excuse if explination",
+        "latency_s": 0.0550981629639864,
+        "audio_s": 8.43
+      },
+      {
+        "id": "7850-281318-0019",
+        "reference": "you say you know all about it then go on and finish your nests by yourselves",
+        "hypothesis": "you say you know all about it than go on and finsh your nest by yourselves",
+        "latency_s": 0.044417012482881546,
+        "audio_s": 5.485
+      },
+      {
+        "id": "1462-170138-0003",
+        "reference": "alexander exclaimed mildly",
+        "hypothesis": "alisander exclaimed mildly",
+        "latency_s": 0.03023526445031166,
+        "audio_s": 2.32
+      },
+      {
+        "id": "2277-149874-0005",
+        "reference": "she had some slight gift of observation and that sense so rich in every woman intuition",
+        "hypothesis": "she had some slight gift of observation and that sence so rich an every woman intoition",
+        "latency_s": 0.044475603848695755,
+        "audio_s": 6.37
+      },
+      {
+        "id": "3000-15664-0045",
+        "reference": "the great wilds of our country once held to be boundless and inexhaustible are being rapidly invaded and overrun in every direction and everything destructible in them is being destroyed",
+        "hypothesis": "the greet wiles of our country onese held to be boundless and inexautible are being rapidly invated and overrun in every direction and everything destructable in them as being destroied",
+        "latency_s": 0.07771315053105354,
+        "audio_s": 12.84
+      },
+      {
+        "id": "6313-66129-0004",
+        "reference": "and weve got a surprise for you announced stacy swelling with pride",
+        "hypothesis": "and weav got a surprise for you ad not stacy swelling with pride",
+        "latency_s": 0.040556060150265694,
+        "audio_s": 3.9
+      },
+      {
+        "id": "5536-43358-0016",
+        "reference": "who may condemn his superstition",
+        "hypothesis": "who may condeme his superstition",
+        "latency_s": 0.030648034065961838,
+        "audio_s": 2.425
+      },
+      {
+        "id": "6241-66616-0005",
+        "reference": "from that hour dated one of the most sanguinary feuds in the history of the great trading company a feud which as we shall see was destined to live even unto the second generation",
+        "hypothesis": "from tha ouer dated one of the most sanguinary fuds in the history of the great treating company a fewde which as we shall see was destained to live even untor the second generation",
+        "latency_s": 0.06653340347111225,
+        "audio_s": 10.81
+      },
+      {
+        "id": "2902-9008-0007",
+        "reference": "i to believe against the authority of porphyry himself too in evil eyes and magic",
+        "hypothesis": "y to believe against the athority of porfery himself two in evil eyes and the magic",
+        "latency_s": 0.044722905382514,
+        "audio_s": 5.97
+      },
+      {
+        "id": "251-137823-0018",
+        "reference": "within minutes tom was in charge of clearing away rubble and extricating anyone who might be trapped inside the buildings",
+        "hypothesis": "within minits tom was in charge of clearing away rouble and extrcating any one who might be trapped inside the bildings",
+        "latency_s": 0.05014514923095703,
+        "audio_s": 7.505
+      },
+      {
+        "id": "2035-152373-0018",
+        "reference": "nothing could be more natural than such an assembly in such a place at such a period",
+        "hypothesis": "nothing could be more natral than such an assembly in such a place at such a period",
+        "latency_s": 0.04372730478644371,
+        "audio_s": 6.015
+      },
+      {
+        "id": "777-126732-0005",
+        "reference": "with his elbow presenting no appearance of a joint but more like a bend in a dummys limb thrown over the back of a chair he leaned forward slightly over his short and enormous thighs to spit into the grate",
+        "hypothesis": "with his elbo presenting no appearance of a joince but more like apendan and donnys lim thrown over the back of a chair he leaned forard slightly over his short and inormous thighes to spit into the great",
+        "latency_s": 0.06800242699682713,
+        "audio_s": 11.12
+      },
+      {
+        "id": "5694-64038-0021",
+        "reference": "you see jim knowed the law",
+        "hypothesis": "ou see gim knowed the law",
+        "latency_s": 0.03498604707419872,
+        "audio_s": 3.33
+      },
+      {
+        "id": "5895-34629-0001",
+        "reference": "the dome of saint pauls was a delight to ursus",
+        "hypothesis": "the dome of saint palls was a delight to ercis",
+        "latency_s": 0.033563876524567604,
+        "audio_s": 3.2
+      }
+    ]
+  },
+  "performance": {
+    "n_utterances": 256,
+    "warmup_utterances": 3,
+    "device": "cuda:0",
+    "dtype": "torch.float32",
+    "total_audio_s": 1882.4098125,
+    "total_processing_s": 13.572303790599108,
+    "total_model_s": 13.32178114913404,
+    "rtf": 0.007210068551743223,
+    "rtf_model_only": 0.0070769824193816664,
+    "throughput_utt_per_s": 18.86194149126835,
+    "throughput_audio_s_per_s": 138.69493650767353,
+    "latency_s": {
+      "mean": 0.053016811682027765,
+      "p50": 0.045200455002486706,
+      "p95": 0.09371979301795363,
+      "min": 0.026833968237042427,
+      "max": 0.1691362652927637
+    },
+    "model_latency_s": {
+      "mean": 0.05203820761380484,
+      "p50": 0.04437825735658407,
+      "p95": 0.09194110054522753
+    },
+    "preprocess_latency_s": {
+      "mean": 0.0009480013613938354,
+      "p50": 0.0008190171793103218
+    },
+    "memory": {
+      "peak_rss_mb": 2853.896192,
+      "cuda": true,
+      "device_name": "NVIDIA A100-SXM4-80GB",
+      "total_vram_bytes": 84989575168,
+      "peak_allocated_bytes": 3136860672,
+      "peak_reserved_bytes": 4441767936
+    }
+  },
+  "arm": "distill_attn_ffn",
+  "arm_info": {
+    "kind": "qat",
+    "layers": {
+      "attention_q": true,
+      "attention_k": true,
+      "attention_v": true,
+      "attention_output": true,
+      "ffn_in": true,
+      "ffn_out": true,
+      "feature_projection": false,
+      "ctc_head": false
+    },
+    "scale_mode": "per_tensor_mean_abs",
+    "n_replaced": 192,
+    "replaced_params": 503660544,
+    "checkpoint": "checkpoints/distill_attn_ffn",
+    "config": "configs/distill_attn_ffn.yaml"
+  },
+  "split": "dev",
+  "subset_size": 256,
+  "seed": 42,
+  "timestamp_utc": "2026-10-25T13:34:16.779203+00:00",
+  "platform": "Linux-4.18.0-477.27.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "git_commit": "bd5155096b829f0879dc44b2a936db4724cf512f",
+  "size": {
+    "total_params": 593376928,
+    "scale_mode": "per_tensor_mean_abs",
+    "n_bitlinear_layers": 192,
+    "quantized_weight_count": 503316480,
+    "non_quantized_param_count": 90060448,
+    "theoretical_payload_bytes_1bit": 62914560,
+    "naive_binary_bytes": 503316480,
+    "packed_payload_bytes": 62914560,
+    "fp_scale_bytes": 768,
+    "non_quantized_fp_param_bytes": 360241792,
+    "fp_master_bytes_excluded_from_artifact": 2013265920,
+    "packed_artifact_components_bytes": 423157120
+  }
+}

@@ -56,18 +56,22 @@ def comparison_table(rows: list[dict]) -> str:
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n"
     )
     lines = [header]
+    def _f(value, places=4):
+        return f"{value:.{places}f}" if isinstance(value, (int, float)) else "n/a"
+
     for row in rows:
         acc = row["accuracy"]
-        perf = row["performance"]
+        perf = row.get("performance", {})
         size = row.get("size", {})
-        vram = perf["memory"].get("peak_reserved_bytes")
+        vram = perf.get("memory", {}).get("peak_reserved_bytes")
         vram_gb = f"{vram / 1e9:.2f}" if vram else "n/a"
         deploy_bytes = size.get("packed_artifact_components_bytes") or size.get("fp32_weight_bytes")
         deploy_gb = f"{deploy_bytes / 1e9:.3f}" if deploy_bytes else "n/a"
+        latency = perf.get("latency_s", {})
         lines.append(
             f"| {row['label']} | {acc['wer']:.4f} | {acc['cer']:.4f} | "
-            f"{perf['rtf']:.4f} | {perf['latency_s']['p50']:.3f} | "
-            f"{perf['latency_s']['p95']:.3f} | {perf['throughput_utt_per_s']:.3f} | "
-            f"{perf['memory']['peak_rss_mb']:.0f} | {vram_gb} | {deploy_gb} |\n"
+            f"{_f(perf.get('rtf'))} | {_f(latency.get('p50'), 3)} | "
+            f"{_f(latency.get('p95'), 3)} | {_f(perf.get('throughput_utt_per_s'), 3)} | "
+            f"{_f(perf.get('memory', {}).get('peak_rss_mb'), 0)} | {vram_gb} | {deploy_gb} |\n"
         )
     return "".join(lines)

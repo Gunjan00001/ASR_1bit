@@ -67,3 +67,16 @@ def test_benchmark_and_evaluate_and_table():
     table = comparison_table([report])
     assert "| tiny |" in table
     assert "WER" in table
+
+
+def test_comparison_table_handles_accuracy_only_rows():
+    row = {
+        "label": "accuracy_only",
+        "accuracy": {"wer": 0.1, "cer": 0.05},
+        "performance": {},
+        "size": {"packed_artifact_components_bytes": 123456},
+    }
+    table = comparison_table([row])
+    assert "| accuracy_only | 0.1000 | 0.0500 |" in table
+    assert "n/a" in table
+    assert "0.000" in table  # deploy size still rendered

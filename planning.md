@@ -383,7 +383,7 @@ same idle A100; it prevents that class of co-location.
 | `qat_attn_a100.pbs` | 12/14 — attention-only re-run | 4 | `0.0421` dev / `0.0439` test, packed 1,983.6 MB |
 | `qat_ffn_a100.pbs` | 15 — FFN-only QAT | 1 | `0.1186 → 0.1190` dev / `0.1095` test, packed 813.3 MB |
 | `distill_attn_ffn.pbs` | 13 — distillation, λ_kd=0.5 | 1 | `0.2232` dev / `0.2167` test, packed 423.3 MB |
-| `distill_attn_ffn_kd01.pbs` | 13/14 — λ_kd=0.1 follow-up | 1 | running (teacher cache reused) |
+| `distill_attn_ffn_kd01.pbs` | 13/14 — λ_kd=0.1 follow-up | 1 | `0.2022` dev (vs 0.2080 QAT), packed 423.3 MB |
 | `final_eval_a100.pbs` | 12/14/15/17/18/19 | 1 | dev+test comparison, packed and streaming results |
 
 The CPU quota (≈14–16 CPUs for this user, including a pre-existing 4-CPU job)
@@ -408,6 +408,7 @@ JSON). Test numbers are a fixed 256-utterance test-clean subset.
 | QAT FFN-only | **0.1190** | **0.0338** | **0.1095** | **0.0318** | 0.813 GB | 2.9× |
 | QAT attention+FFN | **0.2080** | **0.0640** | **0.2029** | **0.0648** | 0.423 GB | 5.6× |
 | QAT + KD (λ_kd=0.5) | 0.2232 | 0.0712 | 0.2167 | 0.0706 | 0.423 GB | 5.6× |
+| QAT + KD (λ_kd=0.1) | **0.2022** | **0.0641** | **0.1986** | **0.0647** | 0.423 GB | 5.6× |
 
 **The scientific result.** QAT recovers every isolated selection: attention-only
 from 44.5% to 4.21%, FFN-only from 100% to 11.90%. The combined attention+FFN
@@ -422,8 +423,9 @@ at ~10× the FP32 WER on this recipe. The best accuracy/size points measured are
 Distillation at λ_kd=0.5 did **not** improve the combined arm (22.32%). The
 logged loss components explain the failure mode: the summed KL term averaged
 6107 vs CTC 726, so the student optimized almost entirely the teacher
-distribution. The λ_kd=0.1 controlled follow-up (same teacher/logits, same
-budget) is running.
+distribution. Lowering λ_kd to 0.1 (same teacher/logits, same budget) improves
+the combined arm to **20.22%** (−0.60 pp vs QAT alone) at the same 0.423 GB;
+the KL term is still ~11× the CTC term (6385 vs 559), so the gain is marginal.
 
 ### 10.6 Measured — PTQ layer sensitivity (256 dev utterances)
 
@@ -483,12 +485,13 @@ feature_projection/ctc_head changes nothing (the model is already collapsed).
 
 ### 10.9 What remains after v1.5.0
 
-- λ_kd=0.1 distillation result (running).
-- A recipe that improves the attention+FFN arm (longer training, LR/early-stop
-  sweep, mean-normalized KD, layer-wise selection).
+- Full 2620-utterance test-clean comparison (running at the time of writing).
+- A recipe that improves the attention+FFN arm beyond the marginal distillation
+  gain (longer training, LR/early-stop sweep, mean-normalized KD, layer-wise
+  selection).
 - True binary compute (XNOR+popcount with 1-bit activations), 2-bit/INT8,
   per-channel/learned scaling.
-- Full 2620-utterance test-clean and LM decoding.
+- LM decoding.
 - A true streaming encoder with cached state.
 
 

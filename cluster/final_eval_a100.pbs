@@ -58,6 +58,11 @@ echo "=== Phase 12: test-clean 256 ==="
 $PY scripts/run_final_eval.py --split test --n 256 --arms "$TEST_ARMS"
 echo "test eval exit: $?"
 
+echo "=== Phase 12: FULL test-clean (2620 utterances) ==="
+FULL_TEST_ARMS="fp32,qat_attention_a100,qat_ffn_a100,qat_attn_ffn,distill_attn_ffn,distill_attn_ffn_kd01"
+$PY scripts/run_final_eval.py --split test --n 2620 --arms "$FULL_TEST_ARMS"
+echo "full test eval exit: $?"
+
 echo "=== Phase 18: packed inference / binary-compute boundary ==="
 if [ -d checkpoints/qat_attn_ffn ]; then
     $PY scripts/benchmark_packed.py \

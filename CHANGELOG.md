@@ -14,8 +14,9 @@ an exact, reproducible repository state.
 PBS cluster, plus the execution/benchmarking/streaming infrastructure it
 required. Every number below is a real measurement stored in `results/`; the
 complete generated tables are in [`RESULTS.md`](RESULTS.md). The λ_kd=0.1
-distillation follow-up was still running when this entry was written and is
-recorded separately when it completes.
+distillation follow-up completed at **0.2022 dev WER**, a small improvement over
+QAT alone (0.2080); the full test-clean evaluation was still running when this
+entry was written.
 
 ### Measured — 1-bit accuracy/size trade-off (A100, pinned protocol)
 
@@ -34,14 +35,16 @@ parameters), not a theoretical 1-bit payload.
 | **QAT FFN-only** | **0.1190** | **0.0338** | **0.1095** | **0.0318** | 0.813 GB |
 | **QAT attention+FFN** | **0.2080** | **0.0640** | **0.2029** | **0.0648** | 0.423 GB |
 | QAT + KD (λ_kd=0.5) | 0.2232 | 0.0712 | 0.2167 | 0.0706 | 0.423 GB |
+| QAT + KD (λ_kd=0.1) | **0.2022** | **0.0641** | **0.1986** | **0.0647** | 0.423 GB |
 
 **Interpretation.** QAT recovers attention-only from 44.5% PTQ to 4.21% and
 FFN-only from 100% to 11.90%. The combined attention+FFN arm recovers to 20.80%,
 **worse than either isolated arm** — the two binarizations interact. The 5.6×
 compression target is reachable but costs ~10× the FP32 WER on this recipe.
 Distillation at λ_kd=0.5 did not help: the summed KL term dominated CTC by ~8×
-(6107 vs 726); the λ_kd=0.1 controlled follow-up reuses the cached teacher
-logits.
+(6107 vs 726). Lowering λ_kd to 0.1 recovers a small, consistent gain
+(**20.22%**, −0.60 pp vs QAT alone) at the same artifact size; the teacher
+signal remains a marginal knob, not a solution to the interaction.
 
 ### Measured — performance (A100, warmed-up benchmark)
 

@@ -38,6 +38,7 @@ from transformers import Wav2Vec2ConformerForCTC, Wav2Vec2Processor
 from onebit_asr.config import load_config
 from onebit_asr.data.dataset import load_dev_subset, load_test_subset
 from onebit_asr.evaluation.benchmark import benchmark_and_evaluate, comparison_table
+from onebit_asr.evaluation.evaluate import evaluate_model, print_summary
 from onebit_asr.evaluation.model_size import fp32_weight_bytes, quick_size_report
 from onebit_asr.models.replace_layers import replace_linears
 from onebit_asr.training.qat import load_qat_checkpoint
@@ -188,6 +189,9 @@ def main() -> int:
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--output-dir", default=str(RESULTS))
     parser.add_argument("--no-progress", action="store_true")
+    parser.add_argument("--no-benchmark", action="store_true",
+                        help="accuracy only (skip the second latency pass); useful "
+                             "for the full 2620-utterance test-clean run")
     args = parser.parse_args()
 
     arms = [a.strip() for a in args.arms.split(",") if a.strip()]
@@ -227,10 +231,28 @@ def main() -> int:
             skipped.append({"arm": name, "reason": f"{type(exc).__name__}: {exc}"})
             continue
 
-        report = benchmark_and_evaluate(
-            model, processor, samples, label=name, warmup=args.warmup,
-            verbose=not args.no_progress,
-        )
+        if args.no_benchmark:
+            accuracy = evaluate_model(model, processor, samples,
+                                      verbose=not args.no_progress)
+            if not args.no_progress:
+                print_summary(accuracy)
+            report = {
+                "label": name,
+                "accuracy": accuracy,
+                "performance": {
+                    "rtf": None,
+                    "latency_s": {"p50": None, "p95": None},
+                    "throughput_utt_per_s": None,
+                    "memory": {"peak_rss_mb": None, "cuda": False},
+                    "warmed_up": False,
+                    "note": "accuracy-only run (--no-benchmark)",
+                },
+            }
+        else:
+            report = benchmark_and_evaluate(
+                model, processor, samples, label=name, warmup=args.warmup,
+                verbose=not args.no_progress,
+            )
         report["arm"] = name
         report["arm_info"] = info
         report["split"] = args.split

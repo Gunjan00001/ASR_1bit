@@ -1,0 +1,50 @@
+#!/bin/bash
+#PBS -N final_full_test
+#PBS -q gpu
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
+#PBS -l walltime=02:30:00
+#PBS -j oe
+#
+# Phase 12 — full LibriSpeech test-clean (2620 utterances), accuracy only.
+#
+# The n256 dev/test comparison already exists. This run answers the plan's
+# "final evaluation: full test-clean" requirement without paying for a second
+# latency pass over every arm (--no-benchmark); warmed-up RTF/VRAM is already
+# measured on the n256 subsets.
+
+set -uo pipefail
+
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"
+cd "$REPO" || exit 1
+
+# shellcheck disable=SC1091
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export HF_HUB_DISABLE_PROGRESS_BARS=1
+export HF_DATASETS_DISABLE_PROGRESS_BARS=1
+
+LOG="logs/final_full_test.log"
+mkdir -p logs results
+: > "$LOG"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== job $PBS_JOBID on $(hostname) at $(date -Is) ==="
+nvidia-smi --query-gpu=index,name,memory.used,memory.total,utilization.gpu \
+    --format=csv,noheader
+
+PY=".venv/bin/python"
+$PY - <<'PY'
+import torch
+assert torch.cuda.is_available(), "CUDA not available"
+print("torch", torch.__version__, "cuda", torch.version.cuda,
+      "device", torch.cuda.get_device_name(0), "count", torch.cuda.device_count())
+PY
+if [ $? -ne 0 ]; then echo "ABORT: CUDA preflight failed"; exit 3; fi
+
+ARMS="fp32,qat_attention_a100,qat_ffn_a100,qat_attn_ffn,distill_attn_ffn,distill_attn_ffn_kd01"
+echo "=== FULL test-clean (2620 utterances), accuracy only ==="
+$PY scripts/run_final_eval.py --split test --n 2620 --arms "$ARMS" --no-benchmark
+echo "full test eval exit: $?"
+echo "=== finished at $(date -Is) ==="

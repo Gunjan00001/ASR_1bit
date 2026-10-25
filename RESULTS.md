@@ -20,7 +20,7 @@ separately, and each JSON records its own dependency versions.
 | QAT FFN-only (A100) | cloud-gpu | 0.1186 | 0.0337 | 0.0293 | 1875 | 165.4 | 96 | `results/qat_ffn_a100.json` |
 | QAT attention+FFN (A100) | cloud-gpu | 0.2082 | 0.0641 | 0.0297 | 1875 | 298.6 | 192 | `results/qat_attn_ffn.json` |
 | QAT + distillation attention+FFN, lambda_kd=0.5 (A100) | cloud-gpu | 0.2232 | 0.0712 | 0.0312 | 1875 | 2500.6 | 192 | `results/distill_attn_ffn.json` |
-| QAT + distillation attention+FFN, lambda_kd=0.1 (A100) | cloud-gpu | — | — | — | — | — | — | not measured |
+| QAT + distillation attention+FFN, lambda_kd=0.1 (A100) | cloud-gpu | 0.2022 | 0.0641 | 0.0304 | 1875 | 638.2 | 192 | `results/distill_attn_ffn_kd01.json` |
 | Distillation smoke (8 steps) | local | 1.0000 | 1.0000 | 0.1616 | 8 | 2121.0 | 192 | `results/distillation_smoke.json` |
 
 ## 2. Size accounting
@@ -34,11 +34,15 @@ separately, and each JSON records its own dependency versions.
 | QAT FFN-only (A100) | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
 | QAT attention+FFN (A100) | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
 | QAT + distillation attention+FFN, lambda_kd=0.5 | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
-| QAT + distillation attention+FFN, lambda_kd=0.1 | — | — | — | — | — | not measured |
+| QAT + distillation attention+FFN, lambda_kd=0.1 | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
 
 The **measured artifact** is the packed safetensors file (packed 1-bit weights +
 FP32 scales + non-quantized FP parameters). FP32 master weights are training-time
 state and are excluded from the deploy artifact.
+
+The `RTF` column in §1 comes from each training script's evaluation pass (which
+includes model/processor warm-up and therefore looks slower). The warmed-up
+benchmark numbers are in §3–§4.
 
 ## 3. Final comparison — dev-clean
 
@@ -48,18 +52,17 @@ Device: `NVIDIA A100-SXM4-80GB` | dataset: `openslr/librispeech_asr clean valida
 
 | Arm | WER | CER | RTF | p50 (s) | p95 (s) | utt/s | Peak RSS (MB) | Peak VRAM (GB) | Deploy size (GB) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| fp32 | 0.0202 | 0.0049 | 0.0059 | 0.035 | 0.085 | 22.921 | 1839 | 4.43 | 2.374 |
-| ptq_attention | 0.4454 | 0.2180 | 0.0063 | 0.038 | 0.087 | 21.707 | 2159 | 4.44 | 1.983 |
-| ptq_ffn | 1.0000 | 1.0000 | 0.0069 | 0.042 | 0.091 | 19.831 | 2740 | 4.44 | 0.813 |
-| ptq_full | 1.0000 | 1.0000 | 0.0072 | 0.045 | 0.094 | 18.916 | 2852 | 4.44 | 0.423 |
-| ptq_full_plus_fproj | 1.0000 | 1.0000 | 0.0072 | 0.045 | 0.093 | 18.957 | 2852 | 4.44 | 0.421 |
-| ptq_all_linears | 1.0000 | 1.0000 | 0.0072 | 0.045 | 0.093 | 18.947 | 2853 | 4.44 | 0.421 |
-| qat_attention_a100 | 0.0421 | 0.0128 | 0.0062 | 0.038 | 0.086 | 21.766 | 2853 | 4.44 | 1.983 |
-| qat_ffn_a100 | 0.1190 | 0.0338 | 0.0069 | 0.043 | 0.092 | 19.730 | 2853 | 4.44 | 0.813 |
-| qat_attn_ffn | 0.2080 | 0.0640 | 0.0072 | 0.045 | 0.094 | 18.819 | 2854 | 4.44 | 0.423 |
-| distill_attn_ffn | 0.2232 | 0.0712 | 0.0072 | 0.045 | 0.094 | 18.862 | 2854 | 4.44 | 0.423 |
-
-Skipped arms: `distill_attn_ffn_kd01` (missing checkpoint: /home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/distill_attn_ffn_kd01)
+| fp32 | 0.0202 | 0.0049 | 0.0059 | 0.035 | 0.084 | 22.955 | 1860 | 4.43 | 2.374 |
+| ptq_attention | 0.4454 | 0.2180 | 0.0063 | 0.038 | 0.087 | 21.733 | 2150 | 4.44 | 1.983 |
+| ptq_ffn | 1.0000 | 1.0000 | 0.0069 | 0.042 | 0.091 | 19.841 | 2736 | 4.44 | 0.813 |
+| ptq_full | 1.0000 | 1.0000 | 0.0072 | 0.045 | 0.094 | 18.902 | 2826 | 4.44 | 0.423 |
+| ptq_full_plus_fproj | 1.0000 | 1.0000 | 0.0072 | 0.045 | 0.093 | 18.940 | 2826 | 4.44 | 0.421 |
+| ptq_all_linears | 1.0000 | 1.0000 | 0.0072 | 0.045 | 0.093 | 18.920 | 2826 | 4.44 | 0.421 |
+| qat_attention_a100 | 0.0421 | 0.0128 | 0.0063 | 0.038 | 0.087 | 21.738 | 2827 | 4.44 | 1.983 |
+| qat_ffn_a100 | 0.1190 | 0.0338 | 0.0069 | 0.043 | 0.091 | 19.789 | 2827 | 4.44 | 0.813 |
+| qat_attn_ffn | 0.2080 | 0.0640 | 0.0072 | 0.045 | 0.094 | 18.866 | 2828 | 4.44 | 0.423 |
+| distill_attn_ffn | 0.2232 | 0.0712 | 0.0072 | 0.045 | 0.094 | 18.842 | 2828 | 4.44 | 0.423 |
+| distill_attn_ffn_kd01 | 0.2022 | 0.0641 | 0.0072 | 0.045 | 0.094 | 18.871 | 2828 | 4.44 | 0.423 |
 
 
 ## 4. Final comparison — test-clean
@@ -70,14 +73,20 @@ Device: `NVIDIA A100-SXM4-80GB` | dataset: `openslr/librispeech_asr clean test` 
 
 | Arm | WER | CER | RTF | p50 (s) | p95 (s) | utt/s | Peak RSS (MB) | Peak VRAM (GB) | Deploy size (GB) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| fp32 | 0.0162 | 0.0044 | 0.0058 | 0.036 | 0.095 | 21.918 | 1866 | 5.98 | 2.374 |
-| ptq_full | 1.0000 | 1.0000 | 0.0070 | 0.046 | 0.104 | 18.187 | 2831 | 6.00 | 0.423 |
-| qat_attention_a100 | 0.0439 | 0.0131 | 0.0061 | 0.039 | 0.097 | 20.772 | 2841 | 6.00 | 1.983 |
-| qat_ffn_a100 | 0.1095 | 0.0318 | 0.0067 | 0.043 | 0.102 | 18.980 | 2841 | 6.00 | 0.813 |
-| qat_attn_ffn | 0.2029 | 0.0648 | 0.0070 | 0.046 | 0.105 | 18.132 | 2841 | 6.00 | 0.423 |
-| distill_attn_ffn | 0.2167 | 0.0706 | 0.0070 | 0.046 | 0.105 | 18.138 | 2841 | 6.00 | 0.423 |
+| fp32 | 0.0162 | 0.0044 | 0.0058 | 0.036 | 0.095 | 21.912 | 1848 | 5.98 | 2.374 |
+| ptq_full | 1.0000 | 1.0000 | 0.0070 | 0.046 | 0.104 | 18.170 | 2848 | 6.00 | 0.423 |
+| qat_attention_a100 | 0.0439 | 0.0131 | 0.0061 | 0.039 | 0.098 | 20.753 | 2859 | 6.00 | 1.983 |
+| qat_ffn_a100 | 0.1095 | 0.0318 | 0.0067 | 0.043 | 0.102 | 18.970 | 2859 | 6.00 | 0.813 |
+| qat_attn_ffn | 0.2029 | 0.0648 | 0.0070 | 0.046 | 0.105 | 18.107 | 2860 | 6.00 | 0.423 |
+| distill_attn_ffn | 0.2167 | 0.0706 | 0.0070 | 0.046 | 0.105 | 18.112 | 2860 | 6.00 | 0.423 |
+| distill_attn_ffn_kd01 | 0.1986 | 0.0647 | 0.0070 | 0.046 | 0.105 | 18.132 | 2860 | 6.00 | 0.423 |
 
-Skipped arms: `distill_attn_ffn_kd01` (missing checkpoint: /home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/distill_attn_ffn_kd01)
+
+### Full test-clean (2620 utterances)
+
+### test-clean (2620 utterances)
+
+Not measured yet.
 
 
 ## 5. Packed 1-bit inference (Phase 18)

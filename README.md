@@ -11,8 +11,9 @@ than FP32), versus the full-PTQ collapse (1.0000) and the FP32 baseline
 (0.0202 / 0.0162). Attention-only QAT remains the accuracy leader among 1-bit
 arms (**0.0421 / 0.0439** at 1.983 GB); FFN-only QAT gives **0.1190 / 0.1095**
 at 0.813 GB. Distillation at λ_kd=0.5 did not improve the attention+FFN result
-(0.2232); a λ_kd=0.1 follow-up is running. The complete measured comparison is
-in [`RESULTS.md`](RESULTS.md). No number here is estimated; failed and negative
+(0.2232); the λ_kd=0.1 controlled follow-up improves it to **0.2022** at the
+same 0.423 GB. The complete measured comparison is in
+[`RESULTS.md`](RESULTS.md). No number here is estimated; failed and negative
 results are kept, and the full research history is in
 [`planning.md`](planning.md).
 
@@ -187,8 +188,9 @@ raw data is in `results/final_comparison_{dev,test}_n256.json`.
 | 1-bit PTQ attention+FFN | 1.0000 | 1.0000 | 0.423 GB | 5.6× |
 | **QAT attention-only (A100)** | **0.0421** | **0.0128** | 1.983 GB | 1.2× |
 | **QAT FFN-only (A100)** | **0.1190** | **0.0338** | 0.813 GB | 2.9× |
-| **QAT attention+FFN (A100)** | **0.2080** | **0.0640** | **0.423 GB** | **5.6×** |
+| QAT attention+FFN (A100) | **0.2080** | **0.0640** | **0.423 GB** | **5.6×** |
 | QAT + distillation (λ_kd=0.5) | 0.2232 | 0.0712 | 0.423 GB | 5.6× |
+| QAT + distillation (λ_kd=0.1) | **0.2022** | **0.0641** | 0.423 GB | 5.6× |
 
 ### Test-clean (256 utterances, same seed)
 
@@ -200,6 +202,7 @@ raw data is in `results/final_comparison_{dev,test}_n256.json`.
 | QAT FFN-only (A100) | 0.1095 | 0.0318 | 0.813 GB |
 | QAT attention+FFN (A100) | 0.2029 | 0.0648 | 0.423 GB |
 | QAT + distillation (λ_kd=0.5) | 0.2167 | 0.0706 | 0.423 GB |
+| QAT + distillation (λ_kd=0.1) | **0.1986** | **0.0647** | 0.423 GB |
 
 **Reading the result.** QAT recovers binarization in every isolated case:
 attention-only from 44.54% (PTQ) to 4.21%, FFN-only from 100% to 11.90%, and
@@ -208,9 +211,10 @@ than either isolated arm**, so the two binarizations interact; the 5.6×
 compression target is reachable, but at a large accuracy cost on this recipe.
 The size/accuracy frontier from this work is: 1.2× at ~2× WER, 2.9× at ~6× WER,
 or 5.6× at ~10× WER (relative to FP32). Distillation at λ_kd=0.5 did not
-improve the combined arm; its summed KL term dominated the CTC term by ~8×
-(measured loss components: KD 6107 vs CTC 726), and the λ_kd=0.1 controlled
-follow-up is reported separately.
+improve the combined arm (22.32%); lowering λ_kd to 0.1 recovers a small but
+consistent gain (**20.22%**, −0.60 pp vs QAT alone) at the same 0.423 GB. The
+KD term still dominates the CTC term, so distillation is a marginal tuning knob
+here, not the solution to the FFN/attention interaction.
 
 **Not a speed result.** All arms run at essentially the same warmed-up A100
 latency/RTF (≈0.006–0.007 end-to-end; difference <10%). The 1-bit runtime
@@ -744,9 +748,10 @@ pinned dependencies, recorded provenance in every results JSON.
   (A100), FFN-only 11.90%, attention+FFN 20.80% (dev). The combined arm is
   **worse than either isolated arm**, so attention and FFN binarization interact;
   that interaction is the main open research question.
-- **Distillation at λ_kd=0.5 did not improve** the combined arm (22.32%). Its
-  summed KL dominated the CTC term by ~8× (6107 vs 726); the λ_kd=0.1 controlled
-  follow-up is reported separately.
+- **Distillation is a marginal tuning knob.** λ_kd=0.5 made the combined arm
+  worse (22.32%); λ_kd=0.1 improved it slightly (20.22% vs 20.80% QAT). The
+  summed KL still dominates CTC (6385 vs 559 at λ_kd=0.1), so the teacher
+  signal is not the missing ingredient for the combined arm.
 - **No speedup from binarization** (measured on A100): all arms have similar
   warmed-up RTF (≈0.006–0.007 end-to-end). Packed storage is real; packed
   inference is 1.10× slower than BitLinear on CPU because it expands bits.

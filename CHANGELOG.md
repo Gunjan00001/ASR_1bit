@@ -8,6 +8,30 @@ an exact, reproducible repository state.
 
 ---
 
+## v1.5.2 — Final status closure
+
+**Scope:** status/documentation only. **No measurements changed.**
+
+### Added
+- README §32 “Completion status”: phase-by-phase audit, explicit
+  future/optional items, and the final full test-clean WER table.
+- `planning.md` §10.10 completion audit; §10.9 reframed as future/optional work.
+- `EXPERIMENT_LOG.md` E23: project completion audit, blocked Kaggle re-run, and
+  the final numbers.
+
+### Changed
+- README status row for the Kaggle clean reproduction is now “superseded by the
+  A100 re-run + packing” (Kaggle CLI/credentials unavailable; quota exhausted
+  historically), instead of “in progress”.
+- `pyproject.toml` — version 1.5.1 → 1.5.2.
+
+### Final WER (full test-clean, 2620)
+FP32 **0.0193**; attention-only QAT **0.0449** at 1.983 GB (best 1-bit);
+FFN-only QAT **0.1134** at 0.813 GB; attention+FFN QAT **0.2050** at 0.423 GB;
+attention+FFN + KD λ_kd=0.1 **0.1998** at 0.423 GB.
+
+---
+
 ## v1.5.1 — Documentation: deep-dive, experiment log, figures, debugging comments
 
 **Scope:** documentation and code-comment checkpoint. **No new measurements**;

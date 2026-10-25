@@ -492,7 +492,7 @@ feature_projection/ctc_head changes nothing (the model is already collapsed).
    ncpus” while A100s were free. *Fix:* resize GPU-bound jobs to 1 CPU and run
    them concurrently.
 
-### 10.9 What remains after v1.5.0
+### 10.9 Future/optional work (not required phases)
 
 - A recipe that improves the attention+FFN arm beyond the marginal distillation
   gain (longer training, LR/early-stop sweep, mean-normalized KD, layer-wise
@@ -501,6 +501,29 @@ feature_projection/ctc_head changes nothing (the model is already collapsed).
   per-channel/learned scaling.
 - LM decoding.
 - A true streaming encoder with cached state.
+
+These are explicitly future research. The required phases (0–17, with 18/19
+investigated/prototyped to the plan's optional scope) are complete.
+
+### 10.10 Completion audit
+
+| Phase | Final state |
+|---|---|
+| 0–10 | complete; tests + FP32/PTQ/size results |
+| 11 | complete on T4 and A100 (attention, FFN, attention+FFN) |
+| 12 | complete on dev 256, test 256, full test-clean 2620 |
+| 13 | complete for λ_kd=0.5 and 0.1 |
+| 14 | complete for FP32/PTQ/QAT/QAT+KD; 2-bit/INT8 optional, not run |
+| 15 | complete for PTQ and QAT component selections |
+| 16 | complete; measured packed artifacts for every trained arm |
+| 17 | complete on A100 dev 256; full-test accuracy-only run is labelled |
+| 18 | investigated: packed storage + XNOR boundary; integrated kernel is future work |
+| 19 | prototype measured: chunked pseudo-streaming; true streaming encoder is future work |
+| Kaggle clean repro | unavailable (no CLI/credentials; quota exhausted); superseded by the A100 re-run |
+
+**Final full test-clean WER:** FP32 0.0193; attention-only 0.0449 (best 1-bit,
+1.983 GB); FFN-only 0.1134 (0.813 GB); attention+FFN 0.2050 (0.423 GB);
+attention+FFN + KD λ_kd=0.1 **0.1998** (0.423 GB).
 
 
 

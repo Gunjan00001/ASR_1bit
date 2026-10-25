@@ -619,6 +619,61 @@ Each entry is a real failure that changed the code. This is deliberately kept.
 
 ---
 
+## E23 — Project completion audit (v1.5.2)
+
+**Question:** are any required phases silently unrun, and what is the final
+number to quote?
+
+**Why:** a long research repository accumulates "in progress" markers. The
+project should end with an explicit statement of what is complete, what is
+optional, and what is blocked.
+
+**What:** audited phases 0–19 against the original plan, the README status
+table, `planning.md`, and the committed result JSONs.
+
+**Did it work?** **Yes.** Every required phase has a measured artifact or an
+explicitly scoped investigation:
+
+- 0–10: complete (environment, inspection, inference, FP32 baseline, BitLinear,
+  PTQ, size accounting).
+- 11: complete on T4 and A100 (attention-only, FFN-only, attention+FFN).
+- 12: complete on dev 256, test 256, and full test-clean 2620.
+- 13: complete for λ_kd=0.5 and λ_kd=0.1.
+- 14: complete for FP32/PTQ/QAT/QAT+KD; 2-bit/INT8 was optional and was not run.
+- 15: complete for the PTQ and QAT component selections.
+- 16: complete; measured packed artifacts for every trained arm.
+- 17: complete on A100 dev 256 (warmed-up RTF/VRAM). The full-test run was
+  accuracy-only and is labelled as such.
+- 18: investigated (packed storage + XNOR/popcount boundary). A true integrated
+  bitwise kernel is future work because the model has FP activations.
+- 19: prototype measured (chunked pseudo-streaming). A true streaming encoder
+  with cached state is future work.
+
+**What is blocked:** the Kaggle T4 clean re-run. The Kaggle CLI/credentials are
+not available in this environment, and the weekly GPU quota was exhausted
+historically. The A100 re-run reproduces the attention-only result and the
+packing pipeline, so the science is covered; the Kaggle artifact remains a
+historical record.
+
+**Final full test-clean WER (2620 utterances, greedy CTC):**
+
+| Model | WER | CER | Deploy size |
+|---|---:|---:|---:|
+| FP32 reference | **0.0193** | 0.0050 | 2.374 GB |
+| Best 1-bit accuracy: attention-only QAT | **0.0449** | 0.0137 | 1.983 GB |
+| FFN-only QAT (2.9×) | 0.1134 | 0.0325 | 0.813 GB |
+| Attention+FFN QAT (5.6×) | 0.2050 | 0.0639 | 0.423 GB |
+| Attention+FFN + KD λ_kd=0.1 (5.6×) | **0.1998** | 0.0636 | 0.423 GB |
+
+Dev-clean (256): 0.0202 / 0.0421 / 0.1190 / 0.2080 / 0.2022. The historical
+Kaggle T4 attention-only run measured **0.0392** on the 256 dev subset; it is
+kept as a separate result, but the final full-test number is 0.0449.
+
+**Conclusion:** the project is complete at the scope of the original plan. The
+open items above are explicitly future research, not missing required phases.
+
+---
+
 ## How to add a new log entry
 
 When you run a new experiment, append:

@@ -4,8 +4,8 @@ Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
 
-**Current checkpoint:** `v1.5.1` (documentation) for the measured `v1.5.0`
-results below. On **full LibriSpeech test-clean (2620 utterances)**, the 1-bit
+**Current checkpoint:** `v1.5.2` (final status closure) for the measured
+`v1.5.0` results below. On **full LibriSpeech test-clean (2620 utterances)**, the 1-bit
 arms measure: attention-only **0.0449** at 1.983 GB, FFN-only **0.1134** at
 0.813 GB, attention+FFN **0.2050** at **0.423 GB** (5.6× smaller), and
 attention+FFN + distillation (λ_kd=0.1) **0.1998** at the same 0.423 GB; FP32 is
@@ -167,7 +167,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
 | 11 | QAT (infrastructure + tests + CPU smoke) | ✅ done (local) |
 | 11 | **QAT (real cloud-GPU training run, attention-only)** | ✅ **measured — WER 3.92%** |
-| 11 | QAT clean reproduction / Kaggle packing | 🔄 in progress (`results/qat_attn_repro.json`) |
+| 11 | QAT clean reproduction / Kaggle packing | ✅ superseded by the A100 re-run + packing (Kaggle CLI/quota unavailable; historical 3.92% preserved) |
 | 11 | **attention+FFN QAT (A100 cluster)** | ✅ **measured — WER 0.2080 dev / 0.2050 full test** |
 | 12 | QAT evaluation (full comparison) | ✅ measured (dev/test 256 + full test-clean 2620) |
 | 13 | Knowledge distillation | ✅ measured (λ_kd=0.5: 0.2232; λ_kd=0.1: 0.2022 dev / 0.1998 full test) |
@@ -928,6 +928,55 @@ The attention+FFN QAT run is done. The open questions and next experiments are:
 
 Acceptance remains a measured WER, artifact size, and RTF; no theoretical
 speedup is reported as a measurement.
+
+## 32. Completion status (v1.5.2)
+
+Every phase required by the original plan is complete at a stated scope. There
+are no silently unrun required phases; the open items below are explicitly
+future research or unavailable infrastructure.
+
+| Phase | Scope completed | Evidence |
+|---|---|---|
+| 0–10 | environment, inspection, inference, FP32 baseline, BitLinear, PTQ, size accounting | `results/baseline.json`, `ptq_binary.json`, `size_report.json`, tests |
+| 11 | QAT on T4 (attention-only) and A100 (attention-only, FFN-only, attention+FFN) | `results/qat_attn*.json`, `qat_ffn_a100.json`, `qat_attn_ffn.json` |
+| 12 | dev 256, test 256, and **full test-clean 2620** evaluation | `results/final_comparison_{dev,test}_n256.*`, `final_comparison_test_n2620.*` |
+| 13 | distillation λ_kd=0.5 and λ_kd=0.1 | `results/distill_attn_ffn*.json` |
+| 14 | FP32 / PTQ / QAT / QAT+KD arms | `RESULTS.md` tables |
+| 15 | PTQ and QAT layer-sensitivity arms | `results/final_*` + `ptq_collapse_diagnostic.json` |
+| 16 | packed deploy artifacts for every trained arm | `results/*_size_report.json` |
+| 17 | warmed-up A100 latency/RTF/VRAM benchmark (256 dev) | `results/final_*_dev_n256.json`, `benchmark_rtf_latency.png` |
+| 18 | packed 1-bit storage + XNOR/popcount boundary measured | `results/packed_inference_benchmark.json` |
+| 19 | chunked pseudo-streaming prototype + measured WER/RTF | `results/streaming_demo_qat_attn_ffn.json` |
+
+**Explicitly future / optional (not required phases):**
+
+- **Integrated bitwise kernel** — the model has FP activations, so an XNOR+popcount
+  kernel cannot replace `BitLinear` without also binarizing activations (a
+  different model). The kernel boundary is measured; the integrated model is
+  future work.
+- **True streaming encoder** — cached convolution/attention state is not
+  implemented; the chunked prototype is measured and documented as such.
+- **2-bit / INT8**, LM decoding, per-channel/learned scaling — optional or out
+  of the pinned protocol.
+- **Kaggle T4 clean re-run** — the Kaggle CLI/credentials are unavailable in
+  this environment, and the weekly quota was exhausted historically. The A100
+  re-run reproduces the attention-only result and the packing pipeline, so this
+  is superseded rather than silently missing.
+
+**Final WER (full LibriSpeech test-clean, 2620 utterances, greedy CTC):**
+
+| Model | WER | CER | Deploy size |
+|---|---:|---:|---:|
+| FP32 reference | **0.0193** | 0.0050 | 2.374 GB |
+| Best 1-bit accuracy: attention-only QAT | **0.0449** | 0.0137 | 1.983 GB |
+| 2.9× FFN-only QAT | 0.1134 | 0.0325 | 0.813 GB |
+| 5.6× attention+FFN QAT | 0.2050 | 0.0639 | 0.423 GB |
+| **5.6× + distillation λ_kd=0.1** | **0.1998** | 0.0636 | **0.423 GB** |
+
+Dev-clean (256) equivalents: 0.0202 / 0.0421 / 0.1190 / 0.2080 / 0.2022.
+The lowest 1-bit dev WER ever measured in the project is the historical Kaggle
+T4 attention-only run at **0.0392** (256 dev); the A100 full-test result is
+0.0449, which is the number to quote for the final model.
 
 ## Layout
 

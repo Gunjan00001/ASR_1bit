@@ -14,9 +14,8 @@ an exact, reproducible repository state.
 PBS cluster, plus the execution/benchmarking/streaming infrastructure it
 required. Every number below is a real measurement stored in `results/`; the
 complete generated tables are in [`RESULTS.md`](RESULTS.md). The λ_kd=0.1
-distillation follow-up completed at **0.2022 dev WER**, a small improvement over
-QAT alone (0.2080); the full test-clean evaluation was still running when this
-entry was written.
+distillation follow-up completed at **0.2022 dev / 0.1998 full test-clean**, a
+small improvement over QAT alone (0.2080 / 0.2050).
 
 ### Measured — 1-bit accuracy/size trade-off (A100, pinned protocol)
 
@@ -36,6 +35,12 @@ parameters), not a theoretical 1-bit payload.
 | **QAT attention+FFN** | **0.2080** | **0.0640** | **0.2029** | **0.0648** | 0.423 GB |
 | QAT + KD (λ_kd=0.5) | 0.2232 | 0.0712 | 0.2167 | 0.0706 | 0.423 GB |
 | QAT + KD (λ_kd=0.1) | **0.2022** | **0.0641** | **0.1986** | **0.0647** | 0.423 GB |
+
+**Full test-clean (2620 utterances), accuracy-only:** FP32 **0.0193 / 0.0050**;
+attention-only **0.0449 / 0.0137**; FFN-only **0.1134 / 0.0325**;
+attention+FFN **0.2050 / 0.0639**; KD λ_kd=0.5 **0.2218 / 0.0709**; KD λ_kd=0.1
+**0.1998 / 0.0636**. The ranking is identical to the fixed 256-utterance
+subsets; the subset numbers are slightly easier.
 
 **Interpretation.** QAT recovers attention-only from 44.5% PTQ to 4.21% and
 FFN-only from 100% to 11.90%. The combined attention+FFN arm recovers to 20.80%,
@@ -137,9 +142,9 @@ signal remains a marginal knob, not a solution to the interaction.
 - `scripts/stream_infer.py` — demo with partial transcripts and WER vs a full
   utterance decode.
 
-### Added — tests (87 total, up from 63)
+### Added — tests (88 total, up from 63)
 - `tests/test_distillation.py` (9), `tests/test_packed.py` (5),
-  `tests/test_streaming.py` (8), `tests/test_latency.py` (2).
+  `tests/test_streaming.py` (8), `tests/test_latency.py` (3).
 
 ### Changed
 - `src/onebit_asr/training/qat.py` — `build_training_arguments` accepts

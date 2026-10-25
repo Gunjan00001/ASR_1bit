@@ -5,17 +5,15 @@ Research project: progressively replace FP linear layers of a pretrained
 measure — honestly — what that costs in accuracy, size, and speed.
 
 **Current checkpoint:** `v1.5.0` — Phases 12–19 have been executed on an
-8×A100-80GB cluster. The decisive attention+FFN QAT run reaches **WER 0.2080
-(dev) / 0.2029 (test-clean)** at a **0.423 GB** packed artifact (5.6× smaller
-than FP32), versus the full-PTQ collapse (1.0000) and the FP32 baseline
-(0.0202 / 0.0162). Attention-only QAT remains the accuracy leader among 1-bit
-arms (**0.0421 / 0.0439** at 1.983 GB); FFN-only QAT gives **0.1190 / 0.1095**
-at 0.813 GB. Distillation at λ_kd=0.5 did not improve the attention+FFN result
-(0.2232); the λ_kd=0.1 controlled follow-up improves it to **0.2022** at the
-same 0.423 GB. The complete measured comparison is in
-[`RESULTS.md`](RESULTS.md). No number here is estimated; failed and negative
-results are kept, and the full research history is in
-[`planning.md`](planning.md).
+8×A100-80GB cluster under the pinned protocol. On **full LibriSpeech
+test-clean (2620 utterances)**, the 1-bit arms measure: attention-only
+**0.0449** at 1.983 GB, FFN-only **0.1134** at 0.813 GB, attention+FFN
+**0.2050** at **0.423 GB** (5.6× smaller), and attention+FFN + distillation
+(λ_kd=0.1) **0.1998** at the same 0.423 GB; FP32 is **0.0193**. Dev-clean
+(256) agrees: 0.0421 / 0.1190 / 0.2080 / 0.2022 at the same sizes. The full
+measured comparison is in [`RESULTS.md`](RESULTS.md). No number here is
+estimated; failed and negative results are kept, and the full research history
+is in [`planning.md`](planning.md).
 
 > This README is written for an engineer joining at this checkpoint. It states
 > what exists, what was measured, and — just as importantly — what has **not**
@@ -56,9 +54,9 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 11 | QAT (infrastructure + tests + CPU smoke) | ✅ done (local) |
 | 11 | **QAT (real cloud-GPU training run, attention-only)** | ✅ **measured — WER 3.92%** |
 | 11 | QAT clean reproduction / Kaggle packing | 🔄 in progress (`results/qat_attn_repro.json`) |
-| 11 | **attention+FFN QAT (A100 cluster)** | ✅ **measured — WER 0.2080 dev / 0.2029 test** |
-| 12 | QAT evaluation (full comparison) | ✅ measured (`RESULTS.md`) |
-| 13 | Knowledge distillation | ✅ measured (λ_kd=0.5: 0.2232; λ_kd=0.1 follow-up running) |
+| 11 | **attention+FFN QAT (A100 cluster)** | ✅ **measured — WER 0.2080 dev / 0.2050 full test** |
+| 12 | QAT evaluation (full comparison) | ✅ measured (dev/test 256 + full test-clean 2620) |
+| 13 | Knowledge distillation | ✅ measured (λ_kd=0.5: 0.2232; λ_kd=0.1: 0.2022 dev / 0.1998 full test) |
 | 14 | Controlled experiments (A–D) | ✅ measured (FP32 / PTQ / QAT / QAT+KD) |
 | 15 | Layer-sensitivity sweep | ✅ measured (PTQ + QAT variants, dev/test) |
 | 16 | Binary storage / packing | ✅ measured (artifacts: 1.983 / 0.813 / 0.423 GB) |
@@ -204,15 +202,26 @@ raw data is in `results/final_comparison_{dev,test}_n256.json`.
 | QAT + distillation (λ_kd=0.5) | 0.2167 | 0.0706 | 0.423 GB |
 | QAT + distillation (λ_kd=0.1) | **0.1986** | **0.0647** | 0.423 GB |
 
+### Full test-clean (2620 utterances)
+
+| Arm | WER | CER | Packed deploy size |
+|---|---:|---:|---:|
+| FP32 baseline | **0.0193** | **0.0050** | 2.374 GB |
+| QAT attention-only (A100) | 0.0449 | 0.0137 | 1.983 GB |
+| QAT FFN-only (A100) | 0.1134 | 0.0325 | 0.813 GB |
+| QAT attention+FFN (A100) | 0.2050 | 0.0639 | 0.423 GB |
+| QAT + distillation (λ_kd=0.5) | 0.2218 | 0.0709 | 0.423 GB |
+| QAT + distillation (λ_kd=0.1) | **0.1998** | **0.0636** | 0.423 GB |
+
 **Reading the result.** QAT recovers binarization in every isolated case:
-attention-only from 44.54% (PTQ) to 4.21%, FFN-only from 100% to 11.90%, and
-attention+FFN from 100% to 20.80%. The combined attention+FFN arm is **worse
-than either isolated arm**, so the two binarizations interact; the 5.6×
+attention-only from 44.54% (PTQ) to 4.49% (full test), FFN-only from 100% to
+11.34%, and attention+FFN from 100% to 20.50%. The combined attention+FFN arm is
+**worse than either isolated arm**, so the two binarizations interact; the 5.6×
 compression target is reachable, but at a large accuracy cost on this recipe.
 The size/accuracy frontier from this work is: 1.2× at ~2× WER, 2.9× at ~6× WER,
-or 5.6× at ~10× WER (relative to FP32). Distillation at λ_kd=0.5 did not
-improve the combined arm (22.32%); lowering λ_kd to 0.1 recovers a small but
-consistent gain (**20.22%**, −0.60 pp vs QAT alone) at the same 0.423 GB. The
+or 5.6× at 20.22% WER (attention+FFN + KD λ_kd=0.1). Distillation at λ_kd=0.5
+did not improve the combined arm (22.32%); lowering λ_kd to 0.1 recovers a small
+but consistent gain (**20.22%**, −0.58 pp vs QAT alone) at the same 0.423 GB. The
 KD term still dominates the CTC term, so distillation is a marginal tuning knob
 here, not the solution to the FFN/attention interaction.
 
@@ -496,15 +505,15 @@ parameters and removing FP master weights from deployment state are future work.
 - **No hardware acceleration.** Confirmed by measurement: all arms have
   essentially the same warmed-up A100 RTF (§8b, `RESULTS.md`). Binarization buys
   disk size, not wall-clock speed.
-- **No full test-clean evaluation** — the test result is a fixed 256-utterance
-  test-clean subset, not the full 2620-utterance set.
+- **No LM decoding** — the full 2620-utterance test-clean is measured, but all
+  WER figures are greedy CTC with no language model.
 - **No true streaming encoder** — `streaming.py` is chunked pseudo-streaming
   (full encoder per overlapping window). Its chunked WER is much worse than the
   full-utterance WER on the demo (Phase 19).
-- **No 2-bit / INT8 arm**, no LM beam-search decoding, no per-channel scaling,
-  no learned alpha.
-- **Distillation did not improve the attention+FFN arm at λ_kd=0.5** (0.2232 vs
-  0.2080). The λ_kd=0.1 follow-up is reported separately.
+- **No 2-bit / INT8 arm**, no per-channel scaling, no learned alpha.
+- **Distillation is a marginal tuning knob**: λ_kd=0.5 made the combined arm
+  worse (0.2232); λ_kd=0.1 improves it to **0.2022 dev / 0.1998 full test**, a
+  small gain over QAT alone (0.2080 / 0.2050).
 - Placeholder modules remain: `features/audio.py`, `decoding/decode.py`,
   `training/train.py`, and several `scripts/*`; `evaluate` is pinned but unused
   (metrics are computed with `jiwer`). `evaluation/latency.py`,
@@ -528,7 +537,7 @@ Reused vs. ours, measured vs. theoretical vs. planned:
 - **Theoretical (labeled as such):** 1-bit payload = 62,914,560 B; FP32 weight
   bytes = params × 4.
 - **Planned (not implemented):** true bitwise kernels, hardware acceleration,
-  full test-clean evaluation, 2-bit/INT8, LM decoding, true streaming state.
+  2-bit/INT8, LM decoding, true streaming state.
 
 No performance claim in this README is unsupported by a file in `results/`.
 
@@ -789,12 +798,13 @@ The attention+FFN QAT run is done. The open questions and next experiments are:
    the current model has FP activations, so it cannot use that kernel directly.
 3. **2-bit / INT8 and per-channel / learned scaling** — the current
    implementation is exactly 1-bit, per-tensor, non-learned alpha.
-4. **Full test-clean (2620 utterances) and LM decoding** — current numbers are
-   a fixed 256-utterance subset with greedy CTC.
+4. **LM decoding** — current numbers are greedy CTC on full test-clean; an
+   LM-assisted comparison is future work.
 5. **A true streaming encoder** with cached convolution/attention state — the
    current chunked prototype loses ~54 pp WER versus full-utterance decoding on
    the demo (Phase 19).
-6. **Distillation follow-up** — the λ_kd=0.1 run and teacher-logit compression.
+6. **Further KD tuning** — mean-normalized KL and layer-wise distillation; the
+   λ_kd=0.1 run is already measured.
 
 Acceptance remains a measured WER, artifact size, and RTF; no theoretical
 speedup is reported as a measurement.

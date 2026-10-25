@@ -102,13 +102,14 @@ def size_table() -> str:
     return "\n".join(lines)
 
 
-def comparison_section(split: str, n: int = 256) -> str:
+def comparison_section(split: str, n: int = 256, label: str | None = None) -> str:
     path = RESULTS / f"final_comparison_{split}_n{n}.json"
     d = load(path.name)
+    title = label or f"{split}-clean ({n} utterances)"
     if not d:
-        return f"### {split}-clean ({n} utterances)\n\nNot measured yet.\n"
+        return f"### {title}\n\nNot measured yet.\n"
     header = (
-        f"### {split}-clean ({n} utterances)\n\n"
+        f"### {title}\n\n"
         f"Device: `{d.get('device_name')}` | dataset: `{d.get('dataset')}` | "
         f"greedy CTC | seed {d.get('seed')}\n\n"
     )
@@ -189,9 +190,11 @@ benchmark numbers are in §3–§4.
 
 {comparison_section("test", 256)}
 
-### Full test-clean (2620 utterances)
+{comparison_section("test", 2620, "Full test-clean (2620 utterances)")}
 
-{comparison_section("test", 2620)}
+> The full test-clean run is accuracy-only (`--no-benchmark`, one inference pass
+> per utterance), so its performance columns are `n/a`. Warmed-up latency/RTF/
+> VRAM are measured on the 256-utterance subsets in the tables above.
 
 ## 5. Packed 1-bit inference (Phase 18)
 

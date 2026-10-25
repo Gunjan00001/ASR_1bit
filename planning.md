@@ -280,6 +280,10 @@ If the rerun WER differs, **both** are retained and the difference is documented
 
 ## 7. What remains unfinished
 
+> **Historical snapshot (v1.4.0).** Superseded by §10: Phases 12–19 are now
+> implemented and measured (full test-clean, distillation, sensitivity,
+> benchmarking, packed inference, streaming). Kept unchanged for history.
+
 - **Phase 12 (QAT evaluation)** — comparison table FP32 / PTQ / QAT (partially
   present in `results/qat_attn.json` `comparison`); full test-clean evaluation.
 - **Phase 13 (Knowledge distillation)** — `src/onebit_asr/training/distillation.py`
@@ -410,6 +414,11 @@ JSON). Test numbers are a fixed 256-utterance test-clean subset.
 | QAT + KD (λ_kd=0.5) | 0.2232 | 0.0712 | 0.2167 | 0.0706 | 0.423 GB | 5.6× |
 | QAT + KD (λ_kd=0.1) | **0.2022** | **0.0641** | **0.1986** | **0.0647** | 0.423 GB | 5.6× |
 
+**Full test-clean (2620), accuracy-only:** FP32 **0.0193 / 0.0050**;
+attention-only **0.0449 / 0.0137**; FFN-only **0.1134 / 0.0325**;
+attention+FFN **0.2050 / 0.0639**; KD λ_kd=0.5 **0.2218 / 0.0709**; KD λ_kd=0.1
+**0.1998 / 0.0636**. The ranking is identical to the 256-utterance subsets.
+
 **The scientific result.** QAT recovers every isolated selection: attention-only
 from 44.5% to 4.21%, FFN-only from 100% to 11.90%. The combined attention+FFN
 arm recovers from 100% to 20.80%, which is **worse than either isolated arm** —
@@ -485,7 +494,6 @@ feature_projection/ctc_head changes nothing (the model is already collapsed).
 
 ### 10.9 What remains after v1.5.0
 
-- Full 2620-utterance test-clean comparison (running at the time of writing).
 - A recipe that improves the attention+FFN arm beyond the marginal distillation
   gain (longer training, LR/early-stop sweep, mean-normalized KD, layer-wise
   selection).

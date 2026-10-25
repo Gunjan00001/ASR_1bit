@@ -57,8 +57,10 @@ def chunk_audio(
     starts = list(range(0, n - size + 1, step))
     tail_start = n - size
     if starts[-1] < tail_start:
-        # Avoid a duplicate window when the tail is already covered by the
-        # previous full window's overlap.
+        # The regular stride stopped before the end. Append one final full window
+        # so the tail is covered. If the tail is already inside the previous
+        # window's overlap (less than `min_tail_s`), just shift that window
+        # instead of adding a nearly-duplicate one.
         if tail_start - starts[-1] < min_tail_s * sample_rate:
             starts[-1] = tail_start
         else:
@@ -85,7 +87,10 @@ def merge_hypotheses(previous: str, new: str, max_overlap_words: int = 30) -> st
     """Merge two overlapping chunk hypotheses by matching a suffix/prefix.
 
     If no overlap is found the texts are concatenated; the overlap window is the
-    caller's control over how often that happens.
+    caller's control over how often that happens. This is a heuristic: it does
+    not align words acoustically, so it can duplicate text when the overlap does
+    not cover a full word (observed in the demo: ``... HIGH CALL INSIDE THE HIGH
+    CALLOR ...``).
     """
     prev_tokens = _tokens(previous)
     new_tokens = _tokens(new)
@@ -94,6 +99,9 @@ def merge_hypotheses(previous: str, new: str, max_overlap_words: int = 30) -> st
     if not new_tokens:
         return " ".join(prev_tokens)
 
+    # Try the longest suffix of `previous` that equals a prefix of `new`. The
+    # comparison is case-insensitive because the CTC tokenizer is uppercase but
+    # the merge should not depend on it.
     max_overlap = min(len(prev_tokens), len(new_tokens), int(max_overlap_words))
     for k in range(max_overlap, 0, -1):
         if [t.lower() for t in prev_tokens[-k:]] == [t.lower() for t in new_tokens[:k]]:
@@ -144,6 +152,9 @@ class StreamingTranscriber:
                 chunk["audio"], sampling_rate=self.sample_rate,
                 return_tensors="pt", padding=True,
             )
+            # The full encoder sees only this window. There is no cached
+            # attention/convolution state, which is exactly why this is
+            # "chunked" and not a streaming encoder.
             logits = self.model(inputs.input_values.to(self.device)).logits
             chunk_text = self.processor.batch_decode(
                 torch.argmax(logits, dim=-1)
@@ -152,6 +163,8 @@ class StreamingTranscriber:
             duration = len(chunk["audio"]) / self.sample_rate
             total_audio += duration
             total_time += dt
+            # Merge the new chunk into the running hypothesis. The overlap is
+            # the only mechanism preventing duplicated words; it is heuristic.
             hypothesis = merge_hypotheses(hypothesis, chunk_text)
             partial = {
                 "chunk": i,

@@ -4,6 +4,16 @@ Selection is by taxonomy category (``onebit_asr.models.conformer_utils``), not
 by hard-coded architecture assumptions. Weights are copied numerically from
 the FP layer into the BitLinear master weights *before* quantization, so the
 pre-quantization values are preserved and only ``forward`` binarizes.
+
+Debugging notes
+---------------
+- The expected counts are 96 (attention-only), 96 (FFN-only), 192 (both).
+  If ``report["n_replaced"]`` is 0, the selection keys are wrong or the taxonomy
+  did not match the checkpoint naming; print ``report["retained"]``.
+- Replacement is in-place. If you need the original model afterwards, deep-copy
+  it first; there is no undo.
+- ``layer_cls.from_linear`` copies the FP weights, so a replacement does not
+  change the function until the first quantized forward.
 """
 
 from __future__ import annotations
@@ -52,6 +62,9 @@ def replace_linears(
         A report dict with ``replaced`` / ``retained`` lists, counts, and the
         parameter count of each group.
     """
+    # Resolve names BEFORE mutating the tree. `select_by_category` walks the
+    # current modules; doing it inside the loop would mix pristine and replaced
+    # layers and make the count depend on traversal order.
     selected_names = {name for name, _m, _c in select_by_category(model, selection)}
 
     replaced, retained = [], []
@@ -60,8 +73,12 @@ def replace_linears(
         category = categorize(name)
         if name in selected_names:
             if isinstance(module, layer_cls):
+                # Idempotency: running the same replacement twice must not wrap
+                # a BitLinear in another BitLinear (which would quantize twice).
                 replaced.append({**_describe(name, module, category), "note": "already replaced"})
                 continue
+            # Modules are attributes of a parent module, not of themselves.
+            # setattr on the parent is the only way to swap the child in place.
             parent, attr = get_parent_module(model, name)
             replacement = layer_cls.from_linear(module, scale_mode=scale_mode, ste_clip=ste_clip)
             setattr(parent, attr, replacement)

@@ -38,7 +38,12 @@ def pack_sign_bits(weight: torch.Tensor) -> np.ndarray:
 
 
 def unpack_sign_bits(packed: np.ndarray, numel: int, shape: tuple[int, ...]) -> np.ndarray:
-    """Unpack to a float32 array of ±1 with the original shape."""
+    """Unpack to a float32 array of ±1 with the original shape.
+
+    Bit convention: 1 → +1, 0 → −1. `pack_sign_bits` used ``sign(W) > 0``, so a
+    zero weight becomes −1 here (the same measure-zero edge case as the size
+    accounting; trained weights are not exactly zero).
+    """
     bits = np.unpackbits(np.asarray(packed, dtype=np.uint8))[:numel]
     return (bits.astype(np.float32) * 2.0 - 1.0).reshape(shape)
 
@@ -78,6 +83,10 @@ class PackedBitLinear(nn.Module):
         return weight * self.alpha
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
+        # Every call unpacks the bits and materializes an FP weight. That is the
+        # honest cost of serving from packed storage with an FP-activation
+        # runtime. If you cache `effective_weight()` for speed, you lose the
+        # storage win in memory; do not do both and claim compression.
         return F.linear(input, self.effective_weight(), self.bias)
 
     def extra_repr(self) -> str:  # noqa: D105
@@ -89,12 +98,19 @@ class PackedBitLinear(nn.Module):
 
 
 def pack_model(model: nn.Module) -> tuple[nn.Module, dict]:
-    """Replace every ``BitLinear`` in ``model`` with ``PackedBitLinear`` in place."""
+    """Replace every ``BitLinear`` in ``model`` with ``PackedBitLinear`` in place.
+
+    This drops the FP32 masters (they are not copied into the packed module).
+    It is intentionally destructive: keep the QAT checkpoint if you need to
+    resume training. The returned model is for inference/benchmarking only.
+    """
     replaced = 0
     packed_bytes = 0
     for name, module in list(model.named_modules()):
         if not isinstance(module, BitLinear):
             continue
+        # Same parent-setattr trick as replace_linears: modules are attributes
+        # of their parent, not of themselves.
         parent_path, attr = name.rsplit(".", 1) if "." in name else ("", name)
         parent = model.get_submodule(parent_path) if parent_path else model
         new = PackedBitLinear.from_bitlinear(module)
@@ -153,6 +169,11 @@ def xnor_popcount_packed(x_packed: np.ndarray, w_packed: np.ndarray, n_bits: int
 
     Returns:
         ``(M, K)`` int32 matrix of matching-bit counts (higher = more similar).
+
+    This is the only place in the repo that performs true 1-bit×1-bit compute.
+    The intermediate `xor` tensor is `(M, K, N/8)` bytes, so this reference is
+    memory-hungry for large shapes; it is a correctness/speed probe, not a
+    production kernel.
     """
     x = np.asarray(x_packed, dtype=np.uint8)
     w = np.asarray(w_packed, dtype=np.uint8)

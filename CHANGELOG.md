@@ -8,6 +8,45 @@ an exact, reproducible repository state.
 
 ---
 
+## v1.5.1 — Documentation: deep-dive, experiment log, figures, debugging comments
+
+**Scope:** documentation and code-comment checkpoint. **No new measurements**;
+all numbers are the v1.5.0 artifacts. This release exists so a new engineer can
+learn the project and debug it without reverse-engineering the history.
+
+### Added
+- `deepdive.md` — a from-scratch teaching guide: ASR/CTC, the Conformer
+  parameter map, the 1-bit math (including the `alpha + 1/N` gradient), BitLinear
+  line by line, layer selection, PTQ vs QAT, distillation, packing, benchmarking,
+  streaming, reproducibility, a debugging cookbook, glossary, and exercises.
+- `EXPERIMENT_LOG.md` — every experiment in the requested format: what we did,
+  why, did it work, why not, what we changed instead, and what worked and why.
+  Includes the infrastructure failure log and the decision log.
+- `docs/figures/` — eight figures generated from the committed JSONs:
+  accuracy vs deploy size, WER by arm, PTQ vs QAT, training curves, artifact
+  composition, A100 RTF/latency, streaming WER, and the parameter map.
+- `scripts/make_figures.py` — deterministic figure generator (reads `results/`,
+  writes `docs/figures/`; no hand-entered numbers).
+- README: “Documentation map”, “Results at a glance” (figures + captions),
+  “What worked / what didn't”, and the parameter-map figure.
+
+### Changed
+- Debugging notes and invariants added throughout:
+  `quantization/{ste,scaling,binarization,bitlinear,packed}.py`,
+  `models/{conformer_utils,replace_layers}.py`,
+  `training/{qat,distillation}.py`,
+  `evaluation/{evaluate,latency,model_size}.py`, `streaming.py`, and the
+  `train_qat`, `train_distillation`, and `run_final_eval` entry points.
+- `pyproject.toml` — version 1.5.0 → 1.5.1.
+- README test count / layout updated for 88 tests and the `docs/` tree.
+
+### Notes
+- The figures are derived from `results/*.json`; if a result changes, rerun
+  `scripts/make_figures.py` and `scripts/summarize_results.py`.
+- No result was regenerated or overwritten in this checkpoint.
+
+---
+
 ## v1.5.0 — Phase 12–19: attention+FFN QAT, distillation, sensitivity, benchmarks
 
 **Scope:** the full post-Phase-11 research program on the local 8×A100-80GB

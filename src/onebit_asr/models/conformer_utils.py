@@ -8,6 +8,16 @@ It is used by:
 Keeping inspection and replacement on one taxonomy prevents the failure mode
 where a config key silently matches nothing (e.g. selecting ``ffn`` when the
 taxonomy emits ``ffn_in`` / ``ffn_out``).
+
+Debugging notes
+---------------
+- If a real linear lands in ``other``, print its name and add a rule here; do
+  not special-case it in the replacement script.
+- ``selected_categories`` raises on unknown keys. That is a feature: a typo in
+  ``configs/*.yaml`` must fail loudly, not leave the layer in FP32.
+- ``iter_linears`` includes ``BitLinear`` because it subclasses ``nn.Linear``.
+  It therefore returns already-replaced layers too; callers must handle that
+  (``replace_linears`` does).
 """
 
 from __future__ import annotations
@@ -52,12 +62,21 @@ def categorize(name: str) -> str:
     """
     n = name.lower()
 
+    # Order matters:
+    # 1. CTC head / feature projection are checked first. They are specific
+    #    names and must win over broader substring rules.
+    # 2. Attention is checked as a group, then q/k/v before output. The `output`
+    #    rule is last inside the group because it is the broadest.
+    # 3. FFN names are checked after attention so `ffn1.output_dense` cannot be
+    #    mistaken for an attention output.
     if "lm_head" in n or n.endswith("ctc_head") or "ctc_head" in n:
         return "ctc_head"
     if "feature_projection" in n:
         return "feature_projection"
 
     if "attention" in n or "self_attn" in n or "attn" in n:
+        # HF naming: linear_q/k/v/out. fairseq naming: q_proj/k_proj/v_proj/
+        # out_proj. The `endswith`/`.query.` forms cover other implementations.
         if "q_proj" in n or "linear_q" in n or n.endswith(".query") or ".query." in n:
             return "attention_q"
         if "k_proj" in n or "linear_k" in n or n.endswith(".key") or ".key." in n:
@@ -68,6 +87,7 @@ def categorize(name: str) -> str:
             return "attention_output"
         return "attention_other"
 
+    # FFN: HF uses intermediate_dense/output_dense; fairseq uses linear1/linear2.
     if "linear1" in n or "intermediate_dense" in n or "intermediate" in n:
         return "ffn_in"
     if "linear2" in n or "output_dense" in n:
@@ -102,7 +122,12 @@ def selected_categories(selection: dict[str, bool]) -> set[str]:
 
 
 def select_by_category(model: nn.Module, selection: dict[str, bool]):
-    """Return ``[(name, module, category)]`` for categories selected as True."""
+    """Return ``[(name, module, category)]`` for categories selected as True.
+
+    This returns **both** pristine ``nn.Linear`` and already-replaced
+    ``BitLinear`` modules (the latter are subclasses). Do not assume the list is
+    all FP32; ``replace_linears`` checks the type before wrapping again.
+    """
     wanted = selected_categories(selection)
     out = []
     for name, module in iter_linears(model):

@@ -1,19 +1,37 @@
 """Phase 11 — quantization-aware training entry point.
 
-Two modes:
+Three modes:
 
 - ``--smoke``: a tiny CPU dry run (small train.100 subset, few steps, small dev
   eval). Cheap sanity check of the whole QAT pipeline; writes a separate
   ``results/qat_smoke.json``.
-- full mode: the real cloud-GPU experiment (config-driven subset/epochs). NOT
-  launched by this task; requires GPU access and explicit approval.
+- ``--probe``: a short timed/VRAM run using the full run's batch settings.
+  It never evaluates or checkpoints; it only measures seconds/step and memory.
+- full mode: the real experiment (config-driven subset/epochs). On this project
+  it runs on the A100 cluster (``cluster/*.pbs``) or Kaggle.
 
-Both modes preserve the pinned evaluation protocol and never touch
+Both full and smoke modes preserve the pinned evaluation protocol and never touch
 ``results/baseline.json``.
+
+Debugging notes
+---------------
+- **Leakage guard:** training refuses the validation/test split. If you see
+  "Refusing to train on the evaluation split", fix the config, do not bypass it.
+- **Probe before training:** the gradient probe must run before ``trainer.train()``
+  because the optimizer zeroes gradients after each step.
+- **Save/load is a diagnostic:** a false negative (GPU kernels are not
+  bit-identical) returns exit 1. The cluster/Kaggle runners still pack whenever
+  the result JSON exists, so a diagnostic must not destroy a valid experiment.
+- **`--probe` return path:** it writes a probe JSON and returns before the
+  evaluation/checkpoint code. If you see an evaluation in probe mode, a config
+  or arg was not passed correctly.
+- **The result JSON is the source of truth.** Logs can be truncated; the JSON
+  records the sample IDs, versions, commit, replacement counts, and metrics.
 
 Usage:
     python scripts/train_qat.py --config configs/qat.yaml --smoke
-    python scripts/train_qat.py --config configs/qat.yaml            # cloud-gpu only
+    python scripts/train_qat.py --config configs/qat.yaml --probe
+    python scripts/train_qat.py --config configs/qat_attn_ffn.yaml
 """
 
 import argparse
@@ -119,7 +137,9 @@ def main() -> int:
     ste_clip = quant_cfg.get("ste_clip", None)
     training = resolve_training(cfg, args.smoke, args.probe, args.probe_steps)
 
-    # Leakage guard: training must never use the evaluation split.
+    # Leakage guard: training must never use the evaluation split. This is a hard
+    # error, not a warning: a QAT run that trains on validation would invalidate
+    # every reported WER.
     if training["split"] == eval_cfg.get("split"):
         raise SystemExit(
             f"Refusing to train on the evaluation split {training['split']!r}"
@@ -157,10 +177,9 @@ def main() -> int:
     recorder = make_loss_recorder()
     trainer = build_trainer(model, train_dataset, collator, training_args, recorder)
 
-    # Put the model on the training device before the probe. The stock Trainer
-    # would move it at train() time; doing it explicitly makes the pre-training
-    # gradient probe run on the same device as training (and avoids a slow,
-    # unrepresentative CPU probe on GPU runs).
+    # Move the model before the probe. The stock Trainer would move it at
+    # train() time; without this the probe runs on CPU (slow and not
+    # representative) or hits a device mismatch.
     model.to(training_args.device)
 
     # Gradient-flow probe (before training: Trainer zeroes grads after each step).
@@ -291,6 +310,9 @@ def main() -> int:
     metrics = evaluate_model(model, processor, samples)
 
     # --- Checkpoint (FP master weights; not packed) + save/load verification ---
+    # The checkpoint is ordinary FP32/FP16 masters. The packed 1-bit deploy
+    # artifact is a separate step (`scripts/pack_qat_model.py`); do not confuse
+    # the checkpoint size with the deploy size.
     manifest = save_qat_checkpoint(model, checkpoint_dir)
     reloaded, _ = load_qat_checkpoint(
         checkpoint_dir, Wav2Vec2ConformerForCTC, cfg["layers"],
@@ -431,6 +453,10 @@ def main() -> int:
           f"| vs FP32 baseline: {baseline_wer}")
     print(f"Saved to {output}")
     if not save_load_ok:
+        # Exit 1 is a diagnostic signal, not "the experiment failed". The
+        # cluster/Kaggle runners treat a missing/invalid result as failure but
+        # still pack whenever the result JSON exists. Do not delete the result
+        # or the checkpoint here.
         return 1
     return 0
 

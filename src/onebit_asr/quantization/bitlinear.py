@@ -22,6 +22,18 @@ Forward:
         -> sign(W)            [STE backward]
         -> alpha * sign(W)    [alpha = mean(|W|), recomputed each forward]
         -> F.linear(input, Wq, bias)
+
+Debugging checklist
+-------------------
+1. ``type(layer) is BitLinear`` and the surrounding model still has the same
+   ``state_dict`` keys as the original ``nn.Linear``.
+2. ``layer.weight`` is FP (not ±1). If it is ±1, something overwrote the master.
+3. ``layer.effective_weight().abs().mean()`` is close to
+   ``layer.weight.abs().mean()`` (both should be ~alpha).
+4. ``layer.weight.grad`` is not ``None`` after a backward pass. If it is, the
+   layer is frozen, detached, or outside the loss graph.
+5. Under fp16 autocast, ``layer.weight`` stays fp32 (the masters are fp32); the
+   *derived* ``wq`` follows the autocast dtype. This is expected.
 """
 
 from __future__ import annotations
@@ -37,6 +49,7 @@ class BitLinear(nn.Linear):
     """1-bit (binary-weight) linear layer with FP master weights."""
 
     #: Marker used for isinstance-style identification without importing this class.
+    #: `model_size.build_packed_tensors` and `packed.pack_model` rely on it.
     is_bitlinear = True
 
     def __init__(
@@ -49,6 +62,10 @@ class BitLinear(nn.Linear):
         device=None,
         dtype=None,
     ) -> None:
+        # `super().__init__` creates `weight` (FP master) and `bias` with exactly
+        # the same parameter names/shapes as nn.Linear. The two config fields are
+        # plain Python attributes, not parameters, so they do not enter the
+        # optimizer or the checkpoint state_dict.
         super().__init__(in_features, out_features, bias=bias, device=device, dtype=dtype)
         self.scale_mode = scale_mode
         self.ste_clip = ste_clip
@@ -60,28 +77,45 @@ class BitLinear(nn.Linear):
         scale_mode: str = "per_tensor_mean_abs",
         ste_clip: float | None = None,
     ) -> "BitLinear":
-        """Create a BitLinear that numerically copies ``linear``'s FP weights."""
+        """Create a BitLinear that numerically copies ``linear``'s FP weights.
+
+        The copy is intentional and lossless: the new layer starts from the exact
+        FP32 values of the layer it replaces. Quantization happens later, inside
+        ``forward``. Do not copy binary values here.
+        """
         bit = cls(
             linear.in_features,
             linear.out_features,
             bias=linear.bias is not None,
             scale_mode=scale_mode,
             ste_clip=ste_clip,
+            # Preserve device/dtype: a model loaded in fp16 or on CUDA must not
+            # silently get a CPU/fp32 layer.
             device=linear.weight.device,
             dtype=linear.weight.dtype,
         )
         with torch.no_grad():
+            # `copy_` (not assignment) preserves the Parameter object and dtype.
             bit.weight.copy_(linear.weight)
             if linear.bias is not None:
                 bit.bias.copy_(linear.bias)
         return bit
 
     def effective_weight(self) -> torch.Tensor:
-        """The quantized weight ``alpha * sign(W)`` actually used in forward."""
+        """The quantized weight ``alpha * sign(W)`` actually used in forward.
+
+        This is a *derived* tensor for inspection/debugging. It is not stored,
+        not registered as a parameter, and not saved in the checkpoint. Calling
+        it in a loop under ``torch.enable_grad()`` builds a graph each time;
+        wrap it in ``torch.no_grad()`` for pure inspection.
+        """
         wq, _alpha = quantize_weight(self.weight, self.scale_mode, self.ste_clip)
         return wq
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:  # noqa: D102
+        # Recompute every call. This is deliberate: QAT needs the quantized view
+        # to follow the live master weights. Caching `wq` would freeze the
+        # quantization after the first step and silently turn QAT into PTQ.
         wq, _alpha = quantize_weight(self.weight, self.scale_mode, self.ste_clip)
         return F.linear(input, wq, self.bias)
 

@@ -14,6 +14,24 @@ Design (preserves the approved Phase 9/10 decisions):
 - Stock Hugging Face ``Trainer`` is used, unmodified.
 - Quantization/expansion stays inside ``BitLinear``, so no Trainer changes are
   needed and the checkpoint holds ordinary FP32 master weights (NOT packed).
+
+Debugging notes
+---------------
+- **The probe must run before ``trainer.train()``.** The optimizer zeroes
+  gradients after each step, so inspecting gradients after training reports 0.
+  ``probe_gradient_flow`` is a separate forward/backward on one batch.
+- **Place the model before the probe.** The stock Trainer moves the model at
+  ``train()`` time; the probe derives the device from the model and moves the
+  batch to it. If you see a device mismatch here, check that the model was
+  moved/loaded on the expected device.
+- **``warmup_ratio`` is not a TrainingArguments field in transformers 5.x.**
+  It is resolved to an integer ``warmup_steps`` from the actual number of
+  optimizer steps; a wrong ``train_num_samples`` changes the warmup length.
+- **Save/load checks are diagnostics, not science.** GPU kernels are not
+  bit-identical; compare decoded argmax agreement (≥0.99) and use a loose logit
+  tolerance. A false negative must not abort packing.
+- **The probe gate is conservative.** ``vram_headroom`` requires 15% free after
+  the probe; an OOM during the probe is treated as a gate failure, not a crash.
 """
 
 from __future__ import annotations
@@ -47,7 +65,13 @@ def setup_qat_model(model, layers: dict, scale_mode: str = "per_tensor_mean_abs"
 
 
 def freeze_feature_extractor(model: nn.Module) -> int:
-    """Freeze the CNN feature extractor parameters. Returns count frozen."""
+    """Freeze the CNN feature extractor parameters. Returns count frozen.
+
+    Only the convolutional feature extractor is frozen. LayerNorm, attention,
+    FFN, feature projection, and the CTC head stay trainable. Freezing the
+    extractor is standard wav2vec2 fine-tuning practice and also keeps it FP
+    (no BitLinear is applied there).
+    """
     feature_extractor = model.get_submodule(FEATURE_EXTRACTOR_PATH)
     frozen = 0
     for param in feature_extractor.parameters():
@@ -130,15 +154,21 @@ def probe_gradient_flow(model: nn.Module, batch: dict) -> dict:
     that the frozen feature extractor received no gradient.
     """
     # The batch comes from a CPU DataLoader, but the model may already be on a
-    # CUDA device (stock Trainer places it there in __init__). Move tensors.
+    # CUDA device (the Trainer moves it at train() time; we also move it
+    # explicitly before probing). Move tensors, or the first matmul will fail
+    # with "Expected all tensors to be on the same device".
     device = next(model.parameters()).device
     batch = {
         key: (value.to(device) if torch.is_tensor(value) else value)
         for key, value in batch.items()
     }
 
+    # `train()` is intentional: dropout/other train-time behavior should match
+    # the real training forward. We restore the previous mode afterwards.
     was_training = model.training
     model.train()
+    # Clear stale grads so "nonzero" really means this backward pass produced
+    # a gradient, not a previous step's leftover.
     model.zero_grad(set_to_none=True)
     out = model(**batch)
     loss = out.loss
@@ -149,6 +179,8 @@ def probe_gradient_flow(model: nn.Module, batch: dict) -> dict:
         p.grad is None or torch.count_nonzero(p.grad) == 0
         for p in feature_extractor.parameters()
     )
+    # Do not leave gradients in memory; the Trainer will zero them anyway, and
+    # a later probe should start clean.
     model.zero_grad(set_to_none=True)
     if not was_training:
         model.eval()
@@ -249,6 +281,16 @@ def build_training_arguments(training: dict, output_dir: str, smoke: bool = Fals
     from transformers import TrainingArguments
 
     warmup_steps = resolve_warmup_steps(training, train_num_samples, smoke)
+    # Keep every field explicit so a config change is visible in the result
+    # JSON. In particular:
+    # - `save_strategy` defaults to "no" to avoid HF epoch checkpoints (optimizer
+    #   state, ~5 GB each) exhausting a small cloud disk; the final masters are
+    #   saved explicitly by `save_qat_checkpoint`.
+    # - `fp16`/`bf16` are mutually exclusive in the Trainer; configs set one.
+    # - `remove_unused_columns=False` is required for distillation, whose batch
+    #   carries teacher columns not present in the model signature.
+    # - `dataloader_num_workers=0` avoids forking issues with the Arrow dataset
+    #   and CUDA in these jobs.
     kwargs = dict(
         output_dir=output_dir,
         per_device_train_batch_size=int(training["batch_size"]),
@@ -377,6 +419,9 @@ def gpu_memory_stats() -> dict:
         "device": f"cuda:{torch.cuda.current_device()}",
         "device_name": props.name,
         "total_bytes": int(props.total_memory),
+        # torch peaks are *this process's* allocator peaks. On a shared GPU
+        # (this cluster), other users' memory is not included here; see
+        # `nvidia_smi_memory_used_mb` for the whole-GPU figure.
         "peak_allocated_bytes": int(torch.cuda.max_memory_allocated()),
         "peak_reserved_bytes": int(torch.cuda.max_memory_reserved()),
         "nvidia_smi_memory_used_mb": _nvidia_smi_used_mb(),
@@ -402,7 +447,13 @@ def extrapolate_training_time(
     gradient_accumulation_steps: int,
     epochs: int,
 ) -> dict:
-    """Extrapolate full-run time from the probe's measured seconds/step."""
+    """Extrapolate full-run time from the probe's measured seconds/step.
+
+    This is an estimate, not a measurement: it excludes data loading, evaluation,
+    and packing. The ceiling arithmetic matches the Trainer's drop-last behavior
+    only approximately; use it to decide whether a run fits a walltime, not to
+    report a benchmark.
+    """
     if seconds_per_optimizer_step <= 0:
         raise ValueError("seconds_per_optimizer_step must be positive")
     micro_batches = math.ceil(int(subset_size) * int(epochs) / max(1, int(batch_size)))
@@ -419,7 +470,12 @@ def extrapolate_training_time(
 
 def vram_headroom(peak_bytes: int | None, total_bytes: int | None,
                   required_fraction: float = 0.15) -> dict:
-    """Check peak VRAM leaves the required fraction of total free."""
+    """Check peak VRAM leaves the required fraction of total free.
+
+    ``passes`` is ``None`` on CPU (the concept does not apply). Callers must
+    treat ``None`` as "not a GPU measurement", never as a pass. The Kaggle gate
+    additionally requires ``is_real_gpu_probe`` to be true.
+    """
     if peak_bytes is None or total_bytes is None or total_bytes <= 0:
         return {"applicable": False, "required_fraction": required_fraction,
                 "passes": None, "free_bytes": None, "free_fraction": None}

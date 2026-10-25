@@ -11,6 +11,20 @@ pinned protocol:
 
 The evaluator never loads a model itself, so it works for loaded FP32 models,
 in-memory BitLinear replacements, or (in future) QAT checkpoints.
+
+Debugging notes
+---------------
+- **Eval mode is forced.** A training loop leaves dropout active; the pinned
+  protocol is inference. The previous mode is restored afterwards.
+- **Timing excludes feature extraction.** ``t0`` starts after ``processor(...)``,
+  so ``latency_s`` is forward + argmax + decode. The Phase 17 benchmark reports
+  end-to-end (including preprocessing) separately.
+- **`peak_rss_mb` is process high-water.** If you evaluate several models in one
+  process, this value is cumulative; use one process per arm for a clean RSS.
+- **The model is moved only if the caller moved it.** This function moves inputs
+  to the model's device but does not call ``model.to(...)``.
+- **Always keep the per-utterance details.** They let you diff two runs and see
+  whether a WER change is real or a subset mismatch.
 """
 
 from __future__ import annotations
@@ -83,12 +97,15 @@ def evaluate_model(
     total_proc = 0.0
 
     for i, s in enumerate(samples):
+        # Preprocessing is outside the timed region (see the module note).
         inputs = processor(s["audio"], sampling_rate=16_000,
                            return_tensors="pt", padding=True)
         audio_sec = len(s["audio"]) / 16_000
         t0 = time.perf_counter()
         with torch.no_grad():
             logits = model(inputs.input_values.to(device)).logits
+        # Greedy CTC: argmax per frame, then the processor collapses repeats and
+        # blanks. No language model.
         hyp = processor.batch_decode(torch.argmax(logits, dim=-1))[0]
         dt = time.perf_counter() - t0
 

@@ -7,6 +7,21 @@ and real container overhead.
 
 Nothing here reports a "1-bit model size" that silently omits scales, FP
 parameters, or container overhead.
+
+Debugging notes
+---------------
+- **Three numbers are not interchangeable.** Theoretical payload
+  (``params/8``), naive binary (``params`` bytes because a `uint8` tensor is one
+  byte per weight), and the measured artifact (packed + scales + non-quantized
+  FP + container) are all reported separately.
+- **`pack_binary_weights` uses ``sign(W) > 0``.** Exact zeros map to the 0 bit
+  (i.e. −1 on unpack), whereas `BitLinear`'s `sign(0)` is 0. This is a
+  measure-zero edge case; do not use exactly-zero weights in a packing test.
+- **FP32 masters are excluded from the artifact on purpose.** They are training
+  state. If you want the in-memory training footprint, add
+  `fp_master_bytes_excluded_from_artifact` back.
+- **`binary_model_size_report` writes a real temp file** to measure container
+  overhead; `quick_size_report` skips the file and is for multi-arm tables.
 """
 
 from __future__ import annotations
@@ -90,6 +105,11 @@ def pack_binary_weights(weight: torch.Tensor) -> np.ndarray:
 
     ``numpy.packbits`` packs along the flattened array; we record the original
     shape so it can be unpacked and reshaped.
+
+    The comparison is ``> 0``: a zero weight maps to the 0 bit, which unpacks as
+    −1. ``BitLinear`` uses ``torch.sign`` where ``sign(0) == 0``. The difference
+    affects only exactly-zero weights (measure-zero in trained models); tests
+    avoid zeros to keep the two paths comparable.
     """
     bits = (torch.sign(weight.detach()).flatten().cpu().numpy() > 0).astype(np.uint8)
     return np.packbits(bits)
@@ -127,6 +147,8 @@ def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dic
     bitlinear_weights: dict[str, nn.Module] = {}
     for name, module in model.named_modules():
         if _is_bitlinear(module) and hasattr(module, "weight"):
+            # Key by the *weight parameter* name, because the non-quantized loop
+            # below iterates `named_parameters()` and must skip these exact keys.
             bitlinear_weights[f"{name}.weight"] = module
 
     quantized_weight_count = sum(m.weight.numel() for m in bitlinear_weights.values())
@@ -138,6 +160,9 @@ def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dic
         packed = pack_binary_weights(module.weight)
         packed_payload_bytes += packed.nbytes
         tensors[f"{weight_name}_packed"] = torch.from_numpy(packed)
+        # One FP32 scalar per layer, exactly what forward() would compute. Using
+        # the master weight (not the packed bits) is important: the scale is not
+        # recoverable from the signs alone.
         alpha = module.weight.detach().abs().mean().to(torch.float32).reshape(1)
         scale_bytes += alpha.numel() * alpha.element_size()
         tensors[f"{weight_name}_scale"] = alpha
@@ -146,6 +171,8 @@ def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dic
     non_quantized_bytes = 0
     for pname, param in model.named_parameters():
         if pname in bitlinear_weights:
+            # Skip the FP32 masters: they are training state. Biases are NOT in
+            # this dict, so they remain in the artifact as FP parameters.
             continue
         tensors[pname] = param.detach().to(torch.float32).contiguous()
         non_quantized_params += param.numel()
@@ -160,6 +187,8 @@ def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dic
         "packed_payload_bytes": int(packed_payload_bytes),
         "fp_scale_bytes": int(scale_bytes),
         "non_quantized_fp_param_bytes": int(non_quantized_bytes),
+        # Assumes FP32 masters (the packing path loads/saves FP32). If you pack
+        # an fp16 model, this figure overstates the excluded bytes.
         "fp_master_bytes_excluded_from_artifact": int(quantized_weight_count * 4),
         "packed_artifact_components_bytes": int(
             packed_payload_bytes + scale_bytes + non_quantized_bytes
@@ -175,6 +204,10 @@ def quick_size_report(model: nn.Module, scale_mode: str = "per_tensor_mean_abs")
     container overhead, but a ~0.4–2 GB write). This lighter variant reuses the
     same tensor builder and reports the component bytes only; use it for
     multi-arm comparisons where writing one artifact per arm is wasteful.
+
+    Because no file is written, ``container_overhead_bytes`` is absent and the
+    total is the *component* sum, not a measured artifact. Do not compare it
+    directly with a measured file size without accounting for headers.
     """
     tensors, stats = build_packed_tensors(model)
     del tensors

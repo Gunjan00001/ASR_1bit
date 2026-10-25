@@ -4,20 +4,134 @@ Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
 
-**Current checkpoint:** `v1.5.0` — Phases 12–19 have been executed on an
-8×A100-80GB cluster under the pinned protocol. On **full LibriSpeech
-test-clean (2620 utterances)**, the 1-bit arms measure: attention-only
-**0.0449** at 1.983 GB, FFN-only **0.1134** at 0.813 GB, attention+FFN
-**0.2050** at **0.423 GB** (5.6× smaller), and attention+FFN + distillation
-(λ_kd=0.1) **0.1998** at the same 0.423 GB; FP32 is **0.0193**. Dev-clean
-(256) agrees: 0.0421 / 0.1190 / 0.2080 / 0.2022 at the same sizes. The full
-measured comparison is in [`RESULTS.md`](RESULTS.md). No number here is
-estimated; failed and negative results are kept, and the full research history
-is in [`planning.md`](planning.md).
+**Current checkpoint:** `v1.5.1` (documentation) for the measured `v1.5.0`
+results below. On **full LibriSpeech test-clean (2620 utterances)**, the 1-bit
+arms measure: attention-only **0.0449** at 1.983 GB, FFN-only **0.1134** at
+0.813 GB, attention+FFN **0.2050** at **0.423 GB** (5.6× smaller), and
+attention+FFN + distillation (λ_kd=0.1) **0.1998** at the same 0.423 GB; FP32 is
+**0.0193**. Dev-clean (256) agrees: 0.0421 / 0.1190 / 0.2080 / 0.2022 at the same
+sizes. The full measured comparison is in [`RESULTS.md`](RESULTS.md). No number
+here is estimated; failed and negative results are kept, and the full research
+history is in [`planning.md`](planning.md).
 
 > This README is written for an engineer joining at this checkpoint. It states
 > what exists, what was measured, and — just as importantly — what has **not**
 > been done yet.
+
+---
+
+## Documentation map
+
+| Document | Purpose | Start here if… |
+|---|---|---|
+| **README.md** (this file) | status, results, design, limitations, reproduction | you want the engineer's reference |
+| [`deepdive.md`](deepdive.md) | a from-scratch, easy teaching guide to ASR, CTC, 1-bit math, QAT, KD, packing, benchmarks, streaming, and debugging | you are new to the project or to low-bit ML |
+| [`EXPERIMENT_LOG.md`](EXPERIMENT_LOG.md) | what we did, why, did it work, why not, what we changed, and what worked | you want the reasoning behind every number |
+| [`RESULTS.md`](RESULTS.md) | generated measured tables (no hand-entered numbers) | you want the final numbers and artifact sizes |
+| [`planning.md`](planning.md) | chronological research history, failures, and next steps | you want the full narrative |
+| [`CHANGELOG.md`](CHANGELOG.md) | versioned checkpoints of the repository | you want to know what changed when |
+| [`cluster/README.md`](cluster/README.md) | PBS/A100 execution layer, GPU selection, job scripts | you want to rerun the training |
+| [`kaggle/README.md`](kaggle/README.md) | Kaggle T4 execution layer | you want the first cloud-GPU path |
+| [`one_bit_asr_implementation_plan.md`](one_bit_asr_implementation_plan.md) | the original specification (unchanged) | you want the project's requirements |
+
+**Reading order for a newcomer:** this file's “Results at a glance” → `deepdive.md`
+§1–§4 → `deepdive.md` §6–§9 → `EXPERIMENT_LOG.md` E8–E17 → `RESULTS.md`.
+
+---
+
+## Results at a glance
+
+All headline numbers are greedy CTC on fixed LibriSpeech subsets. The final table
+is the full 2620-utterance test-clean; dev is the pinned 256-utterance subset.
+“Deploy size” is the measured packed safetensors artifact, not a theoretical
+1-bit payload.
+
+### The accuracy/storage trade-off
+
+![Accuracy vs storage](docs/figures/wer_vs_size_full_test.png)
+
+*Figure 1 — Each point is a measured model. The dashed line connects the measured
+frontier (FP32 → attention-only → FFN-only → best 0.423 GB arm). PTQ
+attention+FFN is at 100% WER and is off-scale. The best 5.6× arm is
+attention+FFN + distillation at λ_kd=0.1 (19.98%).*
+
+The core trade-off:
+
+| What you get | WER (full test) | Packed size | Compression |
+|---|---:|---:|---:|
+| FP32 reference | 0.0193 | 2.374 GB | 1.0× |
+| 1-bit attention-only QAT | 0.0449 | 1.983 GB | 1.2× |
+| 1-bit FFN-only QAT | 0.1134 | 0.813 GB | 2.9× |
+| 1-bit attention+FFN QAT | 0.2050 | 0.423 GB | 5.6× |
+| + distillation λ_kd=0.1 | **0.1998** | 0.423 GB | 5.6× |
+
+### WER by arm
+
+![WER by arm](docs/figures/wer_by_arm_full_test.png)
+
+*Figure 2 — Full test-clean WER. The attention-only arm is the accuracy leader
+among 1-bit models; the FFN-only arm is the best middle point; the combined arm
+is the compression extreme.*
+
+### Why QAT is necessary
+
+![PTQ vs QAT](docs/figures/ptq_vs_qat_dev.png)
+
+*Figure 3 — PTQ (red) has no chance to adapt; QAT (blue) trains the FP32 masters
+through the quantized forward pass. Attention-only recovers from 44.5% to 4.2%,
+FFN-only from 100% to 11.9%, and the combined arm from 100% to 20.8%.
+The PTQ collapse is a real result, not a bug — the control experiment reproduces
+FP32 exactly.*
+
+### Training curves
+
+![Training loss curves](docs/figures/training_loss_curves.png)
+
+*Figure 4 — Left: QAT CTC loss for the three layer selections. Right: the
+distillation total loss (CTC + KD). The distillation loss is not comparable to
+the CTC-only panels; it is shown to explain why λ_kd matters. Lower training loss
+does not guarantee lower WER: the combined arm has a lower loss than the
+attention-only arm but a much worse WER, which is the interaction this project
+did not fully explain.*
+
+### What is actually inside the artifact
+
+![Deploy size composition](docs/figures/size_breakdown.png)
+
+*Figure 5 — Packed 1-bit weights are tiny (13–63 MB); the non-quantized FP
+parameters dominate. That is why attention-only is only 1.2× smaller than FP32:
+its FP FFN alone is ~1.6 GB. The FP32 master weights are training state and are
+excluded.*
+
+### Does 1-bit make inference faster?
+
+![A100 benchmark](docs/figures/benchmark_rtf_latency.png)
+
+*Figure 6 — No. All arms have RTF ≈0.006–0.007 and p50 ≈0.035–0.045 s on an
+A100. The difference is <10% and tracks parameter count, not precision. The
+runtime expands `alpha·sign(W)` to FP before `F.linear`; binarization buys disk
+size, not wall-clock speed.*
+
+### Streaming is a prototype, not a streaming encoder
+
+![Chunked streaming](docs/figures/streaming_demo.png)
+
+*Figure 7 — Chunked 2 s windows with 0.5 s overlap vs a full-utterance decode on
+a 4.45 s sample. Chunked WER is 69.2% vs 15.4%; the merge can duplicate words.
+A true streaming encoder would need cached convolution/attention state.*
+
+### What worked, what didn't
+
+| WORKED | PARTIAL | DID NOT WORK |
+|---|---|---|
+| Drop-in `BitLinear` (FP masters, same state_dict) | Attention+FFN QAT: 20.50%, 5.6× — real but ~10× FP32 WER | 1-bit PTQ attention+FFN: 100% WER (expected) |
+| QAT attention-only: 4.49% full test | Distillation λ_kd=0.1: 19.98% — ~0.5 pp gain | Distillation λ_kd=0.5: 22.18% (worse than QAT) |
+| QAT FFN-only: 11.34% at 2.9× | Packed inference: storage win, 1.10× slower | Any inference speedup from binarization |
+| Bit packing + honest size accounting | Chunked streaming: partial transcripts, poor WER | 5.6× compression at near-FP32 accuracy on this recipe |
+
+**The central scientific finding:** QAT recovers every *isolated* binarization,
+but the *combined* attention+FFN arm is worse than either isolated arm. The two
+quantizations interact; the interaction is the main open question.
 
 ---
 
@@ -47,7 +161,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (87 tests) | ✅ green |
+| 7 | Test gate (88 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
@@ -99,6 +213,12 @@ fine-tuned on 960 h of LibriSpeech. Model-card reference (greedy CTC):
 | `attention_output` (`self_attn.linear_out`) | 24 | 25,190,400 | 4.25% | 1024 → 1024 |
 | `feature_projection` (`feature_projection.projection`) | 1 | 525,312 | 0.09% | 512 → 1024 |
 | `ctc_head` (`lm_head`) | 1 | 32,800 | 0.01% | 1024 → 32 |
+
+![Parameter map](docs/figures/param_map.png)
+
+*Figure 8 — FFN in/out together are ~68% of the 593.4M parameters; attention is
+17%. This is why an attention-only 1-bit model is still ~1.98 GB: the FP32 FFN
+dominates the artifact.*
 
 ## 5. Environment / compute profile
 
@@ -355,7 +475,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **87 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **88 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -382,8 +502,8 @@ This is an experimental choice, not a permanent rule.
   packed-vs-BitLinear output equivalence, module replacement, size accounting.
 - `test_streaming.py` (8) — chunk coverage/overlap, short audio, invalid
   settings, word-overlap merge semantics.
-- `test_latency.py` (2) — warmed-up benchmark wrapper and comparison-table
-  rendering on a tiny synthetic model.
+- `test_latency.py` (3) — warmed-up benchmark wrapper, comparison-table
+  rendering, and accuracy-only (`--no-benchmark`) table rows.
 
 ## 19. Phase 8 replacement behavior (measured on the real model)
 
@@ -833,14 +953,11 @@ one-bit-asr/
 │                       README.md (cloud T4 execution + pack-only recovery)
 ├── cluster/            pick_gpu.sh + PBS jobs (attention/FFN QAT, attention-only
 │                       A100 arm, distillation), README.md (A100 execution)
-├── tests/              87 tests (STE, binarization, BitLinear, replacement, QAT,
+├── tests/              88 tests (STE, binarization, BitLinear, replacement, QAT,
 │                       evaluate, config, distillation, packed, streaming, latency)
-├── results/            env, model_inspection, baseline, ptq_binary,
-│                       size_report, ptq_collapse_diagnostic, qat_smoke,
-│                       qat_attn, qat_attn_size_report, qat_attn_repro,
-│                       distillation_smoke, and the v1.5.0 A100 runs
-│                       (qat_attn_a100, qat_ffn_a100, qat_attn_ffn,
-│                       distill_attn_ffn, final_comparison_*)
+├── docs/figures/       generated charts (scripts/make_figures.py)
+├── deepdive.md         from-scratch teaching guide
+├── EXPERIMENT_LOG.md   what/why/did-it-work log
 ├── RESULTS.md          generated measured tables (no hand-entered numbers)
 ├── checkpoints/        (git-ignored)
 ├── planning.md                          living research history & execution plan

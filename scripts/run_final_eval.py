@@ -7,18 +7,33 @@ written per arm plus a combined JSON/Markdown table.
 Arms
 ----
 - ``fp32``: the untouched FP32 checkpoint (reference).
-- ``ptq_attention`` / ``ptq_ffn`` / ``ptq_full`` / ``ptq_full_plus_fproj``:
-  post-training quantization sensitivity variants (no retraining).
-- ``qat_attention_a100`` / ``qat_attn_ffn`` / ``distill_attn_ffn``: QAT and
-  distillation checkpoints produced by the cluster jobs.
+- ``ptq_attention`` / ``ptq_ffn`` / ``ptq_full`` / ``ptq_full_plus_fproj`` /
+  ``ptq_all_linears``: post-training quantization sensitivity variants.
+- ``qat_attention_a100`` / ``qat_ffn_a100`` / ``qat_attn_ffn``: QAT checkpoints.
+- ``distill_attn_ffn`` / ``distill_attn_ffn_kd01``: distillation checkpoints.
 
 The script skips an arm whose checkpoint is missing (recorded explicitly), so it
 can be run before every training job has finished.
+
+Debugging notes
+---------------
+- **A checkpoint is only complete if its weights file exists.** The Trainer
+  creates `output_dir` when a job starts; `is_dir()` alone is not enough. A
+  missing/incomplete arm is recorded in `skipped`, not treated as a crash.
+- **One bad arm must not abort the table.** The loop catches per-arm exceptions
+  and continues; check the `skipped` list in the combined JSON.
+- **`--no-benchmark` is accuracy-only.** It is used for the full 2620-utterance
+  test-clean so the run does not pay for a second inference pass. Performance
+  columns are `n/a` in that table; warmed-up numbers come from the 256 subsets.
+- **Do not compare host RSS across arms in one process.** It is a process
+  high-water mark; GPU peak memory is reset per arm by the benchmark.
 
 Usage:
     python scripts/run_final_eval.py --split dev --n 256
     python scripts/run_final_eval.py --split test --n 256 \
         --arms fp32,ptq_full,qat_attn_ffn,distill_attn_ffn
+    python scripts/run_final_eval.py --split test --n 2620 \
+        --arms fp32,qat_attn_ffn,distill_attn_ffn_kd01 --no-benchmark
 """
 
 from __future__ import annotations
@@ -232,6 +247,9 @@ def main() -> int:
             continue
 
         if args.no_benchmark:
+            # Accuracy-only path: one inference pass, no latency benchmark. Used
+            # for the full 2620-utterance test-clean. The performance dict is a
+            # placeholder so the comparison table can render `n/a`.
             accuracy = evaluate_model(model, processor, samples,
                                       verbose=not args.no_progress)
             if not args.no_progress:

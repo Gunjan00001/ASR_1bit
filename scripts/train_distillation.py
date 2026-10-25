@@ -13,6 +13,19 @@ The smoke mode builds a 16-utterance dataset and runs 8 steps on CPU or GPU; it
 is a pipeline check, not an accuracy experiment. Full mode writes
 ``results/<output>`` and an FP32-master checkpoint (not bit-packed; packing is
 ``scripts/pack_qat_model.py``).
+
+Debugging notes
+---------------
+- **Teacher cache key:** the cache path is derived from teacher id, split,
+  subset size, and seed. If you change any of them, a new cache is built. Pass
+  ``--refresh-teacher-cache`` to force a recompute even if a cache exists.
+- **Free the teacher before the student.** The teacher is deleted and the CUDA
+  cache is emptied after precompute; otherwise the student + optimizer can OOM.
+- **Move the student before the probe.** The probe derives the device from the
+  model; a CPU model with CUDA batches is a device-mismatch bug.
+- **Inspect `loss_components`.** If KD ≫ CTC, lower λ_kd. The λ_kd=0.5 run
+  failed for exactly this reason; λ_kd=0.1 improved it.
+- **Save/load is a diagnostic** (argmax agreement + loose logits), as in QAT.
 """
 
 from __future__ import annotations
@@ -185,6 +198,8 @@ def main() -> int:
     print(f"Train dataset: {len(train_dataset)} utterances")
 
     # --- Teacher logits: precompute once, reuse across epochs -----------------
+    # The cache key includes teacher/split/subset/seed. Changing any of them
+    # produces a different path, so a stale cache cannot be silently reused.
     cache_path = Path(args.teacher_cache) if args.teacher_cache else teacher_logits_cache_path(
         distill_cfg.get("teacher_logits_cache", ROOT / "checkpoints" / "teacher_logits"),
         teacher_id=teacher_id, split=training["split"],
@@ -208,6 +223,8 @@ def main() -> int:
             progress_every=500 if len(train_dataset) > 100 else 4,
         )
         del teacher
+        # Free the teacher's CUDA allocations before loading the student and
+        # its optimizer state; otherwise a 80 GB GPU can still OOM.
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         cache_info.update(save_teacher_logits(
@@ -249,6 +266,9 @@ def main() -> int:
 
     distill_dataset = DistillationDataset(train_dataset, teacher_logits)
     collator = DistillationCollator(processor=processor)
+    # `remove_unused_columns=False` is required: the batch carries
+    # teacher_logits/teacher_mask, which are not fields in the model's forward
+    # signature. Without it, the Trainer would drop them before compute_loss.
     training_args = build_training_arguments(
         training, str(checkpoint_dir), smoke=args.smoke,
         train_num_samples=len(distill_dataset), remove_unused_columns=False,
@@ -265,6 +285,9 @@ def main() -> int:
     probe_loader = torch.utils.data.DataLoader(
         distill_dataset, batch_size=2, collate_fn=collator
     )
+    # Probe before train(): the optimizer zeroes gradients after each step, so a
+    # post-training probe would report zeros. This is a real forward/backward on
+    # one batch with the combined CTC+KD loss.
     probe = _probe_distillation_step(model, probe_loader, device, distill_cfg)
     print(f"Distillation probe: loss={probe['probe_loss']:.2f} "
           f"(ctc={probe['probe_parts']['ctc']:.2f}, "
@@ -295,6 +318,8 @@ def main() -> int:
     model.eval()
     metrics = evaluate_model(model, processor, samples)
 
+    # FP32 masters, not a packed artifact. `pack_qat_model.py` builds the
+    # deployable 1-bit file from this checkpoint.
     manifest = save_qat_checkpoint(model, checkpoint_dir)
     reloaded, _ = load_qat_checkpoint(
         checkpoint_dir, Wav2Vec2ConformerForCTC, cfg["layers"],
@@ -451,6 +476,8 @@ def main() -> int:
     print(f"WER (distillation): {metrics['wer']:.4f} | vs FP32: {baseline_wer} "
           f"| vs QAT attn+FFN: {qat_af_wer}")
     print(f"Saved to {output}")
+    # As in QAT: exit 1 is a save/load diagnostic, not "the experiment failed".
+    # The cluster runner still packs whenever the result JSON exists.
     return 0 if save_load_ok else 1
 
 

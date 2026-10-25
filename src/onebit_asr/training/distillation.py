@@ -14,6 +14,24 @@ with the student by sample order; per-sample valid lengths are carried in a
 The student is the same :class:`BitLinear`-replaced Wav2Vec2-Conformer used by
 QAT: FP master weights, ``alpha * sign(W)`` inside ``forward``, pass-through
 STE. Nothing about the quantization method changes here.
+
+Debugging notes
+---------------
+- **KL direction matters.** This is ``KL(student || teacher)``, not the reverse.
+  ``F.kl_div(log_student, teacher_probs)`` computes the reverse and will change
+  the gradient; the loss here uses the explicit formula.
+- **The KL is summed over frames**, matching the summed CTC loss. A mean would
+  make the KD term ~1000× smaller (frames ~1000) and λ_kd would be meaningless.
+- **The teacher mask is not optional in spirit.** Padded teacher frames contain
+  zeros; without the mask they would add a large spurious KL term.
+- **Teacher logits are precomputed once** and cached. If you change the teacher,
+  split, subset size, or seed, the cache key changes; pass
+  ``--refresh-teacher-cache`` to force a recompute.
+- **`remove_unused_columns=False` is required** for the Trainer: the batch has
+  `teacher_logits` / `teacher_mask`, which are not in the model signature.
+  `DistillationTrainer.compute_loss` pops them before calling the model.
+- **Inspect `loss_components`.** If KD is ≫ CTC, the student is optimizing the
+  teacher distribution; lower λ_kd. This is exactly how λ_kd=0.5 was diagnosed.
 """
 
 from __future__ import annotations
@@ -74,12 +92,16 @@ def distillation_loss(
         mask = teacher_mask[:, :frames].to(device=student.device, dtype=student.dtype)
 
     temp = float(temperature)
+    # Temperature softening: divide logits before softmax. T^2 restores the
+    # gradient scale so λ_kd does not have to change with T.
     log_student = F.log_softmax(student / temp, dim=-1)
     log_teacher = F.log_softmax(teacher / temp, dim=-1)
     student_probs = log_student.exp()
     # KL(student || teacher) over the vocabulary, summed over valid frames.
     # A sum (not a mean) keeps the KD term on the same scale as the summed CTC
     # loss, so the configured lambda weights are directly comparable.
+    # The mask is important: teacher padding is zeros, which would otherwise
+    # contribute a large, meaningless KL term at the end of every sequence.
     kd_per_frame = (student_probs * (log_student - log_teacher)).sum(-1)
     kd = (kd_per_frame * mask).sum() * (temp * temp)
 
@@ -108,6 +130,11 @@ def precompute_teacher_logits(
     Each returned tensor is ``(T_i, V)`` on CPU in ``dtype``. Processing one
     utterance at a time avoids padding artifacts entirely; on an A100 this is a
     few minutes for 10k utterances and is paid once for all epochs.
+
+    Why one at a time? Batching would require computing each sample's valid
+    output length (the conv stack's length formula) and cropping; a mistake there
+    silently corrupts the KD target. Correctness first; the cache makes the cost
+    amortized.
     """
     teacher.eval()
     teacher.to(device)
@@ -190,9 +217,14 @@ class DistillationCollator:
         )
 
     def __call__(self, features: list[dict]) -> dict:
+        # Pop the teacher data BEFORE the CTC collator: that collator calls the
+        # processor/tokenizer and must not see extra columns. The dataset wrapper
+        # creates a fresh dict per __getitem__, so popping is safe.
         teacher = [f.pop("teacher_logits") for f in features]
         batch = self._ctc(features)
 
+        # Pad teacher logits to the longest teacher sequence in this batch. The
+        # mask marks real frames; zero-padded frames are excluded from the KL.
         max_frames = max(np.asarray(t).shape[0] for t in teacher)
         vocab = np.asarray(teacher[0]).shape[-1]
         padded = torch.zeros(len(teacher), max_frames, vocab, dtype=torch.float32)
@@ -232,6 +264,9 @@ def build_distillation_trainer(
             self.loss_components: list[dict] = []
 
         def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+            # These columns are not accepted by the HF model's forward. Pop them
+            # before the call. `remove_unused_columns=False` is what lets them
+            # reach this method at all.
             teacher_logits = inputs.pop("teacher_logits")
             teacher_mask = inputs.pop("teacher_mask")
             outputs = model(**inputs)
@@ -247,6 +282,8 @@ def build_distillation_trainer(
                 lambda_ctc=self.lambda_ctc,
                 lambda_kd=self.lambda_kd,
             )
+            # Record the components so a failed run can be diagnosed (e.g. KD
+            # dominating CTC). Keep them small: one dict per micro-batch.
             parts["total"] = float(total.detach())
             self.loss_components.append(parts)
             return (total, outputs) if return_outputs else total

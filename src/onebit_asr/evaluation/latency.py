@@ -14,6 +14,19 @@ Measurement notes
 - Latency is reported both end-to-end (feature extraction + forward + greedy
   decode) and model-only (forward + decode), so preprocessing costs are visible.
 - RTF uses end-to-end processing time divided by audio duration.
+
+Debugging notes
+---------------
+- **Sync is mandatory on CUDA.** Without `torch.cuda.synchronize`, the timer
+  measures kernel-launch time instead of execution time.
+- **Warmup is mandatory.** The first forward allocates workspaces and selects
+  kernels; including it inflates the mean, especially on a shared GPU.
+- **The peak memory reset happens after warmup**, so the reported peak is the
+  steady-state inference peak, not the one-time load/context peak.
+- **This function does not compute WER.** Use `evaluate_model` for accuracy;
+  mixing the two would let a benchmark change the pinned protocol.
+- **Host RSS is a high-water mark per process**, just like the evaluator. GPU
+  peaks are per-process allocator peaks; other users' memory is not included.
 """
 
 from __future__ import annotations
@@ -28,6 +41,7 @@ from onebit_asr.evaluation.evaluate import percentile
 
 
 def _sync(device: torch.device) -> None:
+    # No-op on CPU; on CUDA this makes the perf_counter readings meaningful.
     if device.type == "cuda":
         torch.cuda.synchronize(device)
 
@@ -64,6 +78,8 @@ def benchmark_model(
 
     n_warmup = min(int(warmup), len(samples))
     for s in samples[:n_warmup]:
+        # Untimed warmup: allocate CUDA workspaces, autotune kernels, fault in
+        # any lazily loaded weights. Do not record these timings.
         inputs = processor(s["audio"], sampling_rate=sample_rate,
                            return_tensors="pt", padding=True)
         _sync(device)
@@ -71,6 +87,8 @@ def benchmark_model(
         _sync(device)
 
     if device.type == "cuda":
+        # Start the peak measurement after warmup so it reflects steady-state
+        # inference, not model loading.
         torch.cuda.reset_peak_memory_stats(device)
     proc = psutil.Process()
     peak_rss = proc.memory_info().rss

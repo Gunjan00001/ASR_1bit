@@ -337,3 +337,79 @@ Evidence so far: attention-only QAT → **3.92% WER**, while attention+FFN PTQ �
 **Explicitly out of scope for the current cleanup task:** FFN QAT, FFN-only QAT,
 sensitivity sweeps, distillation, 2-bit/INT8, binary kernels, streaming. This
 task stops after the clean Phase-11 reproduction and documentation.
+
+---
+
+## 10. v1.5.0 — Phase 12–19 execution on the A100 cluster (in progress)
+
+This section records the second execution profile: the local PBS cluster
+(8 × A100-SXM4-80GB, one GPU node). The execution layer lives in `cluster/` and
+is documented in `cluster/README.md`.
+
+### 10.1 Why a second profile
+
+The Kaggle T4 runs produced the first real QAT result (attention-only 3.92%),
+but the project's decisive question — whether **FFN** binarization is recoverable
+— needs more compute than a 16 GB T4 comfortably provides, and the Kaggle GPU
+quota was exhausted. The A100 node gives 80 GB per GPU, so attention+FFN QAT and
+distillation can run without gradient checkpointing.
+
+### 10.2 Environment (measured, not assumed)
+
+- `torch 2.11.0+cu126`, `torchvision 0.26.0+cu126`, `transformers 4.57.6`,
+  `datasets 5.0.1`, `numpy 2.5.3`, `jiwer 4.0.0`.
+- Project venv: `ASR_1bit/.venv` with `--system-site-packages`; package installed
+  editable (`pip install -e . --no-deps`).
+- Audio: `ONEBIT_AUDIO_DECODER=soundfile` (torchcodec is not installed on the
+  cluster; this is the same fallback the Kaggle runner uses).
+- The pinned Kaggle stack (torch 2.14 / transformers 5.17) is **not** what runs
+  here. Results record `versions` and stay profile-local.
+
+### 10.3 GPU selection
+
+PBS sets `CUDA_VISIBLE_DEVICES` to an **empty string** and does not pin GPUs.
+`cluster/pick_gpu.sh` unsets it and exports the least-busy of the 8 GPUs by
+`(utilization, memory.used)` before Python starts. A job therefore starts on
+whatever A100 is free rather than waiting for a particular device.
+
+### 10.4 Jobs
+
+| Job | Phase | CPUs | Status |
+|---|---|---:|---|
+| `qat_attn_ffn.pbs` | 11 — attention+FFN QAT | 8 | running |
+| `qat_attn_a100.pbs` | 12/14 — attention-only A100 re-run | 4 | queued |
+| `distill_attn_ffn.pbs` | 13 — FP32 teacher → 1-bit student | 4 | queued |
+
+Per-user CPU quota is 16; jobs are sized so at most 16 CPUs are requested at
+once (including the user's pre-existing job).
+
+### 10.5 Implementation status (no measured claims yet)
+
+- `IMPLEMENTED` Phase 13: `training/distillation.py`, `scripts/train_distillation.py`,
+  9 unit tests, CPU smoke run (`results/distillation_smoke.json`, 8 steps,
+  save/load verified).
+- `IMPLEMENTED` Phase 12/14/15/17: `scripts/run_final_eval.py` evaluates and
+  benchmarks all available arms under one protocol and writes a combined table.
+- `IMPLEMENTED` Phase 16: each cluster job packs its checkpoint with
+  `scripts/pack_qat_model.py` and records the measured artifact size.
+- `IMPLEMENTED` Phase 18: `quantization/packed.py` + `scripts/benchmark_packed.py`;
+  packed storage is real, packed inference is explicitly storage-only, and the
+  XNOR+popcount kernel is scoped to 1-bit×1-bit.
+- `IMPLEMENTED` Phase 19: `streaming.py` + `scripts/stream_infer.py` (chunked
+  pseudo-streaming, not a true streaming encoder).
+- `NOT YET MEASURED`: attention+FFN QAT WER, attention-only A100 WER,
+  distillation WER, final comparison table, packed-inference timings, streaming
+  WER. These will be added to this section only when their JSONs are committed.
+
+### 10.6 Planned comparisons
+
+1. FP32 vs PTQ attention-only vs PTQ FFN-only vs PTQ full (fixed dev subset).
+2. Attention-only QAT (A100) vs attention+FFN QAT (A100) — the FFN question.
+3. QAT attention+FFN vs QAT+distillation — Phase 14 arm D.
+4. Fixed 256-utterance test-clean evaluation for the final table.
+5. Size: FP32 vs packed artifacts for every trained arm.
+6. Latency/RTF/VRAM on the A100 with warmup and synchronized timings.
+7. Packed-storage inference vs BitLinear vs FP32 (storage-only conclusion).
+8. Chunked streaming WER/RTF vs full-utterance decode on a fixed sample.
+
+

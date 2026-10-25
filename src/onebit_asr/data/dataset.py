@@ -22,6 +22,7 @@ from datasets import Audio, Dataset, load_dataset
 DATASET_ID = "openslr/librispeech_asr"
 CONFIG = "clean"
 DEV_SPLIT = "validation"
+TEST_SPLIT = "test"
 TRAIN_SPLIT = "train.100"
 EXPECTED_SR = 16_000
 
@@ -74,6 +75,15 @@ def _load_subset(split: str, subset_size: int, seed: int) -> list[dict]:
 def load_dev_subset(subset_size: int = 256, seed: int = 42) -> list[dict]:
     """Pinned development-evaluation subset (clean validation)."""
     return _load_subset(DEV_SPLIT, subset_size, seed)
+
+
+def load_test_subset(subset_size: int = 256, seed: int = 42) -> list[dict]:
+    """Fixed evaluation subset from clean test (LibriSpeech test-clean).
+
+    Phase 12 asks for test-clean evaluation. The same fixed-seed selection rule
+    as the dev protocol is used, and the IDs are recorded in every result JSON.
+    """
+    return _load_subset(TEST_SPLIT, subset_size, seed)
 
 
 def load_train_subset(subset_size: int = 1000, seed: int = 42, split: str = TRAIN_SPLIT) -> list[dict]:

@@ -234,12 +234,17 @@ def resolve_warmup_steps(training: dict, train_num_samples: int | None, smoke: b
 
 
 def build_training_arguments(training: dict, output_dir: str, smoke: bool = False,
-                             train_num_samples: int | None = None):
+                             train_num_samples: int | None = None,
+                             remove_unused_columns: bool = True):
     """Build stock ``TrainingArguments`` from the config training block.
 
     ``gradient_checkpointing`` is taken explicitly from the config (never
     hard-coded); when enabled, the Trainer handles enabling checkpointing.
     ``warmup_ratio`` is resolved to ``warmup_steps`` (transformers 5.x API).
+
+    ``remove_unused_columns`` must be ``False`` for distillation, because the
+    batch carries ``teacher_logits`` / ``teacher_mask`` columns that are not in
+    the model's forward signature.
     """
     from transformers import TrainingArguments
 
@@ -262,7 +267,7 @@ def build_training_arguments(training: dict, output_dir: str, smoke: bool = Fals
         bf16=bool(training.get("bf16", False)),
         gradient_checkpointing=bool(training.get("gradient_checkpointing", False)),
         report_to=[],
-        remove_unused_columns=True,
+        remove_unused_columns=remove_unused_columns,
         dataloader_num_workers=0,
     )
     if smoke:

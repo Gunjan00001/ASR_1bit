@@ -1,5 +1,15 @@
 """Training: FP baseline train loop, QAT assembly (Phase 11), distillation."""
 
+from onebit_asr.training.distillation import (
+    DistillationCollator,
+    DistillationDataset,
+    build_distillation_trainer,
+    distillation_loss,
+    load_teacher_logits,
+    precompute_teacher_logits,
+    save_teacher_logits,
+    teacher_logits_cache_path,
+)
 from onebit_asr.training.qat import (
     CHECKPOINT_FORMAT,
     bitlinear_grad_stats,
@@ -38,4 +48,12 @@ __all__ = [
     "reset_gpu_peak_memory",
     "extrapolate_training_time",
     "vram_headroom",
+    "distillation_loss",
+    "precompute_teacher_logits",
+    "save_teacher_logits",
+    "load_teacher_logits",
+    "DistillationDataset",
+    "DistillationCollator",
+    "build_distillation_trainer",
+    "teacher_logits_cache_path",
 ]

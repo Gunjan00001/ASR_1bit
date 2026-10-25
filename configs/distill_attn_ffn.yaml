@@ -1,0 +1,19 @@
+# Phase 13 — knowledge distillation: FP32 teacher -> attention+FFN 1-bit student.
+#
+# The student is the exact QAT configuration of configs/qat_attn_ffn.yaml. The
+# teacher is the frozen FP32 checkpoint. Teacher logits are precomputed once for
+# the training subset and cached under checkpoints/ (git-ignored).
+#
+# Loss: L = 0.5 * CTC(student, y) + 0.5 * T^2 * KL(student/T || teacher/T)
+# (frame-level KL summed over valid frames, matching the summed CTC scale).
+extends: qat_attn_ffn.yaml
+
+compute_profile: cloud-gpu
+
+distillation:
+  teacher: facebook/wav2vec2-conformer-rope-large-960h-ft
+  lambda_ctc: 0.5
+  lambda_kd: 0.5
+  temperature: 2.0
+  precompute_teacher_logits: true
+  teacher_logits_cache: checkpoints/teacher_logits

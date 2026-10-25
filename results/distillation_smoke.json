@@ -1,0 +1,294 @@
+{
+  "phase": "Phase 13 knowledge distillation (smoke)",
+  "timestamp_utc": "2026-10-25T11:39:49.804290+00:00",
+  "platform": "Linux-4.18.0-477.10.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "compute_profile": "local",
+  "config_profile": "cloud-gpu",
+  "git_commit": "0b986f71c065fcba23dd62cafbcb147771c14175",
+  "config_path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/configs/distill_attn_ffn.yaml",
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "init_from": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "teacher": {
+    "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+    "frozen": true,
+    "precision": "fp32",
+    "logits_cache": {
+      "path": "checkpoints/teacher_logits/teacher_logits_facebook__wav2vec2-conformer-rope-large-960h-ft_train.100_n16_s42.pt",
+      "reused": false,
+      "n_samples": 16,
+      "dtype": "torch.float16",
+      "bytes": 591993,
+      "meta": {
+        "teacher_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+        "split": "train.100",
+        "subset_size": 16,
+        "seed": 42,
+        "source": "one forward pass per utterance, no padding"
+      }
+    },
+    "vocab_size": 32
+  },
+  "student": {
+    "layers": {
+      "attention_q": true,
+      "attention_k": true,
+      "attention_v": true,
+      "attention_output": true,
+      "ffn_in": true,
+      "ffn_out": true,
+      "feature_projection": false,
+      "ctc_head": false
+    },
+    "quantization": {
+      "scale": "per_tensor_mean_abs",
+      "ste": "pass_through",
+      "ste_clip": null
+    },
+    "replacement": {
+      "n_replaced": 192,
+      "n_retained": 2,
+      "replaced_params": 503660544,
+      "retained_params": 558112,
+      "replaced_categories": [
+        "attention_k",
+        "attention_output",
+        "attention_q",
+        "attention_v",
+        "ffn_in",
+        "ffn_out"
+      ],
+      "retained_categories": [
+        "ctc_head",
+        "feature_projection"
+      ]
+    },
+    "freeze": {
+      "feature_extractor_frozen": true,
+      "trainable_params": 589166752,
+      "frozen_params": 4210176,
+      "trainable_by_group": {
+        "other": {
+          "tensors": 1,
+          "params": 1024,
+          "params_trainable": 1024,
+          "params_frozen": 0
+        },
+        "feature_extractor_frozen": {
+          "tensors": 28,
+          "params": 4210176,
+          "params_trainable": 0,
+          "params_frozen": 4210176
+        },
+        "feature_projection": {
+          "tensors": 4,
+          "params": 526336,
+          "params_trainable": 526336,
+          "params_frozen": 0
+        },
+        "encoder_other": {
+          "tensors": 557,
+          "params": 85290112,
+          "params_trainable": 85290112,
+          "params_frozen": 0
+        },
+        "encoder_bitlinear": {
+          "tensors": 192,
+          "params": 503316480,
+          "params_trainable": 503316480,
+          "params_frozen": 0
+        },
+        "ctc_head": {
+          "tensors": 2,
+          "params": 32800,
+          "params_trainable": 32800,
+          "params_frozen": 0
+        }
+      }
+    }
+  },
+  "distillation": {
+    "lambda_ctc": 0.5,
+    "lambda_kd": 0.5,
+    "temperature": 2.0,
+    "loss": "lambda_ctc*CTC + lambda_kd*T^2*KL(student/T || teacher/T), KL summed over valid frames",
+    "teacher_logits_precomputed": true
+  },
+  "training": {
+    "dataset": "openslr/librispeech_asr",
+    "config": "clean",
+    "split": "train.100",
+    "subset_size": 16,
+    "seed": 42,
+    "sample_ids": [
+      "5703-47198-0059",
+      "1594-135914-0071",
+      "2514-149482-0061",
+      "441-130108-0035",
+      "163-122947-0062",
+      "1116-132847-0032",
+      "7059-77900-0024",
+      "198-129977-0023",
+      "298-126790-0036",
+      "89-218-0040",
+      "6563-285357-0044",
+      "5703-47198-0031",
+      "226-131532-0029",
+      "6476-96661-0012",
+      "2436-2476-0028",
+      "8108-280354-0027"
+    ],
+    "batch_size": 1,
+    "gradient_accumulation_steps": 2,
+    "gradient_checkpointing": false,
+    "learning_rate": 2e-05,
+    "epochs": 3,
+    "max_steps": 8,
+    "warmup_ratio": 0.1,
+    "warmup_steps": 1,
+    "max_grad_norm": 1.0,
+    "weight_decay": 0.0,
+    "optimizer": "adamw_torch",
+    "lr_scheduler": "linear",
+    "device": "cpu",
+    "steps_completed": 8,
+    "final_train_loss": 2121.0393,
+    "train_loss_history": [
+      {
+        "step": 1,
+        "loss": 1453.257
+      },
+      {
+        "step": 2,
+        "loss": 1594.0924
+      },
+      {
+        "step": 3,
+        "loss": 1506.4775
+      },
+      {
+        "step": 4,
+        "loss": 2080.6555
+      },
+      {
+        "step": 5,
+        "loss": 2237.4023
+      },
+      {
+        "step": 6,
+        "loss": 2180.3608
+      },
+      {
+        "step": 7,
+        "loss": 1601.2659
+      },
+      {
+        "step": 8,
+        "loss": 2121.0393
+      }
+    ]
+  },
+  "loss_components": {
+    "total": 1846.8188648223877,
+    "ctc": 615.7489070892334,
+    "kd": 3077.888858795166,
+    "kd_mean_per_frame": 1.3444556477371976,
+    "valid_frames": 569.75,
+    "n_micro_batches": 16
+  },
+  "distillation_probe": {
+    "probe_loss": 2765.6181640625,
+    "probe_parts": {
+      "ctc": 875.3308715820312,
+      "kd": 4655.9052734375,
+      "kd_mean_per_frame": 1.4513420428421135,
+      "valid_frames": 802.0
+    },
+    "loss_is_finite": true,
+    "total_bitlinear": 192,
+    "with_nonzero_grad": 192,
+    "total_grad_norm": 639.9638386449078,
+    "frozen_feature_extractor_grad_is_zero": true
+  },
+  "master_weights": {
+    "digest_changed": true,
+    "abs_sum_before": 44569929.73828125,
+    "abs_sum_after": 44570382.70703125,
+    "abs_sum_delta": 452.96875,
+    "bitlinear_numel": 503316480,
+    "fraction_exactly_pm1_after": 0.0,
+    "remain_fp_not_binary": true
+  },
+  "eval": {
+    "protocol": "fixed dev-clean subset, seed, greedy CTC, normalized text",
+    "subset_size": 256,
+    "n_utterances": 8,
+    "wer": 1.0,
+    "cer": 1.0,
+    "rtf": 0.16164790654979513,
+    "latency_s": {
+      "mean": 1.1271910583600402,
+      "p50": 0.9421004210598767,
+      "p95": 2.004136005137116,
+      "max": 2.2827143110334873
+    },
+    "peak_rss_mb": 29397.385216,
+    "sample_ids": [
+      "1988-24833-0026",
+      "2428-83699-0039",
+      "6345-93302-0010",
+      "2078-142845-0048",
+      "2035-152373-0007",
+      "2902-9006-0017",
+      "5694-64029-0000",
+      "251-137823-0017"
+    ]
+  },
+  "comparison": {
+    "vs_fp32_baseline": {
+      "wer": 0.020184544405997693,
+      "delta_wer": 0.9798154555940023
+    },
+    "vs_ptq": {
+      "wer": 1.0,
+      "delta_wer": 0.0
+    },
+    "vs_qat_attn_ffn": {
+      "wer": null,
+      "delta_wer": null
+    },
+    "vs_qat_attn_a100": {
+      "wer": null,
+      "delta_wer": null
+    }
+  },
+  "checkpoint": {
+    "path": "checkpoints/distill_smoke",
+    "format": "fp32_master_weights",
+    "is_1bit_packed": false,
+    "manifest": {
+      "format": "fp32_master_weights",
+      "is_1bit_packed": false,
+      "description": "FP32 master weights for every parameter (BitLinear masters, biases, LayerNorms, convolutions, feature projection, CTC head). Structurally identical to the original FP32 checkpoint; binary weights exist only at forward time.",
+      "expected_reconstruction": "Wav2Vec2ConformerForCTC.from_pretrained(dir) then replace_linears(...) with the same layer selection; forward() binarizes from these masters.",
+      "bitlinear_layers": 192,
+      "total_params": 593376928,
+      "files": [
+        "model.safetensors"
+      ],
+      "sha256": {
+        "model.safetensors": "29dcf2ebfe86454e7e588d3ec49b82d57d5b8d53847f426b26a73575282b8370"
+      }
+    },
+    "save_load_verified": true,
+    "save_load_argmax_agreement": 1.0,
+    "save_load_max_abs_logit_diff": 0.0
+  },
+  "versions": {
+    "torch": "2.11.0+cu126",
+    "transformers": "4.57.6",
+    "datasets": "5.0.1",
+    "jiwer": "4.0.0",
+    "numpy": "2.5.3",
+    "safetensors": "0.8.0"
+  }
+}

@@ -8,6 +8,82 @@ an exact, reproducible repository state.
 
 ---
 
+## Unreleased — v1.5.0: Phase 12–19 infrastructure on the A100 cluster
+
+**Status:** implementation checkpoint. The long-running cluster jobs are in
+progress; this entry makes **no new WER/size claim**. Each measured result is
+added when its `results/*.json` is committed. See `planning.md` §10.
+
+### Added — execution
+- `cluster/` — PBS execution layer for the local 8×A100-80GB node:
+  `pick_gpu.sh` (unsets the empty `CUDA_VISIBLE_DEVICES` and selects the
+  least-busy GPU), `qat_attn_ffn.pbs`, `qat_attn_a100.pbs`,
+  `distill_attn_ffn.pbs`, and `cluster/README.md`.
+- `configs/qat_attn_ffn.yaml` — attention+FFN QAT (the configuration that
+  collapsed under PTQ).
+- `configs/distill_attn_ffn.yaml` — distillation spec (teacher, λ weights,
+  temperature, teacher-logits cache).
+
+### Added — Phase 13 (knowledge distillation)
+- `src/onebit_asr/training/distillation.py` — frame-masked
+  `λ_ctc·CTC + λ_kd·T²·KL(student/T ‖ teacher/T)` (KL **summed** over valid
+  frames so λ weights are comparable to the summed CTC loss), one-shot teacher
+  logits precomputation, cache load/save, `DistillationDataset`,
+  `DistillationCollator`, `DistillationTrainer`.
+- `scripts/train_distillation.py` — smoke/probe/full modes, checkpointing,
+  save/load verification, pinned dev evaluation.
+- `results/distillation_smoke.json` — CPU pipeline check (8 steps); WER 1.0000
+  is reported as measured and is **not** an accuracy experiment.
+
+### Added — Phase 12/14/15/16/17
+- `src/onebit_asr/data/dataset.py` — `load_test_subset` (test-clean, same
+  fixed-seed selection rule).
+- `src/onebit_asr/evaluation/latency.py` — warmup + synchronized latency,
+  p50/p95, RTF (end-to-end and model-only), throughput, peak RSS, CUDA peak
+  allocated/reserved.
+- `src/onebit_asr/evaluation/benchmark.py` — accuracy+performance orchestration
+  and a Markdown comparison table.
+- `scripts/run_final_eval.py` — evaluates/benchmarks FP32, four PTQ sensitivity
+  variants, and every available QAT/distillation checkpoint under one protocol.
+- `src/onebit_asr/evaluation/model_size.py` — `quick_size_report` (component
+  bytes without writing a container file).
+
+### Added — Phase 18 (binary compute investigation)
+- `src/onebit_asr/quantization/packed.py` — packed 1-bit storage,
+  `PackedBitLinear` (expands bits at forward time; explicitly **not** a compute
+  accelerator), and an XNOR+popcount kernel reference for the 1-bit×1-bit case.
+- `scripts/benchmark_packed.py` — storage/inference/kernel-boundary benchmark.
+
+### Added — Phase 19 (streaming)
+- `src/onebit_asr/streaming.py` — overlapping chunking, word-level overlap
+  merge, and a `StreamingTranscriber` explicitly scoped as pseudo-streaming.
+- `scripts/stream_infer.py` — demo with partial transcripts and WER vs a full
+  utterance decode.
+
+### Added — tests (85 total, up from 63)
+- `tests/test_distillation.py` (9), `tests/test_packed.py` (5),
+  `tests/test_streaming.py` (8).
+
+### Changed
+- `src/onebit_asr/training/qat.py` — `build_training_arguments` accepts
+  `remove_unused_columns` (required for the teacher columns).
+- `src/onebit_asr/training/__init__.py` — exports the distillation API.
+- `.gitignore` — ignores generated cluster effective configs and cluster logs.
+- `pyproject.toml` — version 1.3.0 → 1.5.0; the missing `v1.4.0` tag is added to
+  the previous snapshot (the tag had not been pushed).
+
+### Fixed
+- `scripts/diagnose_ptq_collapse.py` — removed a stray duplicate
+  `Wav2Vec2ConformerForCTC` import flagged `noqa: F401`.
+
+### Environment note (important)
+- Cluster runs use **torch 2.11.0+cu126 / transformers 4.57.6 / datasets 5.0.1**
+  in a project venv with system site packages. This differs from the pinned
+  Kaggle stack. Every result records its versions; no number is extrapolated
+  across profiles, and the historical Kaggle artifacts are never overwritten.
+
+---
+
 ## v1.4.0 — First real cloud-GPU QAT: attention-only 1-bit WER 3.92%
 
 **Scope:** the first real GPU QAT training run (Kaggle Tesla T4) — attention-only

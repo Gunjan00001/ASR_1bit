@@ -47,16 +47,29 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (63 tests) | ✅ green |
+| 7 | Test gate (85 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
 | 11 | QAT (infrastructure + tests + CPU smoke) | ✅ done (local) |
 | 11 | **QAT (real cloud-GPU training run, attention-only)** | ✅ **measured — WER 3.92%** |
 | 11 | QAT clean reproduction / Kaggle packing | 🔄 in progress (`results/qat_attn_repro.json`) |
-| 12 | QAT evaluation (full comparison) | 🔶 partial (dev-subset comparison present) |
-| 13 | Knowledge distillation | ⛔ not started |
-| 14–19 | Controlled experiments, sensitivity, packing, benchmarks, streaming | ⛔ not started |
+| 11 | **attention+FFN QAT (A100 cluster)** | 🔄 running (`results/qat_attn_ffn.json`) |
+| 12 | QAT evaluation (full comparison) | 🔧 implemented (`scripts/run_final_eval.py`) |
+| 13 | Knowledge distillation | 🔧 implemented, cluster run in progress |
+| 14 | Controlled experiments (A–D) | 🔧 implemented (final comparison runner) |
+| 15 | Layer-sensitivity sweep | 🔧 implemented (PTQ variants + QAT arms) |
+| 16 | Binary storage / packing | 🔧 per-run packing wired into cluster jobs |
+| 17 | Inference benchmarking | 🔧 implemented (`evaluation/latency.py`) |
+| 18 | Binary compute | 🔧 packed-inference prototype + kernel boundary measured |
+| 19 | Streaming ASR | 🔧 chunked pseudo-streaming prototype |
+
+> **v1.5.0 work is running on the local 8×A100 PBS cluster** (see
+> [`cluster/README.md`](cluster/README.md)). The status column distinguishes
+> *implemented* from *measured*: a phase is only marked measured once its
+> results JSON is committed. The cluster stack is torch 2.11.0+cu126 /
+> transformers 4.57.6, which differs from the pinned Kaggle stack; every result
+> records its actual versions and no number is extrapolated across profiles.
 
 ## 3. Base model
 
@@ -281,7 +294,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **63 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **85 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -299,6 +312,15 @@ This is an experimental choice, not a permanent rule.
   category selection counts; only selected categories swapped; weights
   preserved numerically; forward still runs; attention-only / FFN-only
   selections; idempotent replacement; report rendering; parent lookup.
+- `test_qat.py` (20) — freezing, BitLinear grads, optimizer updates, FP-ness of
+  masters, finite/decreasing loss, save/load, collator, leakage guard,
+  gradient-checkpointing flag, gradient probe, master delta, stock Trainer.
+- `test_distillation.py` (9) — KL/CTC loss math, temperature/λ weights, frame
+  masking, collator padding, dataset alignment, cache key determinism.
+- `test_packed.py` (5) — pack/unpack round-trip, XNOR-popcount vs float dot,
+  packed-vs-BitLinear output equivalence, module replacement, size accounting.
+- `test_streaming.py` (8) — chunk coverage/overlap, short audio, invalid
+  settings, word-overlap merge semantics.
 
 ## 19. Phase 8 replacement behavior (measured on the real model)
 
@@ -573,6 +595,43 @@ the compression target (`results/qat_attn_size_report.json`).
 > annotated in the JSON. A clean reproduction that packs through Kaggle is
 > recorded separately in `results/qat_attn_repro.json`. See `planning.md` §5–6.
 
+## 27c. Cluster execution (A100, Phase 12–19)
+
+The v1.5.0 work runs on the local 8×A100-80GB PBS cluster. The full execution
+guide is [`cluster/README.md`](cluster/README.md); the scientific configs stay
+in `configs/` and hardware settings are generated as git-ignored
+`configs/cluster_effective_*.yaml`.
+
+Environment actually used (recorded in every result):
+
+```
+torch 2.11.0+cu126   transformers 4.57.6   datasets 5.0.1   numpy 2.5.3
+```
+
+This is not the Kaggle-pinned stack (torch 2.14 / transformers 5.17). Results
+from the two profiles are kept separate and labelled; no number is extrapolated
+between them.
+
+| Job | Phase | Purpose |
+|---|---|---|
+| `cluster/qat_attn_ffn.pbs` | 11 | attention+FFN QAT (the decisive FFN experiment) |
+| `cluster/qat_attn_a100.pbs` | 12/14 | attention-only QAT re-run for a like-for-like A100 arm |
+| `cluster/distill_attn_ffn.pbs` | 13 | FP32 teacher → attention+FFN 1-bit student |
+
+New tooling in this checkpoint:
+
+- `scripts/run_final_eval.py` — Phase 12/14/15/17: evaluates and benchmarks all
+  available arms under one protocol, writing a combined JSON/Markdown table.
+- `src/onebit_asr/training/distillation.py` + `scripts/train_distillation.py` —
+  Phase 13: precomputed teacher logits, frame-masked
+  `λ_ctc·CTC + λ_kd·T²·KL(student/T ‖ teacher/T)`.
+- `src/onebit_asr/evaluation/latency.py` — Phase 17: warmed-up, synchronized
+  latency/RTF/throughput plus CPU-RSS and CUDA peak memory.
+- `src/onebit_asr/quantization/packed.py` — Phase 18: 1-bit packed storage and a
+  packed inference path, with a measured XNOR+popcount kernel boundary.
+- `src/onebit_asr/streaming.py` + `scripts/stream_infer.py` — Phase 19: chunked
+  pseudo-streaming with overlap merging (not a true streaming encoder).
+
 ## 28. Reproducibility instructions
 
 From a clean checkout:
@@ -690,25 +749,32 @@ expect **less** headroom than the 16.9% measured for attention-only.
 
 ```
 one-bit-asr/
-├── configs/            baseline / binary / qat / qat_attn / distillation (extends-composed)
+├── configs/            baseline / binary / qat / qat_attn / qat_attn_ffn / distill_attn_ffn / distillation
 ├── src/onebit_asr/
 │   ├── config.py               extends-aware config loader
-│   ├── data/                   text normalization, dev/train loaders, CTC collator
+│   ├── data/                   text normalization, dev/test/train loaders, CTC collator
 │   ├── features/               (placeholder) audio helpers
 │   ├── models/                 conformer_utils (taxonomy), replace_layers
-│   ├── quantization/           ste, scaling, binarization, bitlinear
-│   ├── training/               qat (freeze/probe/trainer/checkpoint); train+distillation placeholders
+│   ├── quantization/           ste, scaling, binarization, bitlinear, packed
+│   ├── training/               qat (freeze/probe/trainer/checkpoint), distillation
 │   ├── decoding/               (placeholder) decode
-│   └── evaluation/             evaluate (runner), metrics, model_size
+│   ├── streaming.py            chunked pseudo-streaming + overlap merge
+│   └── evaluation/             evaluate (runner), metrics, model_size, latency, benchmark
 ├── scripts/            check_env, inspect_model, infer, eval_baseline,
 │                       verify_eval_equivalence, quantize, diagnose_ptq_collapse,
-│                       smoke_ptq_pipeline, train_qat, pack_qat_model, setup_windows_ffmpeg
+│                       smoke_ptq_pipeline, train_qat, train_distillation,
+│                       pack_qat_model, run_final_eval, benchmark_packed,
+│                       stream_infer, setup_windows_ffmpeg
 ├── kaggle/             kernel.py, requirements/constraints, verify_replacement.py,
-│                       README.md (cloud execution + pack-only recovery)
-├── tests/              63 tests (STE, binarization, BitLinear, replacement, QAT, evaluate, config)
+│                       README.md (cloud T4 execution + pack-only recovery)
+├── cluster/            pick_gpu.sh + PBS jobs (attention/FFN QAT, attention-only
+│                       A100 arm, distillation), README.md (A100 execution)
+├── tests/              85 tests (STE, binarization, BitLinear, replacement, QAT,
+│                       evaluate, config, distillation, packed, streaming)
 ├── results/            env, model_inspection, baseline, ptq_binary,
 │                       size_report, ptq_collapse_diagnostic, qat_smoke,
-│                       qat_attn, qat_attn_size_report, qat_attn_repro  (tracked)
+│                       qat_attn, qat_attn_size_report, qat_attn_repro,
+│                       distillation_smoke, and the v1.5.0 cluster runs
 ├── checkpoints/        (git-ignored)
 ├── planning.md                          living research history & execution plan
 └── one_bit_asr_implementation_plan.md   original (unchanged) specification

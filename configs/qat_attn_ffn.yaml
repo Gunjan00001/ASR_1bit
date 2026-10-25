@@ -1,0 +1,32 @@
+# Phase 11 — attention + FFN QAT (cloud-gpu profile).
+#
+# The decisive experiment: the exact layer selection that collapsed to 100% WER
+# under post-training quantization (Phase 10) is now trained with QAT.
+#
+#   * attention projections (96 layers) -> BitLinear
+#   * FFN projections (96 layers)       -> BitLinear
+#   * feature_projection / ctc_head     -> kept FP
+#
+# Everything else is inherited from qat.yaml -> binary.yaml -> baseline.yaml:
+# lr 2e-5, epochs 3, batch 4, grad-accum 4, warmup_ratio 0.1, adamw_torch,
+# linear schedule, per-tensor mean-abs scale, pass-through STE, train.100.
+#
+# The training budget is identical to configs/qat_attn.yaml so the two QAT arms
+# differ only in which layer categories are binarized.
+extends: qat.yaml
+
+compute_profile: cloud-gpu
+
+layers:
+  attention_q: true
+  attention_k: true
+  attention_v: true
+  attention_output: true
+  ffn_in: true
+  ffn_out: true
+  feature_projection: false
+  ctc_head: false
+
+qat:
+  training:
+    subset_size: 10000

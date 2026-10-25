@@ -68,8 +68,6 @@ def main():
     by_id = {u["id"]: u for u in baseline["utterances"]}
     ref_hyps = [by_id[s["id"]]["hypothesis"] for s in samples]
 
-    from transformers import Wav2Vec2ConformerForCTC as _M  # noqa: F401
-
     results = {}
     for label, overrides in VARIANTS.items():
         model = Wav2Vec2ConformerForCTC.from_pretrained(model_id)

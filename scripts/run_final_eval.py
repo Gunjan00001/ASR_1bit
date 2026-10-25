@@ -1,0 +1,264 @@
+"""Phase 12/14/15/17 — final evaluation, sensitivity sweep, and benchmark.
+
+Loads several experiment arms, evaluates each under the *same* pinned protocol,
+and benchmarks latency/memory/throughput on the same hardware. Results are
+written per arm plus a combined JSON/Markdown table.
+
+Arms
+----
+- ``fp32``: the untouched FP32 checkpoint (reference).
+- ``ptq_attention`` / ``ptq_ffn`` / ``ptq_full`` / ``ptq_full_plus_fproj``:
+  post-training quantization sensitivity variants (no retraining).
+- ``qat_attention_a100`` / ``qat_attn_ffn`` / ``distill_attn_ffn``: QAT and
+  distillation checkpoints produced by the cluster jobs.
+
+The script skips an arm whose checkpoint is missing (recorded explicitly), so it
+can be run before every training job has finished.
+
+Usage:
+    python scripts/run_final_eval.py --split dev --n 256
+    python scripts/run_final_eval.py --split test --n 256 \
+        --arms fp32,ptq_full,qat_attn_ffn,distill_attn_ffn
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import gc
+import json
+import platform
+import subprocess
+import sys
+from pathlib import Path
+
+import torch
+from transformers import Wav2Vec2ConformerForCTC, Wav2Vec2Processor
+
+from onebit_asr.config import load_config
+from onebit_asr.data.dataset import load_dev_subset, load_test_subset
+from onebit_asr.evaluation.benchmark import benchmark_and_evaluate, comparison_table
+from onebit_asr.evaluation.model_size import fp32_weight_bytes, quick_size_report
+from onebit_asr.models.replace_layers import replace_linears
+from onebit_asr.training.qat import load_qat_checkpoint
+
+ROOT = Path(__file__).resolve().parent.parent
+RESULTS = ROOT / "results"
+
+BASE_LAYERS = {
+    "attention_q": False,
+    "attention_k": False,
+    "attention_v": False,
+    "attention_output": False,
+    "ffn_in": False,
+    "ffn_out": False,
+    "feature_projection": False,
+    "ctc_head": False,
+}
+
+ARM_DEFS = {
+    "fp32": {"kind": "fp32"},
+    "ptq_attention": {"kind": "ptq", "layers": {
+        **BASE_LAYERS, "attention_q": True, "attention_k": True,
+        "attention_v": True, "attention_output": True}},
+    "ptq_ffn": {"kind": "ptq", "layers": {
+        **BASE_LAYERS, "ffn_in": True, "ffn_out": True}},
+    "ptq_full": {"kind": "ptq", "layers": {
+        **BASE_LAYERS, "attention_q": True, "attention_k": True,
+        "attention_v": True, "attention_output": True,
+        "ffn_in": True, "ffn_out": True}},
+    "ptq_full_plus_fproj": {"kind": "ptq", "layers": {
+        **BASE_LAYERS, "attention_q": True, "attention_k": True,
+        "attention_v": True, "attention_output": True,
+        "ffn_in": True, "ffn_out": True, "feature_projection": True}},
+    "qat_attention_a100": {
+        "kind": "qat",
+        "config": "configs/qat_attn.yaml",
+        "checkpoint": "checkpoints/qat_attn_a100",
+    },
+    "qat_attn_ffn": {
+        "kind": "qat",
+        "config": "configs/qat_attn_ffn.yaml",
+        "checkpoint": "checkpoints/qat_attn_ffn",
+    },
+    "distill_attn_ffn": {
+        "kind": "qat",
+        "config": "configs/distill_attn_ffn.yaml",
+        "checkpoint": "checkpoints/distill_attn_ffn",
+    },
+}
+
+
+def git_commit() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:  # noqa: BLE001
+        return "unknown"
+
+
+def build_arm(name: str, arm: dict, model_id: str, device: torch.device) -> tuple:
+    """Load/reconstruct one arm. Returns ``(model, arm_info)``."""
+    if arm["kind"] == "fp32":
+        model = Wav2Vec2ConformerForCTC.from_pretrained(model_id)
+        info = {"kind": "fp32", "layers": None, "checkpoint": None}
+
+    elif arm["kind"] == "ptq":
+        cfg = load_config(ROOT / "configs" / "binary.yaml")
+        quant = cfg.get("quantization", {})
+        model = Wav2Vec2ConformerForCTC.from_pretrained(model_id)
+        report = replace_linears(
+            model, arm["layers"],
+            scale_mode=quant.get("scale", "per_tensor_mean_abs"),
+            ste_clip=quant.get("ste_clip"),
+        )
+        info = {
+            "kind": "ptq",
+            "layers": arm["layers"],
+            "scale_mode": quant.get("scale", "per_tensor_mean_abs"),
+            "n_replaced": report["n_replaced"],
+            "replaced_params": report["replaced_params"],
+            "checkpoint": None,
+        }
+
+    elif arm["kind"] == "qat":
+        cfg_path = ROOT / arm["config"]
+        checkpoint = ROOT / arm["checkpoint"]
+        if not checkpoint.is_dir():
+            raise FileNotFoundError(checkpoint)
+        cfg = load_config(cfg_path)
+        quant = cfg.get("quantization", {})
+        model, report = load_qat_checkpoint(
+            checkpoint, Wav2Vec2ConformerForCTC, cfg["layers"],
+            scale_mode=quant.get("scale", "per_tensor_mean_abs"),
+            ste_clip=quant.get("ste_clip"),
+        )
+        info = {
+            "kind": "qat",
+            "layers": cfg["layers"],
+            "scale_mode": quant.get("scale", "per_tensor_mean_abs"),
+            "n_replaced": report["n_replaced"],
+            "replaced_params": report["replaced_params"],
+            "checkpoint": str(arm["checkpoint"]),
+            "config": arm["config"],
+        }
+    else:
+        raise ValueError(f"unknown arm kind {arm['kind']!r}")
+
+    model.to(device)
+    model.eval()
+    return model, info
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Final arm evaluation + benchmark.")
+    parser.add_argument("--split", choices=["dev", "test"], default="dev")
+    parser.add_argument("--n", type=int, default=256)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--arms", default=",".join(ARM_DEFS))
+    parser.add_argument("--warmup", type=int, default=3)
+    parser.add_argument("--output-dir", default=str(RESULTS))
+    parser.add_argument("--no-progress", action="store_true")
+    args = parser.parse_args()
+
+    arms = [a.strip() for a in args.arms.split(",") if a.strip()]
+    unknown = [a for a in arms if a not in ARM_DEFS]
+    if unknown:
+        raise SystemExit(f"unknown arm(s): {unknown}. Choose from {sorted(ARM_DEFS)}")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Device: {device}"
+          + (f" ({torch.cuda.get_device_name(0)})" if device.type == "cuda" else ""))
+    baseline_cfg = load_config(ROOT / "configs" / "baseline.yaml")
+    model_id = baseline_cfg["model"]
+    processor = Wav2Vec2Processor.from_pretrained(model_id)
+
+    print(f"Loading {args.split} subset (n={args.n}, seed={args.seed}) ...")
+    if args.split == "dev":
+        samples = load_dev_subset(subset_size=args.n, seed=args.seed)
+    else:
+        samples = load_test_subset(subset_size=args.n, seed=args.seed)
+
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rows, skipped = [], []
+
+    for name in arms:
+        arm = ARM_DEFS[name]
+        print("=" * 72)
+        print(f"ARM: {name}  {arm}")
+        try:
+            model, info = build_arm(name, arm, model_id, device)
+        except FileNotFoundError as exc:
+            print(f"SKIP: checkpoint missing ({exc})")
+            skipped.append({"arm": name, "reason": f"missing checkpoint: {exc}"})
+            continue
+
+        report = benchmark_and_evaluate(
+            model, processor, samples, label=name, warmup=args.warmup,
+            verbose=not args.no_progress,
+        )
+        report["arm"] = name
+        report["arm_info"] = info
+        report["split"] = args.split
+        report["subset_size"] = args.n
+        report["seed"] = args.seed
+        report["timestamp_utc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        report["platform"] = platform.platform()
+        report["git_commit"] = git_commit()
+
+        total_params = sum(p.numel() for p in model.parameters())
+        if info["kind"] == "fp32":
+            size = {
+                "total_params": total_params,
+                "fp32_weight_bytes": fp32_weight_bytes(total_params),
+            }
+        else:
+            size = {
+                "total_params": total_params,
+                **quick_size_report(model, scale_mode=info["scale_mode"]),
+            }
+        report["size"] = size
+
+        out = output_dir / f"final_{name}_{args.split}_n{args.n}.json"
+        out.write_text(json.dumps(report, indent=2))
+        print(f"Wrote {out}")
+        rows.append(report)
+
+        del model
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    combined = {
+        "phase": "Phase 12/14/15/17 final comparison",
+        "split": args.split,
+        "subset_size": args.n,
+        "seed": args.seed,
+        "device": str(device),
+        "device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
+        "dataset": "openslr/librispeech_asr clean " + ("validation" if args.split == "dev" else "test"),
+        "decoding": "greedy",
+        "text_normalization": "lowercase + strip punctuation",
+        "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "platform": platform.platform(),
+        "git_commit": git_commit(),
+        "arms": rows,
+        "skipped": skipped,
+        "table_markdown": comparison_table(rows),
+    }
+    combined_path = output_dir / f"final_comparison_{args.split}_n{args.n}.json"
+    combined_path.write_text(json.dumps(combined, indent=2))
+    md_path = output_dir / f"final_comparison_{args.split}_n{args.n}.md"
+    md_path.write_text(combined["table_markdown"] + "\n")
+    print("=" * 72)
+    print(combined["table_markdown"])
+    print(f"Wrote {combined_path}")
+    print(f"Wrote {md_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

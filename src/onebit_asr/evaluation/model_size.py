@@ -168,6 +168,19 @@ def build_packed_tensors(model: nn.Module) -> tuple[dict[str, torch.Tensor], dic
     return tensors, stats
 
 
+def quick_size_report(model: nn.Module, scale_mode: str = "per_tensor_mean_abs") -> dict:
+    """Binary size components without writing a container file.
+
+    ``binary_model_size_report`` measures a real safetensors file (accurate
+    container overhead, but a ~0.4–2 GB write). This lighter variant reuses the
+    same tensor builder and reports the component bytes only; use it for
+    multi-arm comparisons where writing one artifact per arm is wasteful.
+    """
+    tensors, stats = build_packed_tensors(model)
+    del tensors
+    return {"scale_mode": scale_mode, **stats}
+
+
 def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale_mode: str = "per_tensor_mean_abs") -> dict:
     """Honest size accounting for a (partially) binarized model.
 

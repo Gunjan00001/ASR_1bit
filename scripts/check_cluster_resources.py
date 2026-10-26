@@ -153,7 +153,7 @@ def main() -> int:
     parser.add_argument("--queue", default="gpu")
     parser.add_argument("--job-name", default="qat_ffn_full")
     parser.add_argument("--user", default=getpass.getuser())
-    parser.add_argument("--required-cpus", type=int, default=2)
+    parser.add_argument("--required-cpus", type=int, default=1)
     parser.add_argument("--required-gpus", type=int, default=1)
     parser.add_argument("--required-gpu-free-gb", type=float, default=25.0)
     parser.add_argument("--required-host-free-gb", type=float, default=64.0)

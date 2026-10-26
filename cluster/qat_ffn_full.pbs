@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N qat_ffn_full
 #PBS -q gpu
-#PBS -l select=1:ncpus=2:ngpus=1:mem=64gb
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
 #PBS -l walltime=04:00:00
 #PBS -j oe
 #

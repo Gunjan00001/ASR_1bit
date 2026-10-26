@@ -301,6 +301,22 @@ def screening_section() -> str:
     return "\n".join(lines) + "\n"
 
 
+def full_arm_test_section() -> str:
+    """Final test evaluation of the two full-run finalists (generated tables)."""
+    lines = []
+    for label, relative in (
+        ("test-256 (with benchmark)", "full_arms_test_n256/final_comparison_test_n256.md"),
+        ("full test-clean (2620, accuracy-only)",
+         "full_arms_test_n2620/final_comparison_test_n2620.md"),
+    ):
+        path = RESULTS / relative
+        if path.is_file():
+            lines.append(f"### {label}\n\n{path.read_text().strip()}")
+        else:
+            lines.append(f"### {label}\n\nNot measured.")
+    return "\n\n".join(lines) + "\n"
+
+
 def main() -> int:
     text = f"""# Results — measured artifacts
 
@@ -343,6 +359,10 @@ benchmark numbers are in §3–§4.
 > The full test-clean run is accuracy-only (`--no-benchmark`, one inference pass
 > per utterance), so its performance columns are `n/a`. Warmed-up latency/RTF/
 > VRAM are measured on the 256-utterance subsets in the tables above.
+
+## 4b. Full mixed-precision finalists — test
+
+{full_arm_test_section()}
 
 ## 5. Packed 1-bit inference (Phase 18)
 

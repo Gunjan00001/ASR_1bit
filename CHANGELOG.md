@@ -8,13 +8,11 @@ an exact, reproducible repository state.
 
 ---
 
-## Unreleased — v1.6.0 mixed-precision research checkpoint (full run prepared; not measured)
+## v1.6.0 — Mixed-precision FFN full comparison (2026-10-26)
 
-**Scope:** implementation, screening, validation, and the controlled pilot.
-**No new full-test WER is claimed**; all full-test accuracy numbers remain the
-v1.5.0 measurements. The pilot's dev-128 result is recorded separately. The
-first pilot attempt was blocked by node allocation; the 2026-10-26 rerun
-completed.
+**Scope:** the full 10,000-utterance / 1,875-step controlled comparison and the
+predefined test evaluation are complete. The 17-layer FP32 exclusion list was
+fixed before the run and was not tuned. No further test tuning was performed.
 
 ### Added
 - `per_output_channel_mean_abs` scaling (`alpha_i = mean_j |W[i,j]|`), with
@@ -34,8 +32,9 @@ completed.
   model is now reloadable and numerically verifiable (max logit diff 0 on smoke).
 - Checkpoint manifests now record `layers`, `exclude_layers`, `scale_mode`,
   `ste_clip`, granularity, config path, and init model; loaders verify them.
-- `cluster/screen_ffn_sensitivity.pbs`, `cluster/qat_ffn_pilot.pbs`.
-- 19 new tests; **107 total**, all passing.
+- `cluster/screen_ffn_sensitivity.pbs`, `cluster/qat_ffn_pilot.pbs`,
+  `cluster/qat_ffn_full.pbs`, `cluster/final_eval_full_arms.pbs`.
+- 22 new tests (122 total), all passing; includes resume and PBS preflight/job checks.
 
 ### Screened / measured
 - Per-channel reconstruction gate: FFN-only QAT masters 0.6458→0.6306 (**2.28%**),
@@ -63,19 +62,33 @@ completed.
   256-dev selection, fixed 17-layer exclusion list, unique `*_full` outputs,
   per-arm skip/resume, packed-artifact verification.
 - Read-only PBS preflight `scripts/check_cluster_resources.py`; it reported
-  ready at 2 free CPUs / 8 GPUs on 2026-10-26. The full run was not submitted in
-  that window.
-- 13 new tests; **122 total**, all passing.
-- **No full-run or full-test WER is claimed.** The pilot remains 0.2303 control
-  vs 0.0900 mixed on dev-128.
+  ready at 2 free CPUs / 8 GPUs on 2026-10-26. The full run was later submitted
+  as job `12848` (1 CPU) and completed; see **Full-run results**.
+- 15 new tests; **122 total**, all passing.
+- The full-run and final-test evaluation are complete; see **Full-run results**
+  below. The pilot was only a pilot.
+
+### Full-run results
+| Arm | Dev-256 | Test-256 | Full test-clean | Artifact |
+|---|---:|---:|---:|---:|
+| FFN-only control (96 BitLinear) | 0.1163 | 0.1124 | 0.1132 | 813,346,080 B |
+| Mixed FFN (79 BitLinear + 17 fixed FP32) | **0.0527** | **0.0516** | **0.0546** | **1,089,643,604 B** |
+
+Full-test delta **−5.86 pp**; the mixed arm is **2.18× smaller than FP32** and
+the control 2.92×. This is a new Pareto point, not a new absolute-WER best;
+attention-only remains 4.49% at 1.983 GB. Selected checkpoints were step 1,875
+and restored; save/load and packed-artifact reload passed.
 
 ### Blocked then resolved
 - The 2026-10-25 pilot attempt was queued and canceled because the GPU node had
   all 96 CPUs assigned and no free slot. The 2026-10-26 rerun (job `12772`)
   completed on a free A100. Outputs: `results/qat_ffn_{control,mixed}_pilot.json`,
   `results/qat_ffn_{control,mixed}_pilot_size_report.json`, and
-  `results/packed_verify_ffn_{control,mixed}_pilot.json`. No full-test mixed WER
-  exists yet.
+  `results/packed_verify_ffn_{control,mixed}_pilot.json`.
+- The first full submission (job `12823`) aborted at the CUDA preflight due to
+  `torch.device_count()`; fixed to `torch.cuda.device_count()` with a static
+  regression test. The full run then completed as job `12848`, and the final
+  test as job `12899`. No historical result was overwritten.
 
 ---
 

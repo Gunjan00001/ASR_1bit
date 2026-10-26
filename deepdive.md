@@ -527,21 +527,21 @@ is ~1.10 GB — still well under the attention-only 1.983 GB. The implementation
 was validated on CPU: 79/79 quantized layers get gradients, the 17 FP layers stay
 FP, save/load works, and the packed artifact reloads with max |Δ logit| 0.
 
-**The controlled pilot ran (2026-10-26).** At the same 2,000 training
-utterances, 500 steps, seed 42, and 128 dev utterances:
+**The full controlled run completed (jobs 12848/12899).** 10,000 training
+utterances, 1,875 steps, seed 42, full 256-dev selection:
 
-| Arm | Dev-128 WER | CER | Best step | Artifact |
+| Arm | Dev-256 WER | Test-256 WER | Full test WER | Artifact |
 |---|---:|---:|---:|---:|
-| FFN-only per-tensor control | 0.2303 | 0.0684 | 500 | 0.8133 GB |
-| Mixed FFN (79 1-bit + 17 FP32) | **0.0900** | 0.0284 | 500 | 1.0896 GB |
+| FFN-only per-tensor control | 0.1163 | 0.1124 | 0.1132 | 0.8133 GB |
+| Mixed FFN (79 1-bit + 17 FP32) | **0.0527** | **0.0516** | **0.0546** | 1.0896 GB |
 
-Mixed minus control: **−14.04 pp**. The mixed artifact is 2.18× smaller than
-FP32 but 0.276 GB larger than the control; this is a trade-off, not a strict
-dominance. Both checkpoints reload and both packed artifacts reproduce logits
-exactly. **This is a clear pilot signal, not a full-test claim.** The next
-controlled step is the full 10k/1,875-step run with both arms and 256-dev
-selection; the pilot script (`cluster/qat_ffn_pilot.pbs`) is not the full run.
-Do not tune the 17-layer exclusion list after seeing the pilot.
+Mixed minus control: **−5.86 pp full-test** at the fixed 17-layer policy. The
+mixed artifact is 2.18× smaller than FP32, while the control is 2.92× smaller;
+the mixed arm is a **new Pareto point**, not an absolute-WER winner.
+Attention-only remains 4.49% at 1.983 GB. Both checkpoints restored step 1,875
+and both packed artifacts reload exactly. The test evaluation was run once after
+selection; no test tuning was performed. The 17-layer exclusion list was fixed
+before the run.
 
 ---
 

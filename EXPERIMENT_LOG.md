@@ -54,6 +54,7 @@ Status labels:
 | E26 | 2026-10-25 | Mixed-precision FFN implementation + pilot | PARTIAL (pilot blocked) |
 | E27 | 2026-10-26 | Controlled mixed-precision FFN pilot | WORKED (pilot; mixed wins) |
 | E28 | 2026-10-26 | Full-run hardening + PBS preflight | WORKED (ready; full not run) |
+| E29 | 2026-10-26 | Full mixed-precision FFN run + final test | WORKED (mixed wins) |
 
 ---
 
@@ -946,6 +947,66 @@ historical results. The pilot remains a pilot.
 
 **Next action:** submit `cluster/qat_ffn_full.pbs` exactly once when the
 preflight is ready; preserve completed arms on interruption.
+
+---
+
+## E29 — Full mixed-precision FFN run and final test
+
+**Question:** does the pilot's mixed-precision win survive the full 10k/1,875-step
+protocol with full 256-dev selection?
+
+**Why:** the pilot used 500 steps and 128 dev utterances. A full comparison is
+required before any test-set claim. The 17-layer FP32 exclusion list was fixed
+before the pilot and was not changed for this run.
+
+**What:** job `12848`, A100, commit `661d4f2`, 1 CPU (GPU-bound), 10,000
+`train.100` utterances, 3 epochs / **1,875 steps**, seed 42, batch 4 × accum 4,
+lr 2e-5, fp16, full **256**-utterance dev evaluation at steps 500/1000/1500 and
+the final 1,875 state. Best state restored before final evaluation. Then job
+`12899` evaluated both selected finalists on test-256 (with benchmark) and full
+test-clean 2620 (accuracy-only), writing to new `results/full_arms_*` directories.
+
+**Did it work? Yes. The mixed arm wins the full comparison.**
+
+| Arm | Dev-256 WER | Test-256 WER | Full test WER | Artifact |
+|---|---:|---:|---:|---:|
+| FFN-only control (96 BitLinear) | 0.1163 | 0.1124 | **0.1132** | **813,346,080 B** |
+| Mixed FFN (79 BitLinear + fixed 17 FP32) | **0.0527** | **0.0516** | **0.0546** | **1,089,643,604 B** |
+
+- Full-test delta: **−5.86 pp** (control 11.32% → mixed 5.46%); relative WER
+  reduction **51.8%**.
+- Artifact: mixed is **2.18× smaller than FP32** (2.374/1.090); control is
+  2.92× smaller. The mixed arm is **276.3 MB larger** than the control but
+  substantially more accurate.
+- Selected checkpoint: step **1,875** for both; `restored_best=true`; the final
+  state was also the best. The 1,500 dev WER was 0.1180 (control) and 0.0532
+  (mixed); the final 1,875 state improved both.
+- Save/load: control `true`, argmax 1.000; mixed `true`, argmax 0.9922 (above
+  the 0.99 criterion). Packed-artifact reload: both **max |Δ logit| 0.0, argmax
+  1.0, decoded 2/2**.
+- Effective bits: control 1.0000/quantized weight, 10.9657/all parameters;
+  mixed 1.0000 and 14.6907.
+- Test-256 benchmark: control RTF 0.0097, p50 0.066 s, VRAM 5.98 GB; mixed RTF
+  0.0102, p50 0.071 s, VRAM 6.00 GB. The mixed arm is ~5% slower, not faster;
+  storage compression is not inference acceleration.
+- Training: control 3,768 s; mixed 3,729 s. Peak GPU allocated/reserved 32.7/38.1
+  GB and 32.4/37.9 GB; peak host RSS 22.6/21.9 GB. One A100, one CPU.
+- Sources: `results/qat_ffn_{control,mixed}_full.json`,
+  `results/qat_ffn_{control,mixed}_full_size_report.json`,
+  `results/full_arms_test_n256/`, `results/full_arms_test_n2620/`,
+  `results/packed_verify_qat_ffn_{control,mixed}_full.json`.
+
+**Honest reading:** the mixed arm is a **new Pareto point** (5.46% at 1.090 GB),
+not a new absolute-WER winner. Attention-only remains the accuracy leader
+(4.49% at 1.983 GB); the control remains the smallest FFN model (11.32% at
+0.813 GB). The mixed arm is the best 2.18×-smaller-than-FP32 trade-off. Test
+evaluation was run once after selection; no test tuning was performed. The
+greedy CTC / no-LM / fixed-subset limitations still apply.
+
+**Next direction:** the combined attention+FFN arm remains worse than
+FFN-only, so the next controlled diagnostic is attention-layer sensitivity /
+mixed precision, not another arbitrary KD sweep. Two-bit/INT8 and LM decoding
+remain separate experiments.
 
 ---
 

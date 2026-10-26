@@ -4,28 +4,25 @@ Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
 
-**Current checkpoint:** `v1.5.2` (final status closure) for the measured
-`v1.5.0` results below. On **full LibriSpeech test-clean (2620 utterances)**, the 1-bit
-arms measure: attention-only **0.0449** at 1.983 GB, FFN-only **0.1134** at
-0.813 GB, attention+FFN **0.2050** at **0.423 GB** (5.6× smaller), and
-attention+FFN + distillation (λ_kd=0.1) **0.1998** at the same 0.423 GB; FP32 is
-**0.0193**. Dev-clean (256) agrees: 0.0421 / 0.1190 / 0.2080 / 0.2022 at the same
-sizes. The full measured comparison is in [`RESULTS.md`](RESULTS.md). No number
-here is estimated; failed and negative results are kept, and the full research
-history is in [`planning.md`](planning.md).
+**Current checkpoint:** `v1.6.0` — mixed-precision FFN full comparison. On
+**full LibriSpeech test-clean (2620 utterances)**: FP32 **0.0193** at 2.374 GB;
+attention-only 1-bit QAT **0.0449** at 1.983 GB; **mixed-precision FFN
+(79 one-bit + 17 fixed FP32 layers) 0.0546 at 1.090 GB**; full FFN-only control
+**0.1132 at 0.813 GB**; attention+FFN QAT **0.2050 at 0.423 GB**; and
+attention+FFN + distillation λ_kd=0.1 **0.1998 at 0.423 GB**. The mixed arm is a
+**new Pareto point**: 2.18× smaller than FP32 at 5.46% WER, versus the FFN-only
+control's 11.32% at 2.92×. All numbers are measured; the historical/pilot
+results remain below and in [`RESULTS.md`](RESULTS.md).
 
-> **v1.6 research checkpoint (pilot measured; full run prepared; no new full-test WER).**
-> Per-output-channel scaling was screened out (2.3–2.4% reconstruction gain,
-> 10% gate). A one-layer **FFN sensitivity screen** selected 17 sensitive layers
-> (`ffn_in` is ~1.9× more sensitive than `ffn_out`). The controlled pilot then
-> measured, at identical 2,000-train/500-step budget, seed 42, and 128 dev
-> utterances: FFN-only control **0.2303 WER / 0.8133 GB** vs mixed FFN
-> **0.0900 WER / 1.0896 GB** (FP32 2.374 GB). Both artifacts reload with max
-> |Δ logit| 0. The full 10k/1,875-step job (`cluster/qat_ffn_full.pbs`), the
-> read-only PBS preflight, persisted best-dev state, and Trainer resume are
-> implemented and tested; the preflight was ready at 2 CPUs, but the full run is
-> **not yet measured**. This is a pilot, not a full-test result. See
-> `EXPERIMENT_LOG.md` E24–E28 and `RESULTS.md` §7.
+> **v1.6 mixed-precision experiment (full run complete).** The controlled full
+> run used 10,000 `train.100` utterances, 1,875 steps, seed 42, and the full
+> 256-utterance dev set for checkpoint selection. The fixed 17-layer FP32
+> exclusion list was not tuned. Dev-256: control **0.1163** vs mixed **0.0527**.
+> Test-256: **0.1124 vs 0.0516**. Full test-clean: **0.1132 vs 0.0546** at
+> **0.813 GB vs 1.090 GB**. The mixed arm is 2.18× smaller than FP32; the control
+> is 2.92× smaller but much less accurate. No further test tuning was performed.
+> The full-run job, resume/preflight, and test evaluation are in
+> `EXPERIMENT_LOG.md` E28–E29 and `RESULTS.md` §4b.
 
 > This README is written for an engineer joining at this checkpoint. It states
 > what exists, what was measured, and — just as importantly — what has **not**
@@ -64,9 +61,9 @@ is the full 2620-utterance test-clean; dev is the pinned 256-utterance subset.
 ![Accuracy vs storage](docs/figures/wer_vs_size_full_test.png)
 
 *Figure 1 — Each point is a measured model. The dashed line connects the measured
-frontier (FP32 → attention-only → FFN-only → best 0.423 GB arm). PTQ
-attention+FFN is at 100% WER and is off-scale. The best 5.6× arm is
-attention+FFN + distillation at λ_kd=0.1 (19.98%).*
+frontier (FP32 → attention-only → mixed FFN → full FFN control → best 0.423 GB
+arm). PTQ attention+FFN is at 100% WER and is off-scale. The mixed FFN arm is the
+new 2.2× point at 5.46%.*
 
 The core trade-off:
 
@@ -74,7 +71,8 @@ The core trade-off:
 |---|---:|---:|---:|
 | FP32 reference | 0.0193 | 2.374 GB | 1.0× |
 | 1-bit attention-only QAT | 0.0449 | 1.983 GB | 1.2× |
-| 1-bit FFN-only QAT | 0.1134 | 0.813 GB | 2.9× |
+| **Mixed FFN (79 1-bit + 17 FP32)** | **0.0546** | **1.090 GB** | **2.2×** |
+| FFN-only QAT (full control) | 0.1132 | 0.813 GB | 2.9× |
 | 1-bit attention+FFN QAT | 0.2050 | 0.423 GB | 5.6× |
 | + distillation λ_kd=0.1 | **0.1998** | 0.423 GB | 5.6× |
 
@@ -82,9 +80,9 @@ The core trade-off:
 
 ![WER by arm](docs/figures/wer_by_arm_full_test.png)
 
-*Figure 2 — Full test-clean WER. The attention-only arm is the accuracy leader
-among 1-bit models; the FFN-only arm is the best middle point; the combined arm
-is the compression extreme.*
+*Figure 2 — Full test-clean WER. Attention-only remains the accuracy leader
+(4.49%); the mixed FFN arm is the new 2.2× point at 5.46%; the full FFN control
+is 11.32%.*
 
 ### Why QAT is necessary
 
@@ -111,19 +109,19 @@ did not fully explain.*
 
 ![Deploy size composition](docs/figures/size_breakdown.png)
 
-*Figure 5 — Packed 1-bit weights are tiny (13–63 MB); the non-quantized FP
-parameters dominate. That is why attention-only is only 1.2× smaller than FP32:
-its FP FFN alone is ~1.6 GB. The FP32 master weights are training state and are
-excluded.*
+*Figure 5 — Packed 1-bit weights are tiny (41–63 MB); the non-quantized FP
+parameters dominate. The mixed FFN arm's 17 FP32 layers push its artifact to
+1.090 GB, still 2.18× smaller than FP32. The FP32 master weights are training
+state and are excluded.*
 
 ### Does 1-bit make inference faster?
 
 ![A100 benchmark](docs/figures/benchmark_rtf_latency.png)
 
-*Figure 6 — No. All arms have RTF ≈0.006–0.007 and p50 ≈0.035–0.045 s on an
-A100. The difference is <10% and tracks parameter count, not precision. The
-runtime expands `alpha·sign(W)` to FP before `F.linear`; binarization buys disk
-size, not wall-clock speed.*
+*Figure 6 — No speedup from compression. The mixed FFN test-256 arm has RTF
+0.0102 vs the control 0.0097 (about 5% slower), while being much more accurate
+and 2.18× smaller than FP32. The runtime expands `alpha·sign(W)` to FP before
+`F.linear`; binarization buys disk size, not wall-clock speed.*
 
 ### Streaming is a prototype, not a streaming encoder
 
@@ -141,7 +139,7 @@ A true streaming encoder would need cached convolution/attention state.*
 | QAT attention-only: 4.49% full test | Distillation λ_kd=0.1: 19.98% — ~0.5 pp gain | Distillation λ_kd=0.5: 22.18% (worse than QAT) |
 | QAT FFN-only: 11.34% at 2.9× | Packed inference: storage win, 1.10× slower | Any inference speedup from binarization |
 | Bit packing + honest size accounting | Chunked streaming: partial transcripts, poor WER | 5.6× compression at near-FP32 accuracy on this recipe |
-| FFN layer-sensitivity screen: specific layers, `ffn_in` 1.9× `ffn_out` | Mixed-precision FFN pilot: 0.0900 vs control 0.2303 (dev-128), 1.09 vs 0.813 GB; full run prepared | Per-output-channel scaling: 2.3–2.4% reconstruction gain (gate 10%) |
+| FFN layer-sensitivity screen: specific layers, `ffn_in` 1.9× `ffn_out` | Full mixed FFN: 5.46% full test at 1.090 GB vs control 11.32% at 0.813 GB; a new Pareto point | Per-output-channel scaling: 2.3–2.4% reconstruction gain (gate 10%) |
 
 **The central scientific finding:** QAT recovers every *isolated* binarization,
 but the *combined* attention+FFN arm is worse than either isolated arm. The two
@@ -193,7 +191,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 19 | Streaming ASR | ✅ prototype measured (chunked WER/RTF) |
 | R1 | Research: per-output-channel scaling | ⛔ screened out: 2.3–2.4% reconstruction gain vs 10% gate |
 | R2 | Research: FFN per-layer sensitivity | ✅ measured: 96 layers, 32 dev; `ffn_in` 1.9× `ffn_out` |
-| R3 | Research: mixed-precision FFN | ✅ pilot measured: mixed 0.0900 vs control 0.2303 dev-128; full run prepared, not started |
+| R3 | Research: mixed-precision FFN | ✅ **full measured**: mixed 0.0527 dev / 0.0546 full test at 1.090 GB; control 0.1163 / 0.1132 at 0.813 GB |
 
 > **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes
@@ -345,22 +343,23 @@ raw data is in `results/final_comparison_{dev,test}_n256.json`.
 |---|---:|---:|---:|
 | FP32 baseline | **0.0193** | **0.0050** | 2.374 GB |
 | QAT attention-only (A100) | 0.0449 | 0.0137 | 1.983 GB |
-| QAT FFN-only (A100) | 0.1134 | 0.0325 | 0.813 GB |
+| **Mixed FFN full (79 1-bit + 17 FP32)** | **0.0546** | **0.0163** | **1.090 GB** |
+| Full FFN-only control (A100, 1875 steps) | 0.1132 | 0.0326 | 0.813 GB |
+| Historical FFN-only QAT (A100, final-only) | 0.1134 | 0.0325 | 0.813 GB |
 | QAT attention+FFN (A100) | 0.2050 | 0.0639 | 0.423 GB |
 | QAT + distillation (λ_kd=0.5) | 0.2218 | 0.0709 | 0.423 GB |
 | QAT + distillation (λ_kd=0.1) | **0.1998** | **0.0636** | 0.423 GB |
 
 **Reading the result.** QAT recovers binarization in every isolated case:
 attention-only from 44.54% (PTQ) to 4.49% (full test), FFN-only from 100% to
-11.34%, and attention+FFN from 100% to 20.50%. The combined attention+FFN arm is
-**worse than either isolated arm**, so the two binarizations interact; the 5.6×
-compression target is reachable, but at a large accuracy cost on this recipe.
-The size/accuracy frontier from this work is: 1.2× at ~2× WER, 2.9× at ~6× WER,
-or 5.6× at 20.22% WER (attention+FFN + KD λ_kd=0.1). Distillation at λ_kd=0.5
-did not improve the combined arm (22.32%); lowering λ_kd to 0.1 recovers a small
-but consistent gain (**20.22%**, −0.58 pp vs QAT alone) at the same 0.423 GB. The
-KD term still dominates the CTC term, so distillation is a marginal tuning knob
-here, not the solution to the FFN/attention interaction.
+11.34%, and attention+FFN from 100% to 20.50%. The **mixed FFN full arm** then
+shows that keeping the 17 measured-sensitive FFN layers FP32 fixes most of the
+FFN damage: **5.46% at 1.090 GB**, versus the full per-tensor FFN control's
+**11.32% at 0.813 GB**. Attention-only remains the absolute accuracy leader
+(4.49% at 1.983 GB); the mixed arm is the best **2.18×-smaller-than-FP32**
+trade-off. The combined attention+FFN arm is still worse than either isolated
+arm, so attention/FFN binarization still interacts; that remains the main open
+question. Distillation at λ_kd=0.1 remains a marginal tuning knob.
 
 **Not a speed result.** All arms run at essentially the same warmed-up A100
 latency/RTF (≈0.006–0.007 end-to-end; difference <10%). The 1-bit runtime
@@ -376,8 +375,8 @@ size**, not wall-clock speed. See §25 and `RESULTS.md` §5.
 
 Mixed minus control: **−14.04 pp** at the same 2,000 training IDs, 128 eval IDs,
 seed, batch, and LR. Both artifacts reload with max |Δ logit| 0. This is a
-**pilot**, not the 256-dev/full-test protocol; the full 10k/1,875-step job is
-prepared and tested but has not produced a result yet.
+**pilot**, not the 256-dev/full-test protocol; the full 10k/1,875-step run is
+complete — dev **0.0527 vs 0.1163**, full test **0.0546 vs 0.1132**. See §32.
 
 ## 9. Phase 4 — BitLinear design
 
@@ -540,6 +539,8 @@ This is an experimental choice, not a permanent rule.
   directories skipped) and a tiny HF Trainer interrupt/restart.
 - `test_cluster_resources.py` (5) — PBS size/node/qstat/nvidia-smi parsing and
   ready/duplicate decisions for the full-run preflight.
+- `test_cluster_job_scripts.py` (2) — static full-PBS CUDA preflight API and
+  full-protocol/output checks.
 - Mixed-precision additions in `test_binarization.py`, `test_bitlinear.py`,
   `test_packed.py`, `test_layer_replacement.py`, and `test_qat.py`: per-channel
   scales/broadcasting/zero rows/gradients, exact-layer exclusion, manifest
@@ -671,9 +672,8 @@ parameters and removing FP master weights from deployment state are future work.
   (full encoder per overlapping window). Its chunked WER is much worse than the
   full-utterance WER on the demo (Phase 19).
 - **No 2-bit / INT8 arm.** Mixed precision (FP32/1-bit per layer) is implemented
-  and piloted; per-output-channel scaling is implemented but screened out;
-  2-bit, INT8, and learned alpha are not. The mixed full run is prepared but
-  not yet measured.
+  and fully measured; per-output-channel scaling is implemented but screened out;
+  2-bit, INT8, and learned alpha are not.
 - **Distillation is a marginal tuning knob**: λ_kd=0.5 made the combined arm
   worse (0.2232); λ_kd=0.1 improves it to **0.2022 dev / 0.1998 full test**, a
   small gain over QAT alone (0.2080 / 0.2050).
@@ -857,6 +857,8 @@ between them.
 | `cluster/distill_attn_ffn.pbs` | 13 | FP32 teacher → attention+FFN 1-bit student (λ_kd=0.5) |
 | `cluster/distill_attn_ffn_kd01.pbs` | 13/14 | controlled distillation follow-up (λ_kd=0.1, cached teacher logits) |
 | `cluster/final_eval_a100.pbs` | 12/14/15/17/18/19 | final comparison + packed/streaming benchmarks |
+| `cluster/qat_ffn_full.pbs` | v1.6 full 10k/1,875 FFN control vs mixed | `results/qat_ffn_{control,mixed}_full.json` |
+| `cluster/final_eval_full_arms.pbs` | v1.6 test-256 + full test-clean finalists | `results/full_arms_test_*` |
 
 New tooling in this checkpoint:
 
@@ -954,40 +956,33 @@ pinned dependencies, recorded provenance in every results JSON.
 
 The attention+FFN QAT run is done. The open questions and next experiments are:
 
-0. **Run the full mixed-precision FFN controlled run.** The pilot is done:
-   mixed **0.0900** vs control **0.2303** dev-128 at 500 steps/2k; artifacts
-   **1.0896 GB** vs **0.8133 GB** (FP32 2.374 GB). The full protocol is 10,000
-   `train.100` utterances, 1,875 steps, both arms, 256-dev selection; only after
-   that run test-256/full test. Do not tune the 17-layer exclusion list after
-   seeing the pilot. The reproducible full-run job is
-   `cluster/qat_ffn_full.pbs`; run `scripts/check_cluster_resources.py` first and
-   submit only when it reports `ready`. The job writes unique `*_full` outputs,
-   persists the best-dev state, resumes from Trainer checkpoints, and
-   packs/verifies both artifacts. It has not yet produced a full result.
-1. **Improve the attention+FFN recipe** — longer training, LR/early-stop sweep,
-   and KD tuning (mean-normalized KL) after the mixed pilot.
-2. **True binary compute** — integrate an XNOR+popcount kernel with 1-bit
+0. **Mixed-precision FFN — completed.** Full 10k/1,875-step controlled run:
+   dev-256 **0.1163 control vs 0.0527 mixed**; test-256 **0.1124 vs 0.0516**;
+   full test-clean **0.1132 vs 0.0546**; artifacts **0.8133 vs 1.0896 GB**.
+   The 17-layer exclusion list was fixed before the run and not tuned.
+1. **Attention-layer sensitivity/mixed precision** — the combined attention+FFN
+   arm is still worse than FFN-only; screen attention layers before another
+   combined run.
+2. **2-bit / INT8 or better-calibrated mixed precision** — a separate controlled
+   experiment; do not combine it with the current result.
+3. **True binary compute** — integrate an XNOR+popcount kernel with 1-bit
    activations. The measured 1-bit×1-bit kernel is 2.3× faster than float, but
-   the current model has FP activations, so it cannot use that kernel directly.
-3. **2-bit / INT8 and learned scaling** — per-output-channel scaling is
-   implemented but screened out; the current trained arms use 1-bit weights with
-   per-tensor, non-learned alpha.
-4. **LM decoding** — current numbers are greedy CTC on full test-clean; an
-   LM-assisted comparison is future work.
+   the current model has FP activations.
+4. **LM decoding** — current numbers are greedy CTC; an LM-assisted comparison
+   is a separate decoding experiment.
 5. **A true streaming encoder** with cached convolution/attention state — the
-   current chunked prototype loses ~54 pp WER versus full-utterance decoding on
-   the demo (Phase 19).
-6. **Further KD tuning** — mean-normalized KL and layer-wise distillation; the
-   λ_kd=0.1 run is already measured.
+   current chunked prototype is not a streaming encoder.
+6. **Further KD tuning** — mean-normalized KL and layer-wise distillation.
 
 Acceptance remains a measured WER, artifact size, and RTF; no theoretical
 speedup is reported as a measurement.
 
-## 32. Completion status (v1.5.2)
+## 32. Completion status (v1.6.0)
 
-Every phase required by the original plan is complete at a stated scope. There
-are no silently unrun required phases; the open items below are explicitly
-future research or unavailable infrastructure.
+Every phase required by the original plan is complete at a stated scope, and the
+v1.6 mixed-precision experiment is completed end-to-end. There are no silently
+unrun required phases; the open items below are explicitly future research or
+unavailable infrastructure.
 
 | Phase | Scope completed | Evidence |
 |---|---|---|
@@ -1011,9 +1006,8 @@ future research or unavailable infrastructure.
 - **True streaming encoder** — cached convolution/attention state is not
   implemented; the chunked prototype is measured and documented as such.
 - **2-bit / INT8**, LM decoding, learned scaling — optional or out of the pinned
-  protocol. Per-output-channel scaling is implemented but was screened out; mixed
-  precision (FP32/1-bit per layer) is implemented and piloted; its full run is
-  pending.
+  protocol. Per-output-channel scaling is implemented but was screened out; the
+  mixed-precision full run is complete (5.46% at 1.090 GB).
 - **Kaggle T4 clean re-run** — the Kaggle CLI/credentials are unavailable in
   this environment, and the weekly quota was exhausted historically. The A100
   re-run reproduces the attention-only result and the packing pipeline, so this
@@ -1025,23 +1019,24 @@ future research or unavailable infrastructure.
 |---|---:|---:|---:|
 | FP32 reference | **0.0193** | 0.0050 | 2.374 GB |
 | Best 1-bit accuracy: attention-only QAT | **0.0449** | 0.0137 | 1.983 GB |
-| 2.9× FFN-only QAT | 0.1134 | 0.0325 | 0.813 GB |
+| **Mixed FFN full (79 1-bit + 17 FP32)** | **0.0546** | **0.0163** | **1.090 GB** |
+| 2.9× FFN-only control (full, 1875 steps) | 0.1132 | 0.0326 | 0.813 GB |
 | 5.6× attention+FFN QAT | 0.2050 | 0.0639 | 0.423 GB |
 | **5.6× + distillation λ_kd=0.1** | **0.1998** | 0.0636 | **0.423 GB** |
 
-Dev-clean (256) equivalents: 0.0202 / 0.0421 / 0.1190 / 0.2080 / 0.2022.
-The lowest 1-bit dev WER ever measured in the project is the historical Kaggle
-T4 attention-only run at **0.0392** (256 dev); the A100 full-test result is
-0.0449, which is the number to quote for the final model.
+Dev-clean (256) equivalents: 0.0202 / 0.0421 / **0.0527 mixed** / 0.1163
+control / 0.2080 / 0.2022. The lowest 1-bit dev WER ever measured in the project
+is the historical Kaggle T4 attention-only run at **0.0392** (256 dev); the A100
+attention-only full-test result is 0.0449. The mixed FFN arm is the best
+trade-off at **2.18× smaller than FP32** and the FFN-only control is 2.92×
+smaller; neither is an absolute-WER win over attention-only.
 
-> **v1.6 research extension (not a completed phase):** per-output-channel
-> scaling was screened out (2.3–2.4% reconstruction gain, gate 10%); the FFN
-> layer-sensitivity screen was measured; the controlled mixed-precision pilot
-> measured **0.0900 vs 0.2303** dev-128 WER (mixed vs control) with artifacts
-> **1.0896 vs 0.8133 GB**; both artifacts reload exactly. The full-run script,
-> PBS preflight, final-step evaluation, and resume path are implemented and
-> tested, but the full run is **not yet measured**. **The final WER table above
-> is unchanged.**
+> **v1.6 mixed-precision extension (completed):** per-output-channel scaling was
+> screened out (2.3–2.4% reconstruction gain, gate 10%); the FFN layer-sensitivity
+> screen selected 17 layers; the full controlled run measured **0.1132 vs 0.0546**
+> full-test WER at **0.813 vs 1.090 GB** (control vs mixed). **The mixed result is
+> a new Pareto point**, not a new absolute-WER best; attention-only 4.49% at
+> 1.983 GB remains the accuracy leader.
 
 ## Layout
 

@@ -541,10 +541,24 @@ compared per-tensor FFN-only QAT against the mixed policy:
 Both arms used the same 2,000 training IDs, 128 eval IDs, seed 42, batch 4 ×
 accum 4, lr 2e-5, and 500 steps. Mixed minus control: **−14.04 pp**. Both
 checkpoints restored the best state (which was step 500), and both packed
-artifacts reload with max |Δ logit| 0. This is a **dev-128 pilot**, not a
-full-test result. The full 10k/1,875-step run with 256-dev selection is the next
-controlled step; it has not been started. Do not tune the 17-layer list after
-seeing the pilot.
+artifacts reload with max |Δ logit| 0. This was a **dev-128 pilot**, not a
+full-test result.
+
+### 10.12 v1.6 full mixed-precision result (measured 2026-10-26)
+
+The full 10k/1,875-step controlled run (job `12848`, 1 CPU, A100) and the final
+test evaluation (job `12899`) completed:
+
+| Arm | Dev-256 | Test-256 | Full test-clean | Artifact |
+|---|---:|---:|---:|---:|
+| FFN-only control | 0.1163 | 0.1124 | 0.1132 | 0.8133 GB |
+| Mixed FFN (79 1-bit + 17 fixed FP32) | **0.0527** | **0.0516** | **0.0546** | 1.0896 GB |
+
+The mixed arm is a new Pareto point: 2.18× smaller than FP32 at 5.46% full-test
+WER, versus the control's 2.92× at 11.32%. Attention-only remains the absolute
+accuracy leader at 4.49% / 1.983 GB. The 17-layer list was fixed before the run;
+test evaluation was one pass after selection. The full job's step-1,875 best
+state was restored and both packed artifacts reload exactly.
 
 
 

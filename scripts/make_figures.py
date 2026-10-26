@@ -75,20 +75,23 @@ def save(fig, name: str) -> None:
 def fig_wer_vs_size() -> None:
     combined = load("final_comparison_test_n2620.json")
     rows = {r["arm"]: r for r in combined["arms"]}
+    full = load("full_arms_test_n2620/final_comparison_test_n2620.json")
+    rows.update({r["arm"]: r for r in full["arms"]})
     order = [
         ("fp32", "FP32", COLORS["fp32"]),
         ("qat_attention_a100", "QAT attention", COLORS["qat"]),
-        ("qat_ffn_a100", "QAT FFN", COLORS["qat"]),
+        ("qat_ffn_mixed_full", "Mixed FFN (17 FP)", "#7c3aed"),
+        ("qat_ffn_control_full", "Full FFN control", "#0f766e"),
         ("qat_attn_ffn", "QAT attention+FFN", COLORS["qat"]),
         ("distill_attn_ffn_kd01", "QAT+KD 0.1", COLORS["kd"]),
-        ("distill_attn_ffn", "QAT+KD 0.5", COLORS["kd"]),
     ]
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
     points = []
     annotate = {
         "fp32": (10, 8),
         "qat_attention_a100": (10, 8),
-        "qat_ffn_a100": (10, 8),
+        "qat_ffn_mixed_full": (-70, -28),
+        "qat_ffn_control_full": (-80, 12),
     }
     for arm, label, color in order:
         row = rows[arm]
@@ -106,8 +109,8 @@ def fig_wer_vs_size() -> None:
                 bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="#d1d5db", lw=0.6),
             )
 
-    # Pareto frontier: FP32 -> attention -> FFN -> best 0.423 GB arm.
-    frontier = [points[0], points[1], points[2], points[4]]
+    # Pareto frontier: FP32 -> attention -> mixed -> full FFN control -> best 0.423 GB arm.
+    frontier = [points[0], points[1], points[2], points[3], points[5]]
     ax.plot([p[0] for p in frontier], [p[1] for p in frontier],
             color="#9ca3af", linestyle="--", linewidth=1.2, zorder=1,
             label="measured frontier")
@@ -139,10 +142,13 @@ def fig_wer_vs_size() -> None:
 def fig_wer_by_arm() -> None:
     combined = load("final_comparison_test_n2620.json")
     rows = {r["arm"]: r for r in combined["arms"]}
+    full = load("full_arms_test_n2620/final_comparison_test_n2620.json")
+    rows.update({r["arm"]: r for r in full["arms"]})
     arms = [
         ("fp32", "FP32", COLORS["fp32"]),
         ("qat_attention_a100", "QAT attention", COLORS["qat"]),
-        ("qat_ffn_a100", "QAT FFN", COLORS["qat"]),
+        ("qat_ffn_mixed_full", "Mixed FFN\n(17 FP32)", "#7c3aed"),
+        ("qat_ffn_control_full", "Full FFN\ncontrol", "#0f766e"),
         ("qat_attn_ffn", "QAT attention+FFN", COLORS["qat"]),
         ("distill_attn_ffn", "QAT+KD 0.5", COLORS["kd"]),
         ("distill_attn_ffn_kd01", "QAT+KD 0.1", COLORS["kd"]),
@@ -255,6 +261,7 @@ def fig_size_breakdown() -> None:
         ("FP32 baseline", None),
         ("QAT attention-only", "qat_attn_a100_size_report.json"),
         ("QAT FFN-only", "qat_ffn_a100_size_report.json"),
+        ("Full mixed FFN\n(17 FP32)", "qat_ffn_mixed_full_size_report.json"),
         ("QAT attention+FFN\n(and KD 0.1)", "qat_attn_ffn_size_report.json"),
     ]
     fig, ax = plt.subplots(figsize=(8.4, 4.4))
@@ -290,12 +297,14 @@ def fig_size_breakdown() -> None:
 def fig_benchmark() -> None:
     combined = load("final_comparison_dev_n256.json")
     rows = {r["arm"]: r for r in combined["arms"]}
+    full = load("full_arms_test_n256/final_comparison_test_n256.json")
+    rows.update({r["arm"]: r for r in full["arms"]})
     arms = [
         ("fp32", "FP32", COLORS["fp32"]),
         ("qat_attention_a100", "QAT attention", COLORS["qat"]),
-        ("qat_ffn_a100", "QAT FFN", COLORS["qat"]),
+        ("qat_ffn_mixed_full", "Mixed FFN (test-256)", "#7c3aed"),
+        ("qat_ffn_control_full", "Full FFN (test-256)", "#0f766e"),
         ("qat_attn_ffn", "QAT attention+FFN", COLORS["qat"]),
-        ("distill_attn_ffn", "QAT+KD 0.5", COLORS["kd"]),
         ("distill_attn_ffn_kd01", "QAT+KD 0.1", COLORS["kd"]),
     ]
     labels = [a[1] for a in arms]

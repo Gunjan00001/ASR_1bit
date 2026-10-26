@@ -23,8 +23,8 @@ separately, and each JSON records its own dependency versions.
 | QAT FFN-only (A100) | cloud-gpu | 0.1186 | 0.0337 | 0.0293 | 1875 | 165.4 | 96 | `results/qat_ffn_a100.json` |
 | Pilot: FFN-only per-tensor control (A100, dev-128) | cloud-gpu | 0.2303 | 0.0684 | 0.0036 | 500 | 342.2 | 96 | `results/qat_ffn_control_pilot.json` |
 | Pilot: mixed-precision FFN (A100, dev-128) | cloud-gpu | 0.0900 | 0.0284 | 0.0035 | 500 | 183.9 | 79 | `results/qat_ffn_mixed_pilot.json` |
-| Full: FFN-only per-tensor control (A100, dev-256) | cloud-gpu | — | — | — | — | — | — | not measured |
-| Full: mixed-precision FFN (A100, dev-256) | cloud-gpu | — | — | — | — | — | — | not measured |
+| Full: FFN-only per-tensor control (A100, dev-256) | cloud-gpu | 0.1163 | 0.0332 | 0.0057 | 1875 | 165.2 | 96 | `results/qat_ffn_control_full.json` |
+| Full: mixed-precision FFN (A100, dev-256) | cloud-gpu | 0.0527 | 0.0158 | 0.0049 | 1875 | 87.5 | 79 | `results/qat_ffn_mixed_full.json` |
 | QAT FFN-only, dev-selected control | cloud-gpu | — | — | — | — | — | — | not measured |
 | QAT FFN-only, per-output-channel scales | cloud-gpu | — | — | — | — | — | — | not measured |
 | QAT attention+FFN (A100) | cloud-gpu | 0.2082 | 0.0641 | 0.0297 | 1875 | 298.6 | 192 | `results/qat_attn_ffn.json` |
@@ -43,8 +43,8 @@ separately, and each JSON records its own dependency versions.
 | QAT FFN-only (A100) | per_tensor_mean_abs | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
 | Pilot: FFN-only per-tensor control | per_tensor_mean_abs | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
 | Pilot: mixed-precision FFN | per_tensor_mean_abs | 79 | 331350016 | 41.4 | 1048.1 | 1325.4 | 1089.6 |
-| Full: FFN-only per-tensor control | — | — | — | — | — | — | not measured |
-| Full: mixed-precision FFN | — | — | — | — | — | — | not measured |
+| Full: FFN-only per-tensor control | per_tensor_mean_abs | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
+| Full: mixed-precision FFN | per_tensor_mean_abs | 79 | 331350016 | 41.4 | 1048.1 | 1325.4 | 1089.6 |
 | QAT FFN-only, dev-selected control | — | — | — | — | — | — | not measured |
 | QAT FFN-only, per-output-channel scales | — | — | — | — | — | — | not measured |
 | QAT attention+FFN (A100) | per_tensor_mean_abs | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
@@ -114,6 +114,23 @@ Device: `NVIDIA A100-SXM4-80GB` | dataset: `openslr/librispeech_asr clean test` 
 > The full test-clean run is accuracy-only (`--no-benchmark`, one inference pass
 > per utterance), so its performance columns are `n/a`. Warmed-up latency/RTF/
 > VRAM are measured on the 256-utterance subsets in the tables above.
+
+## 4b. Full mixed-precision finalists — test
+
+### test-256 (with benchmark)
+
+| Arm | WER | CER | RTF | p50 (s) | p95 (s) | utt/s | Peak RSS (MB) | Peak VRAM (GB) | Deploy size (GB) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| qat_ffn_control_full | 0.1124 | 0.0331 | 0.0097 | 0.066 | 0.165 | 13.165 | 3430 | 5.98 | 0.813 |
+| qat_ffn_mixed_full | 0.0516 | 0.0165 | 0.0102 | 0.071 | 0.171 | 12.460 | 3107 | 6.00 | 1.090 |
+
+### full test-clean (2620, accuracy-only)
+
+| Arm | WER | CER | RTF | p50 (s) | p95 (s) | utt/s | Peak RSS (MB) | Peak VRAM (GB) | Deploy size (GB) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| qat_ffn_control_full | 0.1132 | 0.0326 | n/a | n/a | n/a | n/a | n/a | n/a | 0.813 |
+| qat_ffn_mixed_full | 0.0546 | 0.0163 | n/a | n/a | n/a | n/a | n/a | n/a | 1.090 |
+
 
 ## 5. Packed 1-bit inference (Phase 18)
 

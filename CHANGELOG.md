@@ -8,17 +8,21 @@ an exact, reproducible repository state.
 
 ---
 
-## Unreleased — attention sensitivity screen prepared (blocked)
+## Unreleased — preliminary attention sensitivity screen + policies
 
-- Added `weight_reconstruction_error` and 4 tests; extended
-  `scripts/screen_layer_sensitivity.py` to record weight reconstruction error,
-  configuration, preliminary status, and fixed dev IDs.
-- Added `cluster/screen_attention_sensitivity.pbs` (32 fixed dev utterances,
-  one attention layer at a time, no QAT, no test-clean).
-- Preflight blocked: **0 free CPU** on `jiit-gpu01` (96/96 assigned; 8 GPUs free).
-  The screen job was **not submitted**; no attention measurement, policy, or
-  pilot exists. The v1.6.0 results and 17-layer FFN list are unchanged.
-- 19 new tests total; **126** pass.
+- Added `weight_reconstruction_error`, 4 tests, and a 3-test attention-policy
+  config generator; **129 tests** pass.
+- Ran a **preliminary CPU screen on 16 fixed dev utterances** (FP32 ref WER
+  0.0256); all 96 attention layers measured with WER/CER, logit/KL, argmax, and
+  weight reconstruction error. `attention_output` is least sensitive
+  (mean ΔWER +0.0047); `attention_k` is most sensitive (+0.0069).
+- Generated two configs without changing the 17 FFN exclusions:
+  `attention_v1_cpu16_category` (24 `attention_output` layers quantized;
+  estimated 0.992 GB) and `attention_v1_cpu16_sensitive24` (top-24 rel-L2
+  attention FP32, 72 quantized; estimated 0.797 GB).
+- The comparable 2k/500 pilot job is prepared (`cluster/qat_attention_mixed_pilot.pbs`).
+  It was **not submitted**: 0 free PBS CPUs (8 GPUs free). No attention QAT/WER
+  result exists; v1.6.0 results remain unchanged.
 
 ---
 

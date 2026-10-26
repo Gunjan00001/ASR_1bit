@@ -173,7 +173,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (126 tests) | ✅ green |
+| 7 | Test gate (129 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
@@ -192,7 +192,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | R1 | Research: per-output-channel scaling | ⛔ screened out: 2.3–2.4% reconstruction gain vs 10% gate |
 | R2 | Research: FFN per-layer sensitivity | ✅ measured: 96 layers, 32 dev; `ffn_in` 1.9× `ffn_out` |
 | R3 | Research: mixed-precision FFN | ✅ **full measured**: mixed 0.0527 dev / 0.0546 full test at 1.090 GB; control 0.1163 / 0.1132 at 0.813 GB |
-| R4 | Research: attention sensitivity | ⏸ screen prepared + tested; blocked by 0 free PBS CPUs |
+| R4 | Research: attention sensitivity | ✅ preliminary CPU16 screen: `attention_output` least sensitive; 2 policies generated; pilot blocked (0 free CPUs) |
 
 > **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes
@@ -504,7 +504,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **126 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **129 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -544,6 +544,8 @@ This is an experimental choice, not a permanent rule.
   full-protocol/output checks.
 - `test_sensitivity.py` (4) — per-tensor/per-channel weight reconstruction
   error, zero weights, binary exactness, and finite/bounded random weights.
+- `test_attention_policy.py` (3) — category/sensitive policy generation, 17-FFN
+  preservation, size arithmetic, and generated-config loading.
 - Mixed-precision additions in `test_binarization.py`, `test_bitlinear.py`,
   `test_packed.py`, `test_layer_replacement.py`, and `test_qat.py`: per-channel
   scales/broadcasting/zero rows/gradients, exact-layer exclusion, manifest
@@ -888,7 +890,7 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 126 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 129 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
@@ -908,7 +910,7 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 126 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 129 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
@@ -963,13 +965,16 @@ The attention+FFN QAT run is done. The open questions and next experiments are:
    dev-256 **0.1163 control vs 0.0527 mixed**; test-256 **0.1124 vs 0.0516**;
    full test-clean **0.1132 vs 0.0546**; artifacts **0.8133 vs 1.0896 GB**.
    The 17-layer exclusion list was fixed before the run and not tuned.
-1. **Attention-layer sensitivity/mixed precision — prepared, blocked.** The
-   one-layer attention screen (`scripts/screen_layer_sensitivity.py` with
-   `configs/qat_attn.yaml`, 32 fixed dev utterances) is implemented and tested;
-   the job is `cluster/screen_attention_sensitivity.pbs`, output
-   `results/layer_sensitivity_attention_v1.json`. The PBS preflight is blocked
-   at **0 free CPUs** (8 GPUs free). The 17-layer FFN list is untouched. No
-   attention measurement, policy selection, or pilot exists yet.
+1. **Attention-layer sensitivity/mixed precision — preliminary screen done; pilot blocked.** A 16-utterance CPU screen (FP32 ref WER 0.0256) measured all
+   96 attention layers. `attention_output` is the least sensitive category
+   (mean ΔWER +0.0047, rel-L2 0.0527, reconstruction 0.685); `attention_k` is
+   the most sensitive (mean ΔWER +0.0069, rel-L2 0.0617). Two configs were
+   generated without touching the 17 FFN exclusions:
+   `attention_v1_cpu16_category` (quantize `attention_output`; ~0.992 GB) and
+   `attention_v1_cpu16_sensitive24` (keep the top-24 rel-L2 attention layers;
+   ~0.797 GB). The comparable 2k/500 pilot job is prepared, but the node has
+   **0 free CPUs** (8 GPUs free), so it was not submitted. No attention WER or
+   QAT result exists yet.
 2. **2-bit / INT8 or better-calibrated mixed precision** — a separate controlled
    experiment; do not combine it with the current result.
 3. **True binary compute** — integrate an XNOR+popcount kernel with 1-bit
@@ -1074,7 +1079,7 @@ one-bit-asr/
 ├── cluster/            pick_gpu.sh + PBS jobs (attention/FFN QAT, attention-only
 │                       A100 arm, distillation, layer screen, mixed pilot,
 │                       hardened full FFN control/mixed job), README.md
-├── tests/              126 tests (STE, binarization, BitLinear, replacement,
+├── tests/              129 tests (STE, binarization, BitLinear, replacement,
 │                       QAT, evaluate, config, distillation, packed, streaming,
 │                       latency, callbacks, resume, cluster preflight,
 │                       mixed-precision exclusions)

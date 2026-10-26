@@ -56,6 +56,7 @@ Status labels:
 | E28 | 2026-10-26 | Full-run hardening + PBS preflight | WORKED (ready; full not run) |
 | E29 | 2026-10-26 | Full mixed-precision FFN run + final test | WORKED (mixed wins) |
 | E30 | 2026-10-26 | Attention sensitivity screen prep | BLOCKED (0 free CPUs; no job) |
+| E31 | 2026-10-26 | Preliminary attention sensitivity screen + policies | WORKED (CPU16); pilot blocked |
 
 ---
 
@@ -933,7 +934,7 @@ real PBS check, not an assumption from a free GPU.
   GPUs, host memory, disk, duplicate jobs, existing outputs).
 - `cluster/qat_ffn_full.pbs` runs both arms sequentially, skips completed arms,
   resumes partial arms, and packs/verifies both artifacts.
-- 13 new tests (callbacks, resume, preflight); **126 total** pass.
+- 13 new tests (callbacks, resume, preflight); **129 total** pass.
 - A CPU smoke of the updated mixed training path was started to validate the
   result/resume plumbing (pipeline check, not accuracy).
 
@@ -1052,6 +1053,69 @@ results are unchanged.
 `results/layer_sensitivity_attention_v1.json`; then propose one attention
 policy and run the comparable 2k/500 pilot against the mixed FFN pilot. No full
 QAT until the pilot is reviewed.
+
+---
+
+## E31 — Preliminary attention sensitivity screen and policies
+
+**Question:** which attention projections are sensitive to isolated 1-bit
+quantization, and can a mixed-attention policy reduce the 1.090 GB mixed FFN
+artifact without losing its accuracy?
+
+**Why:** the v1.6.0 mixed FFN keeps all attention FP32. The attention-only QAT
+(4.49% at 1.983 GB) shows attention can be quantized with QAT, but all-at-once
+attention+FFN is 20.50%, so layer selection matters.
+
+**What:** reused `scripts/screen_layer_sensitivity.py` with
+`configs/qat_attn.yaml` on CPU (PBS had 0 free CPUs), 16 fixed dev utterances,
+seed 42, one of 96 attention layers at a time, FP32 reference, no QAT, no
+test-clean. Extended it with weight reconstruction error and preliminary/test
+flags. Then generated policies with `scripts/make_attention_mixed_config.py`.
+
+**Did it work? Yes, as a preliminary screen.** FP32 reference WER **0.0256**
+(CER 0.0059) on 16 dev utterances.
+
+| Category | mean ΔWER | max ΔWER | mean rel-L2 | mean reconstruction |
+|---|---:|---:|---:|---:|
+| attention_q | +0.0064 | +0.0160 | 0.0528 | 0.817 |
+| attention_k | +0.0069 | +0.0160 | 0.0617 | 0.834 |
+| attention_v | +0.0056 | +0.0128 | 0.0608 | 0.753 |
+| **attention_output** | **+0.0047** | +0.0128 | **0.0527** | **0.685** |
+
+Most WER-sensitive single layers: 9.k, 17.q, 17.k (+0.0160); 5.v, 9.q, 10.q/k/v/out,
+11.k, 16.k, 19.k (+0.0128). Highest logit perturbation: 18.q/k, 16.v, 18.v/out,
+23.v/q/k/out, 19.k (rel-L2 0.09–0.16). These are preliminary 16-utterance
+rankings, not QAT guarantees.
+
+**Policies generated (no WER prediction):**
+
+- **A — attention_output category**: quantize 24 `attention_output` layers; keep
+  q/k/v and the 17 FFN exclusions FP32. Estimated 0.9921 GB (saves ~97.6 MB).
+  Least-sensitive category on all three screen metrics; conservative choice.
+- **B — sensitive-24**: keep the top-24 attention layers by relative L2 (mostly
+  late layers 18/16/23/19/22), quantize the other 72; keep the 17 FFN
+  exclusions. Estimated 0.7971 GB. Aggressive; the top WER-sensitive mid layers
+  (9/10/17) are not all kept, and attention+FFN interaction is the known risk.
+
+Configs: `configs/attention_v1_cpu16_category.yaml`,
+`configs/attention_v1_cpu16_sensitive24.yaml`; metadata:
+`results/attention_v1_cpu16_*.json`.
+
+**Pilot:** the job `cluster/qat_attention_mixed_pilot.pbs` is prepared for the
+same 2k/500/seed-42/dev-128 budget as the mixed FFN pilot (primary reference
+0.0900 dev-128, 1.0896 GB). It was **not submitted**: 0 free PBS CPUs (8 GPUs
+free). No attention QAT or WER result exists; the 17 FFN list and v1.6.0
+results are untouched.
+
+**Next action:** when a 1-CPU/1-GPU slot is available, run the conservative
+policy first:
+
+```bash
+CONFIG=configs/attention_v1_cpu16_category.yaml POLICY_ID=attention_v1_cpu16_category qsub cluster/qat_attention_mixed_pilot.pbs
+```
+
+Promote to full only if the pilot improves the dev accuracy/compression
+trade-off; do not tune test.
 
 ---
 

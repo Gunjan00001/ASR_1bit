@@ -14,16 +14,18 @@ sizes. The full measured comparison is in [`RESULTS.md`](RESULTS.md). No number
 here is estimated; failed and negative results are kept, and the full research
 history is in [`planning.md`](planning.md).
 
-> **v1.6 research checkpoint (pilot measured; no new full-test WER).**
+> **v1.6 research checkpoint (pilot measured; full run prepared; no new full-test WER).**
 > Per-output-channel scaling was screened out (2.3–2.4% reconstruction gain,
 > 10% gate). A one-layer **FFN sensitivity screen** selected 17 sensitive layers
 > (`ffn_in` is ~1.9× more sensitive than `ffn_out`). The controlled pilot then
 > measured, at identical 2,000-train/500-step budget, seed 42, and 128 dev
 > utterances: FFN-only control **0.2303 WER / 0.8133 GB** vs mixed FFN
 > **0.0900 WER / 1.0896 GB** (FP32 2.374 GB). Both artifacts reload with max
-> |Δ logit| 0. This is a **pilot**, not a full-test result; the full
-> 10k/1,875-step run is the next controlled step. See `EXPERIMENT_LOG.md`
-> E24–E27 and `RESULTS.md` §7.
+> |Δ logit| 0. The full 10k/1,875-step job (`cluster/qat_ffn_full.pbs`), the
+> read-only PBS preflight, persisted best-dev state, and Trainer resume are
+> implemented and tested; the preflight was ready at 2 CPUs, but the full run is
+> **not yet measured**. This is a pilot, not a full-test result. See
+> `EXPERIMENT_LOG.md` E24–E28 and `RESULTS.md` §7.
 
 > This README is written for an engineer joining at this checkpoint. It states
 > what exists, what was measured, and — just as importantly — what has **not**
@@ -139,7 +141,7 @@ A true streaming encoder would need cached convolution/attention state.*
 | QAT attention-only: 4.49% full test | Distillation λ_kd=0.1: 19.98% — ~0.5 pp gain | Distillation λ_kd=0.5: 22.18% (worse than QAT) |
 | QAT FFN-only: 11.34% at 2.9× | Packed inference: storage win, 1.10× slower | Any inference speedup from binarization |
 | Bit packing + honest size accounting | Chunked streaming: partial transcripts, poor WER | 5.6× compression at near-FP32 accuracy on this recipe |
-| FFN layer-sensitivity screen: specific layers, `ffn_in` 1.9× `ffn_out` | Mixed-precision FFN pilot: 0.0900 vs control 0.2303 (dev-128), 1.09 vs 0.813 GB; full run pending | Per-output-channel scaling: 2.3–2.4% reconstruction gain (gate 10%) |
+| FFN layer-sensitivity screen: specific layers, `ffn_in` 1.9× `ffn_out` | Mixed-precision FFN pilot: 0.0900 vs control 0.2303 (dev-128), 1.09 vs 0.813 GB; full run prepared | Per-output-channel scaling: 2.3–2.4% reconstruction gain (gate 10%) |
 
 **The central scientific finding:** QAT recovers every *isolated* binarization,
 but the *combined* attention+FFN arm is worse than either isolated arm. The two
@@ -173,7 +175,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (107 tests) | ✅ green |
+| 7 | Test gate (120 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
@@ -191,7 +193,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 19 | Streaming ASR | ✅ prototype measured (chunked WER/RTF) |
 | R1 | Research: per-output-channel scaling | ⛔ screened out: 2.3–2.4% reconstruction gain vs 10% gate |
 | R2 | Research: FFN per-layer sensitivity | ✅ measured: 96 layers, 32 dev; `ffn_in` 1.9× `ffn_out` |
-| R3 | Research: mixed-precision FFN | ✅ pilot measured: mixed 0.0900 vs control 0.2303 dev-128; full run pending |
+| R3 | Research: mixed-precision FFN | ✅ pilot measured: mixed 0.0900 vs control 0.2303 dev-128; full run prepared, not started |
 
 > **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes
@@ -374,8 +376,8 @@ size**, not wall-clock speed. See §25 and `RESULTS.md` §5.
 
 Mixed minus control: **−14.04 pp** at the same 2,000 training IDs, 128 eval IDs,
 seed, batch, and LR. Both artifacts reload with max |Δ logit| 0. This is a
-**pilot**, not the 256-dev/full-test protocol; the full 10k/1,875-step run is
-the next controlled step.
+**pilot**, not the 256-dev/full-test protocol; the full 10k/1,875-step job is
+prepared and tested but has not produced a result yet.
 
 ## 9. Phase 4 — BitLinear design
 
@@ -502,7 +504,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **107 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **120 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -520,9 +522,10 @@ This is an experimental choice, not a permanent rule.
   category selection counts; only selected categories swapped; weights
   preserved numerically; forward still runs; attention-only / FFN-only
   selections; idempotent replacement; report rendering; parent lookup.
-- `test_qat.py` (20) — freezing, BitLinear grads, optimizer updates, FP-ness of
+- `test_qat.py` (22) — freezing, BitLinear grads, optimizer updates, FP-ness of
   masters, finite/decreasing loss, save/load, collator, leakage guard,
-  gradient-checkpointing flag, gradient probe, master delta, stock Trainer.
+  gradient-checkpointing flag, gradient probe, master delta, stock Trainer,
+  save-step configuration, and checkpoint-selection metadata.
 - `test_distillation.py` (9) — KL/CTC loss math, temperature/λ weights, frame
   masking, collator padding, dataset alignment, cache key determinism.
 - `test_packed.py` (5) — pack/unpack round-trip, XNOR-popcount vs float dot,
@@ -531,8 +534,12 @@ This is an experimental choice, not a permanent rule.
   settings, word-overlap merge semantics.
 - `test_latency.py` (3) — warmed-up benchmark wrapper, comparison-table
   rendering, and accuracy-only (`--no-benchmark`) table rows.
-- `test_callbacks.py` (3) — best-dev selection/restore, cadence, and duplicate
-  step guard.
+- `test_callbacks.py` (6) — best-dev selection/restore, final-step evaluation,
+  persisted selection state across resume, cadence, and duplicate-step guard.
+- `test_resume.py` (3) — latest-checkpoint discovery (numeric steps, incomplete
+  directories skipped) and a tiny HF Trainer interrupt/restart.
+- `test_cluster_resources.py` (5) — PBS size/node/qstat/nvidia-smi parsing and
+  ready/duplicate decisions for the full-run preflight.
 - Mixed-precision additions in `test_binarization.py`, `test_bitlinear.py`,
   `test_packed.py`, `test_layer_replacement.py`, and `test_qat.py`: per-channel
   scales/broadcasting/zero rows/gradients, exact-layer exclusion, manifest
@@ -665,7 +672,8 @@ parameters and removing FP master weights from deployment state are future work.
   full-utterance WER on the demo (Phase 19).
 - **No 2-bit / INT8 arm.** Mixed precision (FP32/1-bit per layer) is implemented
   and piloted; per-output-channel scaling is implemented but screened out;
-  2-bit, INT8, and learned alpha are not. The mixed full run is pending.
+  2-bit, INT8, and learned alpha are not. The mixed full run is prepared but
+  not yet measured.
 - **Distillation is a marginal tuning knob**: λ_kd=0.5 made the combined arm
   worse (0.2232); λ_kd=0.1 improves it to **0.2022 dev / 0.1998 full test**, a
   small gain over QAT alone (0.2080 / 0.2050).
@@ -875,7 +883,7 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 107 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 120 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
@@ -895,7 +903,7 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 107 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 120 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
@@ -951,8 +959,11 @@ The attention+FFN QAT run is done. The open questions and next experiments are:
    **1.0896 GB** vs **0.8133 GB** (FP32 2.374 GB). The full protocol is 10,000
    `train.100` utterances, 1,875 steps, both arms, 256-dev selection; only after
    that run test-256/full test. Do not tune the 17-layer exclusion list after
-   seeing the pilot. The pilot script is not the full run; use the same base
-   configs with the full training block.
+   seeing the pilot. The reproducible full-run job is
+   `cluster/qat_ffn_full.pbs`; run `scripts/check_cluster_resources.py` first and
+   submit only when it reports `ready`. The job writes unique `*_full` outputs,
+   persists the best-dev state, resumes from Trainer checkpoints, and
+   packs/verifies both artifacts. It has not yet produced a full result.
 1. **Improve the attention+FFN recipe** — longer training, LR/early-stop sweep,
    and KD tuning (mean-normalized KL) after the mixed pilot.
 2. **True binary compute** — integrate an XNOR+popcount kernel with 1-bit
@@ -1027,9 +1038,10 @@ T4 attention-only run at **0.0392** (256 dev); the A100 full-test result is
 > scaling was screened out (2.3–2.4% reconstruction gain, gate 10%); the FFN
 > layer-sensitivity screen was measured; the controlled mixed-precision pilot
 > measured **0.0900 vs 0.2303** dev-128 WER (mixed vs control) with artifacts
-> **1.0896 vs 0.8133 GB**; both artifacts reload exactly. This is a pilot, not a
-> full-test result. **The final WER table above is unchanged**; the full
-> 10k/1,875-step run is the next controlled step.
+> **1.0896 vs 0.8133 GB**; both artifacts reload exactly. The full-run script,
+> PBS preflight, final-step evaluation, and resume path are implemented and
+> tested, but the full run is **not yet measured**. **The final WER table above
+> is unchanged.**
 
 ## Layout
 
@@ -1053,15 +1065,17 @@ one-bit-asr/
 │                       pack_qat_model, run_final_eval, benchmark_packed,
 │                       stream_infer, analyze_quantization_error,
 │                       screen_layer_sensitivity, verify_packed_artifact,
-│                       make_figures, summarize_results, setup_windows_ffmpeg
+│                       check_cluster_resources, make_figures,
+│                       summarize_results, setup_windows_ffmpeg
 ├── kaggle/             kernel.py, requirements/constraints, verify_replacement.py,
 │                       README.md (cloud T4 execution + pack-only recovery)
 ├── cluster/            pick_gpu.sh + PBS jobs (attention/FFN QAT, attention-only
-│                       A100 arm, distillation, layer screen, mixed pilot),
-│                       README.md (A100 execution)
-├── tests/              107 tests (STE, binarization, BitLinear, replacement,
+│                       A100 arm, distillation, layer screen, mixed pilot,
+│                       hardened full FFN control/mixed job), README.md
+├── tests/              120 tests (STE, binarization, BitLinear, replacement,
 │                       QAT, evaluate, config, distillation, packed, streaming,
-│                       latency, callbacks, mixed-precision exclusions)
+│                       latency, callbacks, resume, cluster preflight,
+│                       mixed-precision exclusions)
 ├── results/            measured JSONs, screening/validation artifacts, final tables
 ├── docs/figures/       generated charts (scripts/make_figures.py)
 ├── deepdive.md         from-scratch teaching guide

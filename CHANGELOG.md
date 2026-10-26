@@ -8,7 +8,7 @@ an exact, reproducible repository state.
 
 ---
 
-## Unreleased — v1.6.0 mixed-precision research checkpoint (pilot complete; full run pending)
+## Unreleased — v1.6.0 mixed-precision research checkpoint (full run prepared; not measured)
 
 **Scope:** implementation, screening, validation, and the controlled pilot.
 **No new full-test WER is claimed**; all full-test accuracy numbers remain the
@@ -53,6 +53,21 @@ completed.
   Both checkpoints save/load and both packed artifacts reload with **max
   |Δ logit| 0, argmax 1.0, decoded 2/2**. This is a pilot, not a full-test
   result.
+
+### Full-run hardening (prepared, no full WER yet)
+- `DevWERCallback` now evaluates the final training step, persists the best-dev
+  state/history for resume, and restores the selected state before evaluation.
+- `training/resume.py` + `train_qat.py --resume` use the latest numeric Trainer
+  checkpoint; output/checkpoint paths refuse silent overwrite.
+- Full job `cluster/qat_ffn_full.pbs`: 10k utterances, 1,875 steps, seed 42,
+  256-dev selection, fixed 17-layer exclusion list, unique `*_full` outputs,
+  per-arm skip/resume, packed-artifact verification.
+- Read-only PBS preflight `scripts/check_cluster_resources.py`; it reported
+  ready at 2 free CPUs / 8 GPUs on 2026-10-26. The full run was not submitted in
+  that window.
+- 13 new tests; **120 total**, all passing.
+- **No full-run or full-test WER is claimed.** The pilot remains 0.2303 control
+  vs 0.0900 mixed on dev-128.
 
 ### Blocked then resolved
 - The 2026-10-25 pilot attempt was queued and canceled because the GPU node had

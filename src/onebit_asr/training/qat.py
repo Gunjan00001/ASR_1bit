@@ -313,6 +313,11 @@ def build_training_arguments(training: dict, output_dir: str, smoke: bool = Fals
         lr_scheduler_type=training.get("lr_scheduler", "linear"),
         logging_steps=int(training.get("logging_steps", 10)),
         save_strategy=training.get("save_strategy", "no"),
+        save_steps=int(training.get("save_steps", 500)),
+        save_total_limit=(
+            int(training["save_total_limit"])
+            if training.get("save_total_limit") is not None else None
+        ),
         seed=int(training.get("seed", 42)),
         fp16=bool(training.get("fp16", False)),
         bf16=bool(training.get("bf16", False)),
@@ -367,7 +372,8 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path, *,
                         ste_clip: float | None = None,
                         config_path: str | None = None,
                         init_from: str | None = None,
-                        exclude_layers: list[str] | None = None) -> dict:
+                        exclude_layers: list[str] | None = None,
+                        selection: dict | None = None) -> dict:
     """Save FP32 master weights + an explicit manifest.
 
     The saved file is a normal FP32 checkpoint. It is **not** bit-packed; the
@@ -410,6 +416,10 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path, *,
         "quantization_granularity": granularity,
         "config_path": str(config_path) if config_path else None,
         "init_from": init_from,
+        # Which dev-selected state these masters represent. The result JSON has
+        # the full history; the manifest keeps the step/WER next to the weights
+        # so a checkpoint is self-describing.
+        "selection": dict(selection) if selection is not None else None,
         "bitlinear_layers": sum(1 for m in model.modules() if isinstance(m, BitLinear)),
         "total_params": sum(p.numel() for p in model.parameters()),
         "files": [p.name for p in weight_files],

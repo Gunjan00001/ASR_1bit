@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import platform
 from pathlib import Path
 
@@ -177,6 +178,7 @@ def main() -> int:
         "phase": "Phase 16/18 packed artifact reload verification",
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "platform": platform.platform(),
+        "pbs_jobid": os.environ.get("PBS_JOBID"),
         "config_path": cfg.get("_config_path"),
         "checkpoint": str(checkpoint),
         "artifact": str(artifact_path),

@@ -79,3 +79,82 @@ def test_callback_rejects_nonpositive_cadence():
         assert "positive" in str(exc)
     else:
         raise AssertionError("expected ValueError")
+
+
+def test_callback_evaluates_final_state_when_not_on_cadence():
+    model = nn.Linear(1, 1, bias=False)
+    calls = {"n": 0}
+    wer_sequence = [0.40, 0.32]       # step 2 cadence, final step 5
+
+    def eval_fn(_model):
+        value = wer_sequence[calls["n"]]
+        calls["n"] += 1
+        return {"wer": value, "cer": value / 2}
+
+    cb = DevWERCallback(eval_fn, eval_every_steps=2, verbose=False)
+    with torch.no_grad():
+        model.weight.fill_(1.0)
+    cb.on_step_end(None, _State(2), None, model=model)
+    with torch.no_grad():
+        model.weight.fill_(5.0)
+    cb.on_train_end(None, _State(5), None, model=model)
+
+    assert calls["n"] == 2
+    assert cb.best_wer == 0.32
+    assert cb.best_step == 5
+    assert cb.final_scheduled_wer == 0.40
+    assert cb.final_state_wer == 0.32
+    assert cb.final_state_step == 5
+    assert cb.restored_best is True
+    assert torch.allclose(model.weight, torch.tensor([[5.0]]))
+
+
+def test_callback_persists_best_and_history_across_resume(tmp_path):
+    state_path = tmp_path / "dev_best.pt"
+    model = nn.Linear(1, 1, bias=False)
+    calls = {"n": 0}
+
+    def eval_fn(_model):
+        calls["n"] += 1
+        return {"wer": 0.30, "cer": 0.10}
+
+    cb = DevWERCallback(eval_fn, eval_every_steps=2, verbose=False,
+                        state_path=state_path)
+    with torch.no_grad():
+        model.weight.fill_(2.0)
+    cb.on_step_end(None, _State(2), None, model=model)
+    cb.on_train_end(None, _State(2), None, model=model)
+    assert state_path.is_file()
+
+    cfg = torch.load(state_path, map_location="cpu", weights_only=False)
+    assert cfg["best_step"] == 2
+
+    resumed = DevWERCallback(
+        lambda _m: {"wer": 0.25, "cer": 0.08},
+        eval_every_steps=2,
+        verbose=False,
+        state_path=state_path,
+        load_state=True,
+    )
+    assert resumed.resumed is True
+    assert len(resumed.history) == 1
+    assert resumed.best_wer == 0.30
+    assert resumed.best_step == 2
+    assert resumed.best_state is not None
+
+
+def test_callback_evaluates_resumed_checkpoint_state():
+    model = nn.Linear(1, 1, bias=False)
+    calls = {"n": 0}
+
+    def eval_fn(_model):
+        calls["n"] += 1
+        return {"wer": 0.20, "cer": 0.05}
+
+    cb = DevWERCallback(eval_fn, eval_every_steps=2, verbose=False)
+    with torch.no_grad():
+        model.weight.fill_(3.0)
+    cb.on_train_begin(None, _State(2), None, model=model)
+    assert calls["n"] == 1
+    assert cb.best_step == 2
+    assert cb.history[0]["phase"] == "resume_state"

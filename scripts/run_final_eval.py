@@ -112,6 +112,16 @@ ARM_DEFS = {
         "config": "configs/qat_ffn_per_channel.yaml",
         "checkpoint": "checkpoints/qat_ffn_per_channel",
     },
+    "qat_ffn_control_full": {
+        "kind": "qat",
+        "config": "configs/cluster_effective_qat_ffn_control_full.yaml",
+        "checkpoint": "checkpoints/qat_ffn_control_full",
+    },
+    "qat_ffn_mixed_full": {
+        "kind": "qat",
+        "config": "configs/cluster_effective_qat_ffn_mixed_full.yaml",
+        "checkpoint": "checkpoints/qat_ffn_mixed_full",
+    },
     "qat_attn_ffn": {
         "kind": "qat",
         "config": "configs/qat_attn_ffn.yaml",

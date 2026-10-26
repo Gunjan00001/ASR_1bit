@@ -53,6 +53,7 @@ Status labels:
 | E25 | 2026-10-25 | FFN per-layer sensitivity screen | WORKED (screening) |
 | E26 | 2026-10-25 | Mixed-precision FFN implementation + pilot | PARTIAL (pilot blocked) |
 | E27 | 2026-10-26 | Controlled mixed-precision FFN pilot | WORKED (pilot; mixed wins) |
+| E28 | 2026-10-26 | Full-run hardening + PBS preflight | WORKED (ready; full not run) |
 
 ---
 
@@ -901,6 +902,50 @@ hyperparameter tuning.
 layers (`ffn_in` dominated), and keeping 17 of them FP32 removed the
 quantization damage that the control accumulates. The artifact reload check
 proves the gain is not a checkpoint-loading artifact.
+
+---
+
+## E28 — Full-run hardening and PBS preflight
+
+**Question:** can the 10k/1,875-step control and mixed arms be run reproducibly,
+resumed after interruption, and selected from the full 256-utterance dev set
+without overwriting any existing result?
+
+**Why:** the pilot used 500 steps and 128 dev utterances. A full run is long
+enough to be interrupted, and the prior `DevWERCallback` would have skipped the
+final 1,875th step (not on the 500-step cadence) and lost its best state on a
+Trainer restart. The node was also fully allocated earlier; submission needed a
+real PBS check, not an assumption from a free GPU.
+
+**What:**
+
+- `DevWERCallback` now evaluates the final state at `on_train_end` (even when the
+  final step is not on the cadence), persists its history/best state atomically
+  to `dev_best.pt`, and reloads it across a resume.
+- `find_latest_checkpoint` selects the highest numeric `checkpoint-<step>` with
+  a `trainer_state.json`; `train_qat.py --resume auto` uses it. Output and
+  checkpoint directories are guard-railed against silent overwrite.
+- The full job uses `save_strategy=steps`, `save_steps=250`,
+  `save_total_limit=1`, full 256-dev selection, and unique `*_full` outputs.
+- `scripts/check_cluster_resources.py` is a read-only preflight (PBS CPUs,
+  GPUs, host memory, disk, duplicate jobs, existing outputs).
+- `cluster/qat_ffn_full.pbs` runs both arms sequentially, skips completed arms,
+  resumes partial arms, and packs/verifies both artifacts.
+- 13 new tests (callbacks, resume, preflight); **120 total** pass.
+- A CPU smoke of the updated mixed training path was started to validate the
+  result/resume plumbing (pipeline check, not accuracy).
+
+**Did it work?** **The hardening and preflight worked.** The preflight initially
+blocked (96/96 CPUs assigned) and later reported ready with **2 free CPUs,
+8 GPUs with ≥25 GB free, 1.75 TB free host RAM, and no duplicate jobs**. The
+full job was not submitted in that window; no full result exists. The 17-layer
+exclusion list and training budget were not changed.
+
+**What is not claimed:** no full-run WER, no full-test WER, and no change to the
+historical results. The pilot remains a pilot.
+
+**Next action:** submit `cluster/qat_ffn_full.pbs` exactly once when the
+preflight is ready; preserve completed arms on interruption.
 
 ---
 

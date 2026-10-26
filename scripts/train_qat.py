@@ -39,9 +39,11 @@ import copy
 import datetime
 import importlib.metadata
 import json
+import os
 import platform
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import torch
@@ -53,6 +55,7 @@ from onebit_asr.data.dataset import build_ctc_train_dataset, load_dev_subset
 from onebit_asr.evaluation.evaluate import evaluate_model, print_summary
 from onebit_asr.models.replace_layers import report_replacement
 from onebit_asr.training.callbacks import DevWERCallback
+from onebit_asr.training.resume import find_latest_checkpoint
 from onebit_asr.training.qat import (
     CHECKPOINT_FORMAT,
     build_training_arguments,
@@ -117,6 +120,9 @@ def main() -> int:
                         help="short timed/VRAM probe; gates the full run (Phase 11 §7b)")
     parser.add_argument("--pilot", action="store_true",
                         help="short controlled WER pilot (2k subset, 500 steps, dev eval)")
+    parser.add_argument("--resume", nargs="?", const="auto", default=None,
+                        help="resume training from the latest Trainer checkpoint ('auto') "
+                             "or from an explicit checkpoint directory")
     parser.add_argument("--probe-steps", type=int, default=None,
                         help="override the configured probe step count")
     parser.add_argument("--output", default=None)
@@ -137,6 +143,35 @@ def main() -> int:
         output = RESULTS / "qat.json"
     default_ckpt = "qat_smoke" if args.smoke else ("qat_pilot" if args.pilot else "qat")
     checkpoint_dir = Path(args.checkpoint_dir or (ROOT / "checkpoints" / default_ckpt))
+
+    # Never overwrite a completed result or an existing run directory. A full
+    # job that is interrupted before writing its result can be continued with
+    # `--resume`, but a result on disk means the run is done.
+    if not (args.smoke or args.probe):
+        if output.exists():
+            raise SystemExit(
+                f"Refusing to overwrite existing result {output}. "
+                "Use a new --output or inspect the completed run."
+            )
+        if checkpoint_dir.exists() and any(checkpoint_dir.iterdir()) and not args.resume:
+            raise SystemExit(
+                f"Checkpoint directory {checkpoint_dir} is not empty. "
+                "Pass --resume to continue it, or choose a new --checkpoint-dir."
+            )
+
+    resume_from = None
+    if args.resume:
+        if args.resume == "auto":
+            resume_from = find_latest_checkpoint(checkpoint_dir)
+            if resume_from is None:
+                print(f"No Trainer checkpoint under {checkpoint_dir}; starting fresh.")
+        else:
+            candidate = Path(args.resume)
+            if not candidate.is_dir():
+                raise SystemExit(f"--resume checkpoint not found: {candidate}")
+            resume_from = candidate
+        if resume_from is not None:
+            print(f"Resuming from {resume_from}")
 
     eval_cfg = cfg["eval"]
     quant_cfg = cfg.get("quantization", {})
@@ -194,7 +229,16 @@ def main() -> int:
             # evaluate_model forces eval mode and restores the model's mode.
             return evaluate_model(current_model, processor, dev_samples, verbose=False)
 
-        dev_cb = DevWERCallback(_eval_dev, eval_every_steps=eval_every)
+        dev_cb = DevWERCallback(
+            _eval_dev,
+            eval_every_steps=eval_every,
+            state_path=checkpoint_dir / "dev_best.pt",
+            load_state=bool(resume_from),
+        )
+        # The callback needs a model reference at on_train_begin (resume), before
+        # the first on_step_end. The Trainer does not guarantee passing `model`
+        # to that event in every version.
+        dev_cb.model = model
         print(f"Dev selection: {len(dev_samples)} utterances every {eval_every} steps")
 
     collator = DataCollatorCTCWithPadding(processor=processor)
@@ -325,14 +369,21 @@ def main() -> int:
         print(f"Saved probe to {output}")
         return 0
 
-    trainer.train()
+    reset_gpu_peak_memory()
+    train_t0 = time.perf_counter()
+    train_output = trainer.train(
+        resume_from_checkpoint=str(resume_from) if resume_from is not None else None
+    )
+    train_wall_s = time.perf_counter() - train_t0
 
     # The callback restored the best dev state at `on_train_end` (if it ran any
     # dev eval). Everything below therefore measures/saves the selected state.
     dev_summary = dev_cb.summary() if dev_cb is not None else {}
     if dev_summary.get("best_dev_wer") is not None:
         print(f"Best dev WER: {dev_summary['best_dev_wer']:.4f} at step "
-              f"{dev_summary['best_step']} (restored={dev_summary['restored_best']})")
+              f"{dev_summary['best_step']} (restored={dev_summary['restored_best']}); "
+              f"final-state WER {dev_summary.get('final_state_dev_wer')} "
+              f"at step {dev_summary.get('final_state_step')}")
 
     masters_after = master_weight_snapshot(model)
     master_update = master_weight_delta(masters_before, masters_after)
@@ -345,17 +396,30 @@ def main() -> int:
     # smaller dev slice; for full/smoke it is the pinned 256/8-utterance subset.
     print(f"Evaluating on {len(dev_samples)} dev utterances (pinned protocol) ...")
     model.eval()  # pinned protocol is inference; ensure dropout is off
+    eval_t0 = time.perf_counter()
     metrics = evaluate_model(model, processor, dev_samples)
+    eval_duration_s = time.perf_counter() - eval_t0
+    gpu_mem = gpu_memory_stats()
 
     # --- Checkpoint (FP master weights; not packed) + save/load verification ---
     # The checkpoint is ordinary FP32/FP16 masters. The packed 1-bit deploy
     # artifact is a separate step (`scripts/pack_qat_model.py`); do not confuse
     # the checkpoint size with the deploy size.
+    selection = {
+        "best_dev_wer": dev_summary.get("best_dev_wer"),
+        "best_step": dev_summary.get("best_step"),
+        "final_state_dev_wer": dev_summary.get("final_state_dev_wer"),
+        "final_state_step": dev_summary.get("final_state_step"),
+        "final_scheduled_dev_wer": dev_summary.get("final_scheduled_dev_wer"),
+        "steps_completed": int(trainer.state.global_step),
+        "restored_best": dev_summary.get("restored_best", False),
+        "resumed": dev_summary.get("resumed", False),
+    }
     manifest = save_qat_checkpoint(
         model, checkpoint_dir,
         layers=cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip,
         config_path=cfg.get("_config_path"), init_from=model_id,
-        exclude_layers=exclude_layers,
+        exclude_layers=exclude_layers, selection=selection,
     )
     reloaded, _ = load_qat_checkpoint(
         checkpoint_dir, Wav2Vec2ConformerForCTC, cfg["layers"],
@@ -404,6 +468,7 @@ def main() -> int:
         "platform": platform.platform(),
         "compute_profile": "local" if not torch.cuda.is_available() else "cloud-gpu",
         "config_profile": cfg.get("compute_profile"),
+        "pbs_jobid": os.environ.get("PBS_JOBID"),
         "git_commit": git_commit(),
         "model_id": model_id,
         "init_from": model_id,
@@ -453,6 +518,15 @@ def main() -> int:
             "lr_scheduler": training.get("lr_scheduler"),
             "device": str(training_args.device),
             "steps_completed": trainer.state.global_step,
+            "resume_requested": args.resume,
+            "resumed_from": str(resume_from) if resume_from is not None else None,
+            "trainer_save_strategy": str(training_args.save_strategy),
+            "trainer_save_steps": int(training_args.save_steps),
+            "trainer_save_total_limit": training_args.save_total_limit,
+            "trainer_checkpoints": sorted(p.name for p in checkpoint_dir.glob("checkpoint-*")),
+            "train_runtime_s": train_output.metrics.get("train_runtime"),
+            "train_wall_s": train_wall_s,
+            "eval_duration_s": eval_duration_s,
             "final_train_loss": next(
                 (e["loss"] for e in reversed(trainer.state.log_history) if "loss" in e), None
             ),
@@ -466,7 +540,11 @@ def main() -> int:
             "best_dev_wer": dev_summary.get("best_dev_wer"),
             "best_step": dev_summary.get("best_step"),
             "final_dev_wer": dev_summary.get("final_dev_wer"),
+            "final_scheduled_dev_wer": dev_summary.get("final_scheduled_dev_wer"),
+            "final_state_dev_wer": dev_summary.get("final_state_dev_wer"),
+            "final_state_step": dev_summary.get("final_state_step"),
             "restored_best": dev_summary.get("restored_best", False),
+            "resumed": dev_summary.get("resumed", False),
         },
         "dev_selection": dev_summary,
         "gradient_flow": gradient_flow,
@@ -480,6 +558,10 @@ def main() -> int:
             "rtf": metrics["rtf"],
             "latency_s": metrics["latency_s"],
             "peak_rss_mb": metrics["peak_rss_mb"],
+            "duration_s": eval_duration_s,
+            "total_audio_s": metrics["total_audio_s"],
+            "total_processing_s": metrics["total_processing_s"],
+            "throughput_utt_per_s": metrics["throughput_utt_per_s"],
             "sample_ids": metrics["sample_ids"],
         },
         "comparison": {
@@ -499,10 +581,25 @@ def main() -> int:
             "manifest": manifest,
             "best_dev_wer": dev_summary.get("best_dev_wer"),
             "best_step": dev_summary.get("best_step"),
+            "final_scheduled_dev_wer": dev_summary.get("final_scheduled_dev_wer"),
+            "final_state_dev_wer": dev_summary.get("final_state_dev_wer"),
+            "final_state_step": dev_summary.get("final_state_step"),
+            "steps_completed": trainer.state.global_step,
+            "resumed_from": str(resume_from) if resume_from is not None else None,
             "restored_best": dev_summary.get("restored_best", False),
+            "selection": selection,
             "save_load_verified": save_load_ok,
             "save_load_argmax_agreement": argmax_agreement,
             "save_load_max_abs_logit_diff": logit_max_abs_diff,
+        },
+        "resources": {
+            "pbs_jobid": os.environ.get("PBS_JOBID"),
+            "device": str(training_args.device),
+            "host_peak_rss_mb": metrics["peak_rss_mb"],
+            "gpu": gpu_mem,
+            "train_runtime_s": train_output.metrics.get("train_runtime"),
+            "train_wall_s": train_wall_s,
+            "eval_duration_s": eval_duration_s,
         },
         "baseline": {"path": str(RESULTS / "baseline.json"), "wer": baseline_wer,
                      "cer": baseline.get("cer")},

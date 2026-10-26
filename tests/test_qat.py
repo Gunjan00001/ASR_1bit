@@ -392,3 +392,36 @@ def test_checkpoint_layer_mismatch_raises(tiny_model, tmp_path):
     other["ffn_in"] = False
     with pytest.raises(ValueError, match="layer selection"):
         load_qat_checkpoint(tmp_path, Wav2Vec2ConformerForCTC, other)
+
+
+def test_training_arguments_save_steps_and_limit(tmp_path):
+    args = build_training_arguments(
+        {
+            "batch_size": 1,
+            "gradient_accumulation_steps": 1,
+            "learning_rate": 2e-5,
+            "epochs": 1,
+            "logging_steps": 1,
+            "seed": 0,
+            "save_strategy": "steps",
+            "save_steps": 250,
+            "save_total_limit": 1,
+        },
+        str(tmp_path),
+    )
+    assert str(args.save_strategy).lower().endswith("steps")
+    assert args.save_steps == 250
+    assert args.save_total_limit == 1
+
+
+def test_checkpoint_manifest_records_selection(tiny_model, tmp_path):
+    model = _fresh_qat_model(tiny_model)
+    selection = {
+        "best_dev_wer": 0.1,
+        "best_step": 1500,
+        "final_state_dev_wer": 0.11,
+        "final_state_step": 1875,
+        "steps_completed": 1875,
+    }
+    manifest = save_qat_checkpoint(model, tmp_path, layers=ATTN_FFN, selection=selection)
+    assert manifest["selection"] == selection

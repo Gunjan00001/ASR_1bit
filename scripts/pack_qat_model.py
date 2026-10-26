@@ -20,6 +20,7 @@ Usage:
 import argparse
 import datetime
 import json
+import os
 import platform
 import sys
 from pathlib import Path
@@ -67,6 +68,7 @@ def main() -> int:
     report.update({
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "platform": platform.platform(),
+        "pbs_jobid": os.environ.get("PBS_JOBID"),
         "checkpoint": str(checkpoint),
         "config_path": cfg.get("_config_path"),
         "layers": cfg["layers"],
@@ -104,6 +106,7 @@ def main() -> int:
         "artifact": output.name,
         "artifact_bytes_measured": report["packed_artifact_bytes_measured"],
         "checkpoint": str(checkpoint),
+        "pbs_jobid": report.get("pbs_jobid"),
         "config_path": cfg.get("_config_path"),
         "layers": cfg["layers"],
         "exclude_layers": exclude_layers,

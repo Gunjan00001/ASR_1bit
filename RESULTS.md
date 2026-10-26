@@ -23,6 +23,8 @@ separately, and each JSON records its own dependency versions.
 | QAT FFN-only (A100) | cloud-gpu | 0.1186 | 0.0337 | 0.0293 | 1875 | 165.4 | 96 | `results/qat_ffn_a100.json` |
 | Pilot: FFN-only per-tensor control (A100, dev-128) | cloud-gpu | 0.2303 | 0.0684 | 0.0036 | 500 | 342.2 | 96 | `results/qat_ffn_control_pilot.json` |
 | Pilot: mixed-precision FFN (A100, dev-128) | cloud-gpu | 0.0900 | 0.0284 | 0.0035 | 500 | 183.9 | 79 | `results/qat_ffn_mixed_pilot.json` |
+| Full: FFN-only per-tensor control (A100, dev-256) | cloud-gpu | — | — | — | — | — | — | not measured |
+| Full: mixed-precision FFN (A100, dev-256) | cloud-gpu | — | — | — | — | — | — | not measured |
 | QAT FFN-only, dev-selected control | cloud-gpu | — | — | — | — | — | — | not measured |
 | QAT FFN-only, per-output-channel scales | cloud-gpu | — | — | — | — | — | — | not measured |
 | QAT attention+FFN (A100) | cloud-gpu | 0.2082 | 0.0641 | 0.0297 | 1875 | 298.6 | 192 | `results/qat_attn_ffn.json` |
@@ -41,6 +43,8 @@ separately, and each JSON records its own dependency versions.
 | QAT FFN-only (A100) | per_tensor_mean_abs | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
 | Pilot: FFN-only per-tensor control | per_tensor_mean_abs | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
 | Pilot: mixed-precision FFN | per_tensor_mean_abs | 79 | 331350016 | 41.4 | 1048.1 | 1325.4 | 1089.6 |
+| Full: FFN-only per-tensor control | — | — | — | — | — | — | not measured |
+| Full: mixed-precision FFN | — | — | — | — | — | — | not measured |
 | QAT FFN-only, dev-selected control | — | — | — | — | — | — | not measured |
 | QAT FFN-only, per-output-channel scales | — | — | — | — | — | — | not measured |
 | QAT attention+FFN (A100) | per_tensor_mean_abs | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |

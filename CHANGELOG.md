@@ -8,6 +8,20 @@ an exact, reproducible repository state.
 
 ---
 
+## Unreleased — attention sensitivity screen prepared (blocked)
+
+- Added `weight_reconstruction_error` and 4 tests; extended
+  `scripts/screen_layer_sensitivity.py` to record weight reconstruction error,
+  configuration, preliminary status, and fixed dev IDs.
+- Added `cluster/screen_attention_sensitivity.pbs` (32 fixed dev utterances,
+  one attention layer at a time, no QAT, no test-clean).
+- Preflight blocked: **0 free CPU** on `jiit-gpu01` (96/96 assigned; 8 GPUs free).
+  The screen job was **not submitted**; no attention measurement, policy, or
+  pilot exists. The v1.6.0 results and 17-layer FFN list are unchanged.
+- 19 new tests total; **126** pass.
+
+---
+
 ## v1.6.0 — Mixed-precision FFN full comparison (2026-10-26)
 
 **Scope:** the full 10,000-utterance / 1,875-step controlled comparison and the
@@ -34,7 +48,7 @@ fixed before the run and was not tuned. No further test tuning was performed.
   `ste_clip`, granularity, config path, and init model; loaders verify them.
 - `cluster/screen_ffn_sensitivity.pbs`, `cluster/qat_ffn_pilot.pbs`,
   `cluster/qat_ffn_full.pbs`, `cluster/final_eval_full_arms.pbs`.
-- 22 new tests (122 total), all passing; includes resume and PBS preflight/job checks.
+- 19 new tests (126 total), all passing; includes resume, PBS preflight/job checks, and the sensitivity helper.
 
 ### Screened / measured
 - Per-channel reconstruction gate: FFN-only QAT masters 0.6458→0.6306 (**2.28%**),
@@ -64,7 +78,7 @@ fixed before the run and was not tuned. No further test tuning was performed.
 - Read-only PBS preflight `scripts/check_cluster_resources.py`; it reported
   ready at 2 free CPUs / 8 GPUs on 2026-10-26. The full run was later submitted
   as job `12848` (1 CPU) and completed; see **Full-run results**.
-- 15 new tests; **122 total**, all passing.
+- 19 new tests; **126 total**, all passing.
 - The full-run and final-test evaluation are complete; see **Full-run results**
   below. The pilot was only a pilot.
 

@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -N screen_attn_sens
+#PBS -q gpu
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+#
+# Attention-layer sensitivity screen (one layer at a time, no QAT).
+#
+# FP32 reference; each of the 96 attention projections is replaced by BitLinear
+# in isolation; the rest of the model stays FP32. The fixed 32-utterance dev
+# subset and seed 42 match the existing FFN screen. No test-clean is read.
+#
+# Outputs are a NEW experiment identifier:
+#   results/layer_sensitivity_attention_v1.json
+#
+# The existing 17-layer FFN exclusion list is not touched. This job does not
+# train. Submit only when scripts/check_cluster_resources.py reports ready.
+
+set -uo pipefail
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"
+cd "$REPO" || exit 1
+# shellcheck disable=SC1091
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export HF_HUB_DISABLE_PROGRESS_BARS=1
+export HF_DATASETS_DISABLE_PROGRESS_BARS=1
+
+LOG="logs/screen_attention_sensitivity.log"
+mkdir -p logs results
+: > "$LOG"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== job $PBS_JOBID on $(hostname) at $(date -Is) ==="
+echo "commit: $(git rev-parse HEAD)"
+nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv,noheader
+
+PY=".venv/bin/python"
+$PY - <<'PY'
+import torch
+assert torch.cuda.is_available(), "CUDA not available"
+print("torch", torch.__version__, "cuda", torch.version.cuda,
+      "device", torch.cuda.get_device_name(0), "count", torch.cuda.device_count())
+PY
+if [ $? -ne 0 ]; then echo "ABORT: CUDA preflight failed"; exit 3; fi
+
+$PY scripts/screen_layer_sensitivity.py \
+    --config configs/qat_attn.yaml \
+    --n 32 \
+    --output results/layer_sensitivity_attention_v1.json
+echo "screen exit: $?"
+echo "=== finished at $(date -Is) ==="

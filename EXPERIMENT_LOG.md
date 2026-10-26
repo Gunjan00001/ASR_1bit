@@ -55,6 +55,7 @@ Status labels:
 | E27 | 2026-10-26 | Controlled mixed-precision FFN pilot | WORKED (pilot; mixed wins) |
 | E28 | 2026-10-26 | Full-run hardening + PBS preflight | WORKED (ready; full not run) |
 | E29 | 2026-10-26 | Full mixed-precision FFN run + final test | WORKED (mixed wins) |
+| E30 | 2026-10-26 | Attention sensitivity screen prep | BLOCKED (0 free CPUs; no job) |
 
 ---
 
@@ -932,7 +933,7 @@ real PBS check, not an assumption from a free GPU.
   GPUs, host memory, disk, duplicate jobs, existing outputs).
 - `cluster/qat_ffn_full.pbs` runs both arms sequentially, skips completed arms,
   resumes partial arms, and packs/verifies both artifacts.
-- 13 new tests (callbacks, resume, preflight); **122 total** pass.
+- 13 new tests (callbacks, resume, preflight); **126 total** pass.
 - A CPU smoke of the updated mixed training path was started to validate the
   result/resume plumbing (pipeline check, not accuracy).
 
@@ -1007,6 +1008,50 @@ greedy CTC / no-LM / fixed-subset limitations still apply.
 FFN-only, so the next controlled diagnostic is attention-layer sensitivity /
 mixed precision, not another arbitrary KD sweep. Two-bit/INT8 and LM decoding
 remain separate experiments.
+
+---
+
+## E30 — Attention sensitivity screen prepared (blocked)
+
+**Question:** which individual attention projections are sensitive to isolated
+1-bit quantization, so a future mixed-attention policy can be chosen from data?
+
+**Why:** the full mixed FFN is 5.46% at 1.090 GB, but its attention is entirely
+FP32. Attention-only QAT (all attention 1-bit, FFN FP32) is 4.49% at 1.983 GB;
+a partial attention quantization could reduce the mixed artifact further. The
+existing FFN screen showed that per-layer sensitivity is measurable and useful.
+
+**What:** reused `scripts/screen_layer_sensitivity.py` with
+`configs/qat_attn.yaml` (96 attention layers, FP32 reference, 32 fixed dev
+utterances, seed 42, one layer at a time, no QAT, no test-clean). Extended the
+screen to record weight reconstruction error, quantization configuration,
+preliminary/test-set flags, and prepared
+`cluster/screen_attention_sensitivity.pbs` with output
+`results/layer_sensitivity_attention_v1.json`.
+
+**Did it work?** **Preparation and tests: yes. The screen: not run.** The PBS
+preflight reports `jiit-gpu01 state=job-busy`, **96/96 CPUs assigned**, 8 free
+GPUs, no duplicate job, so a 1-CPU screen job would queue. Per the resource rule
+I did not submit it. No attention layer has been measured; no policy is selected;
+no pilot was launched. The existing 17-layer FFN exclusion list and v1.6.0
+results are unchanged.
+
+**Candidate policy templates (hypotheses only, pending the screen):**
+
+- **A — category-conservative:** quantize the least-sensitive attention
+  category (24 layers), keep the other attention categories FP32 and the 17 FFN
+  FP. If the screen selects one category, the expected artifact is ~0.99 GB
+  (saves ~97.6 MB).
+- **B — sensitive-preserving:** quantize all attention except the top-sensitive
+  layers (e.g. keep 24–48 FP32), keep the 17 FFN FP. Size would be ~0.80–0.90 GB,
+  but the attention+FFN interaction is the known risk (the all-attention+FFN arm
+  is 20.50%). Exact layers and any WER claim wait for the screen/pilot.
+
+**Next action:** when at least one PBS CPU frees, run
+`qsub cluster/screen_attention_sensitivity.pbs` once; analyze
+`results/layer_sensitivity_attention_v1.json`; then propose one attention
+policy and run the comparable 2k/500 pilot against the mixed FFN pilot. No full
+QAT until the pilot is reviewed.
 
 ---
 

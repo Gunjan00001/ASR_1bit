@@ -57,6 +57,7 @@ which later becomes busy.
 | `distill_attn_ffn_kd01.pbs` | Phase 13/14: λ_kd=0.1 distillation follow-up | 1 | `results/distill_attn_ffn_kd01.json` |
 | `screen_ffn_sensitivity.pbs` | research: one-layer FFN sensitivity screen (no training) | 4 | `results/layer_sensitivity_ffn.json` |
 | `qat_ffn_pilot.pbs` | research: 500-step FFN control vs mixed-precision pilot | 4 | `results/qat_ffn_control_pilot.json`, `results/qat_ffn_mixed_pilot.json` |
+| `screen_attention_sensitivity.pbs` | research: one-layer attention sensitivity screen (no training) | 1 | `results/layer_sensitivity_attention_v1.json` |
 | `qat_ffn_full.pbs` | full controlled 10k/1,875-step FFN control vs mixed (1 CPU, GPU-bound) | 1 | `results/qat_ffn_{control,mixed}_full.json`, size/verify JSONs |
 | `final_eval_full_arms.pbs` | v1.6 test-256 (benchmark) + full test-clean 2620 (accuracy) | 1 | `results/full_arms_test_*` |
 | `final_eval_a100.pbs` | Phase 12/14/15/17/18/19: final comparison, packed and streaming benchmarks | 1 | `results/final_comparison_*.{json,md}`, `results/packed_inference_benchmark.json`, `results/streaming_demo_qat_attn_ffn.json` |

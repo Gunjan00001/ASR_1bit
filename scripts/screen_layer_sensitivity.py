@@ -41,6 +41,7 @@ from onebit_asr.config import load_config
 from onebit_asr.data.dataset import load_dev_subset
 from onebit_asr.data.text import normalize_pair
 from onebit_asr.evaluation.metrics import compute_cer, compute_wer
+from onebit_asr.evaluation.sensitivity import weight_reconstruction_error
 from onebit_asr.models.conformer_utils import (
     get_parent_module,
     select_by_category,
@@ -174,6 +175,11 @@ def main() -> int:
             "in_features": original.in_features,
             "out_features": original.out_features,
             "params": sum(p.numel() for p in original.parameters()),
+            # Weight-level reconstruction error is independent of the dev set;
+            # logit metrics show how that error propagates in this layer.
+            "weight_reconstruction_error": weight_reconstruction_error(
+                original.weight, scale_mode=scale_mode, ste_clip=ste_clip
+            ),
             "relative_l2": logit_metrics["mean_relative_l2"],
             "kl_ref_variant": logit_metrics["mean_kl_ref_variant"],
             "argmax_agreement": logit_metrics["mean_argmax_agreement"],
@@ -184,6 +190,7 @@ def main() -> int:
         rows.append(row)
         print(
             f"  [{i:>3}/{len(targets)}] {name}: "
+            f"recon={row['weight_reconstruction_error']:.4f} "
             f"relL2={row['relative_l2']:.4f} KL={row['kl_ref_variant']:.4f} "
             f"argmax={row['argmax_agreement']:.3f} "
             f"WER={row['wer']:.4f} (d={row['delta_wer_vs_fp32']:+.4f})",
@@ -202,6 +209,9 @@ def main() -> int:
             "mean_delta_wer": sum(deltas) / len(deltas),
             "max_delta_wer": max(deltas),
             "mean_relative_l2": sum(r["relative_l2"] for r in group_rows) / len(group_rows),
+            "mean_weight_reconstruction_error": sum(
+                r["weight_reconstruction_error"] for r in group_rows
+            ) / len(group_rows),
         }
 
     result = {
@@ -212,10 +222,17 @@ def main() -> int:
         ),
         "screening_only": True,
         "not_qat": True,
+        "preliminary": True,
+        "small_subset_warning": (
+            "Small dev subset; use only for ranking, never for test-set selection "
+            "or as a QAT performance guarantee."
+        ),
+        "test_set_used": False,
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "platform": platform.platform(),
         "config_path": cfg.get("_config_path"),
         "model_id": model_id,
+        "quantization": {"scale_mode": scale_mode, "ste_clip": ste_clip},
         "scale_mode": scale_mode,
         "ste_clip": ste_clip,
         "split": "validation",

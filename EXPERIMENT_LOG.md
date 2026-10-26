@@ -931,7 +931,7 @@ real PBS check, not an assumption from a free GPU.
   GPUs, host memory, disk, duplicate jobs, existing outputs).
 - `cluster/qat_ffn_full.pbs` runs both arms sequentially, skips completed arms,
   resumes partial arms, and packs/verifies both artifacts.
-- 13 new tests (callbacks, resume, preflight); **120 total** pass.
+- 13 new tests (callbacks, resume, preflight); **122 total** pass.
 - A CPU smoke of the updated mixed training path was started to validate the
   result/resume plumbing (pipeline check, not accuracy).
 

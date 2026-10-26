@@ -50,7 +50,7 @@ $PY - <<'PY'
 import torch
 assert torch.cuda.is_available(), "CUDA not available"
 print("torch", torch.__version__, "cuda", torch.version.cuda,
-      "device", torch.cuda.get_device_name(0), "count", torch.device_count())
+      "device", torch.cuda.get_device_name(0), "count", torch.cuda.device_count())
 PY
 if [ $? -ne 0 ]; then echo "ABORT: CUDA preflight failed"; exit 3; fi
 

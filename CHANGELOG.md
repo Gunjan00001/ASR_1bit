@@ -65,7 +65,7 @@ completed.
 - Read-only PBS preflight `scripts/check_cluster_resources.py`; it reported
   ready at 2 free CPUs / 8 GPUs on 2026-10-26. The full run was not submitted in
   that window.
-- 13 new tests; **120 total**, all passing.
+- 13 new tests; **122 total**, all passing.
 - **No full-run or full-test WER is claimed.** The pilot remains 0.2303 control
   vs 0.0900 mixed on dev-128.
 

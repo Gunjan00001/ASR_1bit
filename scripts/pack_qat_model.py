@@ -48,6 +48,7 @@ def main() -> int:
     quant_cfg = cfg.get("quantization", {})
     scale_mode = quant_cfg.get("scale", "per_tensor_mean_abs")
     ste_clip = quant_cfg.get("ste_clip", None)
+    bits = int(quant_cfg.get("bits", 1))
     exclude_layers = list(quant_cfg.get("exclude_layers") or [])
 
     checkpoint = Path(args.checkpoint)
@@ -58,13 +59,13 @@ def main() -> int:
     model, replacement = load_qat_checkpoint(
         checkpoint, Wav2Vec2ConformerForCTC, cfg["layers"],
         scale_mode=scale_mode, ste_clip=ste_clip,
-        exclude_layers=exclude_layers,
+        exclude_layers=exclude_layers, bits=bits,
     )
     model.eval()
 
     output = Path(args.output)
     print(f"Writing packed artifact -> {output} ...")
-    report = write_packed_artifact(model, output, scale_mode=scale_mode)
+    report = write_packed_artifact(model, output, scale_mode=scale_mode, bits=bits)
     report.update({
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "platform": platform.platform(),
@@ -113,6 +114,9 @@ def main() -> int:
         "mixed_precision": bool(exclude_layers),
         "scale_mode": scale_mode,
         "ste_clip": ste_clip,
+        "bits": bits,
+        "bits_by_layer": report.get("bits_by_layer"),
+        "quantization_levels": report.get("quantization_levels"),
         "n_bitlinear_layers": report["n_bitlinear_layers"],
         "quantized_weight_count": report["quantized_weight_count"],
         "packed_payload_bytes": report["packed_payload_bytes"],
@@ -139,7 +143,7 @@ def main() -> int:
     report_path.write_text(json.dumps(report, indent=2))
 
     print(f"Packed artifact bytes (measured): {report['packed_artifact_bytes_measured']:,}")
-    print(f"Packed payload bytes (1 bit/weight): {report['packed_payload_bytes']:,}")
+    print(f"Packed payload bytes ({bits} bit/weight): {report['packed_payload_bytes']:,}")
     print(f"Scale bytes: {report['fp_scale_bytes']:,} "
           f"({report.get('fp_scale_element_count')} values, {scale_mode})")
     print(f"Effective bits / quantized weight: "

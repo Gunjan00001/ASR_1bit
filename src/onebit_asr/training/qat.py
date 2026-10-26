@@ -55,7 +55,8 @@ FEATURE_EXTRACTOR_PATH = "wav2vec2_conformer.feature_extractor"
 # --- Model assembly ---------------------------------------------------------
 
 def setup_qat_model(model, layers: dict, scale_mode: str = "per_tensor_mean_abs",
-                    ste_clip: float | None = None, exclude_layers: list[str] | None = None):
+                    ste_clip: float | None = None, exclude_layers: list[str] | None = None,
+                    bits: int = 1):
     """Replace selected Linear layers with BitLinear, keeping FP32 masters.
 
     ``exclude_layers`` keeps exact selected layers at FP32 for mixed precision.
@@ -64,7 +65,7 @@ def setup_qat_model(model, layers: dict, scale_mode: str = "per_tensor_mean_abs"
     """
     report = replace_linears(
         model, layers, scale_mode=scale_mode, ste_clip=ste_clip,
-        exclude_layers=exclude_layers,
+        exclude_layers=exclude_layers, bits=bits,
     )
     return model, report
 
@@ -373,7 +374,8 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path, *,
                         config_path: str | None = None,
                         init_from: str | None = None,
                         exclude_layers: list[str] | None = None,
-                        selection: dict | None = None) -> dict:
+                        selection: dict | None = None,
+                        bits: int = 1) -> dict:
     """Save FP32 master weights + an explicit manifest.
 
     The saved file is a normal FP32 checkpoint. It is **not** bit-packed; the
@@ -413,6 +415,7 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path, *,
         "mixed_precision": bool(exclude_layers),
         "scale_mode": scale_mode,
         "ste_clip": ste_clip,
+        "bits": int(bits),
         "quantization_granularity": granularity,
         "config_path": str(config_path) if config_path else None,
         "init_from": init_from,
@@ -432,7 +435,8 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path, *,
 def load_qat_checkpoint(out_dir: str | Path, model_cls, layers: dict,
                         scale_mode: str = "per_tensor_mean_abs",
                         ste_clip: float | None = None,
-                        exclude_layers: list[str] | None = None):
+                        exclude_layers: list[str] | None = None,
+                        bits: int = 1):
     """Reload FP32 masters and reconstruct the binarized model.
 
     New checkpoints carry the exact layer selection, excluded mixed-precision
@@ -469,6 +473,12 @@ def load_qat_checkpoint(out_dir: str | Path, model_cls, layers: dict,
                     f"  requested : {requested_excluded}\n"
                     "Refusing to load a mismatched mixed-precision model."
                 )
+        manifest_bits = int(manifest.get("bits", 1))
+        if manifest_bits != int(bits):
+            raise ValueError(
+                f"checkpoint bit width {manifest_bits} does not match requested {bits}; "
+                "refusing to reconstruct the wrong quantizer."
+            )
         manifest_scale = manifest.get("scale_mode")
         if manifest_scale is not None and manifest_scale != scale_mode:
             warnings.warn(
@@ -482,7 +492,7 @@ def load_qat_checkpoint(out_dir: str | Path, model_cls, layers: dict,
     model = model_cls.from_pretrained(out_dir)
     model, report = setup_qat_model(
         model, layers, scale_mode=scale_mode, ste_clip=ste_clip,
-        exclude_layers=requested_excluded,
+        exclude_layers=requested_excluded, bits=bits,
     )
     return model, report
 

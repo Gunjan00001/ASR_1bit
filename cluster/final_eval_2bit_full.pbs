@@ -1,0 +1,42 @@
+#!/bin/bash
+#PBS -N final_eval_2bit_full
+#PBS -q gpu
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
+#PBS -l walltime=01:30:00
+#PBS -j oe
+#
+# One-shot final evaluation of the selected 2-bit full checkpoint.
+# Test-256 includes the warmed benchmark; full test-clean is accuracy-only.
+set -uo pipefail
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"
+cd "$REPO" || exit 1
+# shellcheck disable=SC1091
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export HF_HUB_DISABLE_PROGRESS_BARS=1
+export HF_DATASETS_DISABLE_PROGRESS_BARS=1
+
+LOG="logs/final_eval_2bit_full.log"
+mkdir -p logs results/2bit_final_test_n256 results/2bit_final_test_n2620
+: > "$LOG"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== job $PBS_JOBID on $(hostname) at $(date -Is) ==="
+echo "commit: $(git rev-parse HEAD)"
+nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv,noheader
+
+PY=".venv/bin/python"
+ARMS="qat_ffn_mixed_2bit_full"
+
+echo "=== TEST-256 with benchmark ==="
+$PY scripts/run_final_eval.py --split test --n 256 --arms "$ARMS" \
+    --output-dir results/2bit_final_test_n256 --no-progress
+echo "test-256 exit: $?"
+
+echo "=== FULL TEST-CLEAN 2620 (accuracy-only) ==="
+$PY scripts/run_final_eval.py --split test --n 2620 --arms "$ARMS" \
+    --output-dir results/2bit_final_test_n2620 --no-progress --no-benchmark
+echo "full-test exit: $?"
+echo "=== finished at $(date -Is) ==="

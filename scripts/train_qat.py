@@ -177,6 +177,7 @@ def main() -> int:
     quant_cfg = cfg.get("quantization", {})
     scale_mode = quant_cfg.get("scale", "per_tensor_mean_abs")
     ste_clip = quant_cfg.get("ste_clip", None)
+    bits = int(quant_cfg.get("bits", 1))
     exclude_layers = list(quant_cfg.get("exclude_layers") or [])
     training = resolve_training(cfg, args.smoke, args.probe, args.probe_steps, args.pilot)
 
@@ -196,7 +197,7 @@ def main() -> int:
         raise SystemExit("model.config.pad_token_id is None; CTC blank unknown")
     model, replacement = setup_qat_model(
         model, cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip,
-        exclude_layers=exclude_layers,
+        exclude_layers=exclude_layers, bits=bits,
     )
     print(report_replacement(replacement))
 
@@ -308,7 +309,7 @@ def main() -> int:
             ),
             "model_id": cfg["qat"]["init_from"],
             "layers": cfg["layers"],
-            "quantization": {"scale": scale_mode, "ste": quant_cfg.get("ste"), "ste_clip": ste_clip},
+            "quantization": {"scale": scale_mode, "ste": quant_cfg.get("ste"), "ste_clip": ste_clip, "bits": bits},
             "freeze": freeze,
             "replacement": {
                 "n_replaced": replacement["n_replaced"],
@@ -419,12 +420,12 @@ def main() -> int:
         model, checkpoint_dir,
         layers=cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip,
         config_path=cfg.get("_config_path"), init_from=model_id,
-        exclude_layers=exclude_layers, selection=selection,
+        exclude_layers=exclude_layers, selection=selection, bits=bits,
     )
     reloaded, _ = load_qat_checkpoint(
         checkpoint_dir, Wav2Vec2ConformerForCTC, cfg["layers"],
         scale_mode=scale_mode, ste_clip=ste_clip,
-        exclude_layers=exclude_layers,
+        exclude_layers=exclude_layers, bits=bits,
     )
     device = next(model.parameters()).device
     reloaded = reloaded.to(device)
@@ -481,6 +482,7 @@ def main() -> int:
             ),
             "ste": quant_cfg.get("ste"),
             "ste_clip": ste_clip,
+            "bits": bits,
             "exclude_layers": exclude_layers,
             "mixed_precision": bool(exclude_layers),
         },

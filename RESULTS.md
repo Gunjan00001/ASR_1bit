@@ -217,7 +217,25 @@ accuracy versus the mixed FFN reference. B is 19.7% smaller than A but costs
 7.13 pp more WER. No full run or test-clean evaluation was performed. The
 comparison JSON is `results/attention_pilots_comparison.json`.
 
-## 9. Honest reading
+## 10. 2-bit FFN pilot (A100, dev-128)
+
+Controlled pilot: the mixed-FFN config with only `quantization.bits: 2`
+changed. Four signed levels `{-1.5,-0.5,+0.5,+1.5}*alpha`, four codes/byte,
+fixed 17 FFN exclusions, 2,000 train.100 utterances, 500 steps, seed 42,
+dev-128, best-dev step 500. **Pilot only — not a full-test result.**
+
+| Arm | Dev-128 WER | Dev-128 CER | Artifact bytes | ΔWER vs mixed | Size vs mixed | Quantized layers | Excluded | Reload |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| Mixed FFN 1-bit (historical) | 0.0900 | 0.0284 | 1,089,643,604 | — | — | 79 | 17 | pass 0.0/1.0 |
+| 2-bit FFN pilot | **0.0299** | **0.0093** | **1,131,062,436** | **−6.01 pp** | +3.80% | 79 | 17 | pass 0.0/1.0 |
+
+The 2-bit artifact pays **+41.4 MB** for a **6.0 pp** dev accuracy gain; effective
+storage is **2.0000 bits/quantized weight** (15.2492 bits/total parameter,
+measured). GPU: A100-SXM4-80GB; peak allocation 30.81 GB; train runtime 1,274 s;
+eval RTF 0.00641. Packing is storage-only (the runtime expands codes to FP
+weights). Full 10k/test results are **not measured**.
+
+## 11. Honest reading
 
 - Accuracy numbers are greedy CTC on fixed LibriSpeech subsets; they are not
   comparable to LM-assisted leaderboard numbers.

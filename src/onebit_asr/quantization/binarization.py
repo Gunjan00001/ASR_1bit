@@ -27,6 +27,10 @@ import torch
 
 from onebit_asr.quantization.scaling import compute_scale
 from onebit_asr.quantization.ste import binary_quantize
+from onebit_asr.quantization.two_bit import (
+    quantize_weight_2bit,
+    validate_bits,
+)
 
 
 def binarize(weight: torch.Tensor, clip_value: float | None = None) -> torch.Tensor:
@@ -38,20 +42,18 @@ def quantize_weight(
     weight: torch.Tensor,
     scale_mode: str = "per_tensor_mean_abs",
     ste_clip: float | None = None,
+    bits: int = 1,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return ``(Wq, alpha)`` where ``Wq = alpha * sign(W)``.
+    """Return ``(Wq, alpha)`` for the configured bit width.
 
-    The scale is computed from the same FP master ``weight`` that is being
-    binarized, so gradients flow through both the scale and the STE path.
-
-    Order matters: ``wb`` is derived first, but ``alpha`` is computed from
-    ``weight`` (not from ``wb``). Computing it from ``wb`` would detach the
-    scale from the master and change the gradient (see ``deepdive.md`` §3.4).
-
-    ``alpha`` is a 0-D scalar for ``per_tensor_mean_abs`` or ``[out,1]`` for
-    ``per_output_channel_mean_abs``. In both cases ``alpha * wb`` broadcasts to
-    the full ``[out,in]`` weight, so the rest of the code path is identical.
+    ``bits=1`` is the original path: ``Wq = alpha * sign(W)``. ``bits=2`` uses
+    the symmetric mid-rise codebook in :mod:`onebit_asr.quantization.two_bit`.
+    The 1-bit default keeps every historical experiment and checkpoint path
+    unchanged.
     """
+    bits = validate_bits(bits)
+    if bits == 2:
+        return quantize_weight_2bit(weight, scale_mode, ste_clip)
     # Shape contract check: a scalar or one scale per output row. A wrong shape
     # here would silently broadcast in a surprising direction.
     alpha = compute_scale(weight, scale_mode)  # differentiable scale(s)

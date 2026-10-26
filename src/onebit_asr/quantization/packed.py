@@ -27,6 +27,12 @@ from torch import nn
 
 from onebit_asr.quantization.bitlinear import BitLinear
 from onebit_asr.quantization.scaling import compute_scale
+from onebit_asr.quantization.two_bit import (
+    codes_for_weight,
+    pack_2bit_codes,
+    unpack_2bit_levels,
+    validate_bits,
+)
 
 #: popcount lookup table for one byte
 POPCOUNT = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint8)
@@ -58,8 +64,10 @@ class PackedBitLinear(nn.Module):
         shape: tuple[int, int],
         alpha: torch.Tensor,
         bias: torch.Tensor | None,
+        bits: int = 1,
     ) -> None:
         super().__init__()
+        self.bits = validate_bits(bits)
         self.in_features = int(shape[1])
         self.out_features = int(shape[0])
         self.numel = self.in_features * self.out_features
@@ -82,9 +90,12 @@ class PackedBitLinear(nn.Module):
         per-output-channel mode stores ``[out,1]``. The forward broadcasts both.
         """
         weight = module.weight.detach()
-        packed = pack_sign_bits(weight)
         alpha = compute_scale(weight, scale_mode).float()
-        return cls(packed, tuple(weight.shape), alpha, module.bias)
+        if int(getattr(module, "bits", 1)) == 1:
+            packed = pack_sign_bits(weight)
+        else:
+            packed = pack_2bit_codes(codes_for_weight(weight, alpha))
+        return cls(packed, tuple(weight.shape), alpha, module.bias, bits=module.bits)
 
     @classmethod
     def from_artifact(
@@ -93,6 +104,7 @@ class PackedBitLinear(nn.Module):
         shape: tuple[int, int],
         alpha: torch.Tensor,
         bias: torch.Tensor | None,
+        bits: int = 1,
     ) -> "PackedBitLinear":
         """Rebuild a packed layer from artifact tensors.
 
@@ -105,11 +117,15 @@ class PackedBitLinear(nn.Module):
             packed_np = packed.detach().cpu().numpy()
         else:
             packed_np = np.asarray(packed)
-        return cls(packed_np, tuple(shape), alpha, bias)
+        return cls(packed_np, tuple(shape), alpha, bias, bits=bits)
 
     def effective_weight(self) -> torch.Tensor:
-        raw = unpack_sign_bits(self.packed.cpu().numpy(), self.numel,
-                               (self.out_features, self.in_features))
+        if self.bits == 1:
+            raw = unpack_sign_bits(self.packed.cpu().numpy(), self.numel,
+                                   (self.out_features, self.in_features))
+        else:
+            raw = unpack_2bit_levels(self.packed.cpu().numpy(), self.numel,
+                                     (self.out_features, self.in_features))
         weight = torch.from_numpy(raw).to(device=self.alpha.device, dtype=self.alpha.dtype)
         return weight * self.alpha
 
@@ -124,7 +140,7 @@ class PackedBitLinear(nn.Module):
         return (
             f"in_features={self.in_features}, out_features={self.out_features}, "
             f"bias={self.bias is not None}, packed_bytes={self.packed.numel()}, "
-            f"storage=1-bit+fp32_scale"
+            f"storage={self.bits}-bit+fp32_scale"
         )
 
 
@@ -140,6 +156,7 @@ def pack_model(model: nn.Module, scale_mode: str = "per_tensor_mean_abs") -> tup
     """
     replaced = 0
     packed_bytes = 0
+    bits_seen = set()
     for name, module in list(model.named_modules()):
         if not isinstance(module, BitLinear):
             continue
@@ -150,12 +167,14 @@ def pack_model(model: nn.Module, scale_mode: str = "per_tensor_mean_abs") -> tup
         new = PackedBitLinear.from_bitlinear(module, scale_mode=scale_mode)
         setattr(parent, attr, new)
         packed_bytes += int(new.packed.numel())
+        bits_seen.add(int(new.bits))
         replaced += 1
     return model, {
         "n_packed_layers": replaced,
         "packed_weight_bytes": packed_bytes,
+        "bits": sorted(bits_seen),
         "scale_mode": scale_mode,
-        "note": "Forward expands packed bits to FP; storage-only compression.",
+        "note": "Forward expands packed codes to FP; storage-only compression.",
     }
 
 
@@ -186,6 +205,8 @@ def packed_model_size_report(model: nn.Module) -> dict:
     return {
         "n_packed_layers": n_layers,
         "packed_weight_bytes": packed_bytes,
+        "bits": sorted({int(getattr(m, "bits", 1)) for m in model.modules()
+                       if isinstance(m, PackedBitLinear)}),
         "fp_scale_bytes": scale_bytes,
         "fp_scale_and_bias_bytes": fp_scale_bias_bytes,
         "non_packed_fp_param_bytes": non_packed_bytes,

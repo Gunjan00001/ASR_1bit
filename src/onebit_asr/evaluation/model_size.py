@@ -34,6 +34,13 @@ import torch.nn as nn
 from huggingface_hub import snapshot_download
 
 from onebit_asr.quantization.scaling import compute_scale
+from onebit_asr.quantization.two_bit import (
+    LEVELS,
+    codes_for_weight,
+    pack_2bit_codes,
+    packed_2bit_bytes,
+    validate_bits,
+)
 
 WEIGHT_SUFFIXES = (".safetensors", ".bin")
 
@@ -122,12 +129,19 @@ def packed_binary_bytes(num_weights: int) -> int:
     return int(np.packbits(np.zeros(int(num_weights), dtype=np.uint8)).nbytes)
 
 
+def packed_nbit_bytes(num_weights: int, bits: int) -> int:
+    """Payload bytes for ``bits`` codes per weight (2-bit path is exact)."""
+    bits = validate_bits(bits)
+    return packed_binary_bytes(num_weights) if bits == 1 else packed_2bit_bytes(num_weights)
+
+
 def _is_bitlinear(module: nn.Module) -> bool:
     # Marker attribute set by BitLinear; avoids importing quantization here.
     return bool(getattr(module, "is_bitlinear", False))
 
 
-def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_abs") -> tuple[dict[str, torch.Tensor], dict]:
+def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_abs",
+                         bits: int | None = None) -> tuple[dict[str, torch.Tensor], dict]:
     """Build the packed artifact tensor map and its component-byte accounting.
 
     Shared by :func:`binary_model_size_report` (which *measures* a real file)
@@ -159,18 +173,30 @@ def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_ab
 
     tensors: dict[str, torch.Tensor] = {}
     packed_payload_bytes = 0
+    theoretical_bytes = 0
     scale_bytes = 0
     scale_element_count = 0
+    bits_by_layer: dict[str, int] = {}
     for weight_name, module in bitlinear_weights.items():
-        packed = pack_binary_weights(module.weight)
+        module_bits = validate_bits(int(getattr(module, "bits", 1)))
+        if bits is not None and module_bits != validate_bits(bits):
+            raise ValueError(
+                f"model layer {weight_name} uses {module_bits}-bit but requested {bits}-bit"
+            )
+        alpha = compute_scale(module.weight.detach(), scale_mode).to(torch.float32)
+        if alpha.dim() == 0:
+            alpha = alpha.reshape(1)
+        if module_bits == 1:
+            packed = pack_binary_weights(module.weight)
+        else:
+            packed = pack_2bit_codes(codes_for_weight(module.weight, alpha))
+        bits_by_layer[weight_name] = module_bits
+        theoretical_bytes += packed_nbit_bytes(module.weight.numel(), module_bits)
         packed_payload_bytes += packed.nbytes
         tensors[f"{weight_name}_packed"] = torch.from_numpy(packed)
         # Use the *same* scale function as forward. Per-tensor gives a 0-D
         # tensor (we store it as shape [1] for compatibility with old
         # artifacts); per-channel gives [out,1] and is stored as-is.
-        alpha = compute_scale(module.weight.detach(), scale_mode).to(torch.float32)
-        if alpha.dim() == 0:
-            alpha = alpha.reshape(1)
         scale_element_count += alpha.numel()
         scale_bytes += alpha.numel() * alpha.element_size()
         tensors[f"{weight_name}_scale"] = alpha
@@ -194,7 +220,10 @@ def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_ab
         "quantized_weight_count": int(quantized_weight_count),
         "non_quantized_param_count": int(non_quantized_params),
         "total_params": int(total_params),
-        "theoretical_payload_bytes_1bit": theoretical_payload_bytes(quantized_weight_count),
+        "bits": (next(iter(bits_by_layer.values())) if len(set(bits_by_layer.values())) == 1
+                 else sorted(set(bits_by_layer.values()))),
+        "bits_by_layer": bits_by_layer,
+        "theoretical_payload_bytes": int(theoretical_bytes),
         "naive_binary_bytes": naive_binary_bytes(quantized_weight_count),
         "packed_payload_bytes": int(packed_payload_bytes),
         "fp_scale_bytes": int(scale_bytes),
@@ -210,6 +239,7 @@ def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_ab
             8.0 * (packed_payload_bytes + scale_bytes) / quantized_weight_count
             if quantized_weight_count else None
         ),
+        "quantization_levels": list(LEVELS) if any(v == 2 for v in bits_by_layer.values()) else None,
         "effective_bits_per_total_param": (
             8.0 * component_bytes / total_params if total_params else None
         ),
@@ -217,7 +247,8 @@ def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_ab
     return tensors, stats
 
 
-def quick_size_report(model: nn.Module, scale_mode: str = "per_tensor_mean_abs") -> dict:
+def quick_size_report(model: nn.Module, scale_mode: str = "per_tensor_mean_abs",
+                      bits: int | None = None) -> dict:
     """Binary size components without writing a container file.
 
     ``binary_model_size_report`` measures a real safetensors file (accurate
@@ -229,12 +260,14 @@ def quick_size_report(model: nn.Module, scale_mode: str = "per_tensor_mean_abs")
     total is the *component* sum, not a measured artifact. Do not compare it
     directly with a measured file size without accounting for headers.
     """
-    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode)
+    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode, bits=bits)
     del tensors
     return {"scale_mode": scale_mode, **stats}
 
 
-def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale_mode: str = "per_tensor_mean_abs") -> dict:
+def binary_model_size_report(model: nn.Module, repo_id: str | None = None,
+                             scale_mode: str = "per_tensor_mean_abs",
+                             bits: int | None = None) -> dict:
     """Honest size accounting for a (partially) binarized model.
 
     Separates, with no double counting: theoretical 1-bit payload, naive binary
@@ -250,7 +283,7 @@ def binary_model_size_report(model: nn.Module, repo_id: str | None = None, scale
 
     from safetensors.torch import save_file
 
-    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode)
+    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode, bits=bits)
     with tempfile.TemporaryDirectory() as tmp:
         artifact = Path(tmp) / "packed_model.safetensors"
         save_file(tensors, str(artifact))
@@ -278,6 +311,7 @@ def write_packed_artifact(
     model: nn.Module,
     out_path: str | Path,
     scale_mode: str = "per_tensor_mean_abs",
+    bits: int | None = None,
 ) -> dict:
     """Write a real, deployable packed 1-bit artifact and return its size report.
 
@@ -289,7 +323,7 @@ def write_packed_artifact(
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode)
+    tensors, stats = build_packed_tensors(model, scale_mode=scale_mode, bits=bits)
     save_file(tensors, str(out_path))
     measured = out_path.stat().st_size
     return {

@@ -8,6 +8,23 @@ an exact, reproducible repository state.
 
 ---
 
+## Unreleased — genuine 2-bit FFN: pilot passes gate
+
+- Added a configurable symmetric 2-bit weight quantizer with **four signed
+  levels** `{-1.5,-0.5,+0.5,+1.5}*alpha` (mid-rise, saturating outside ±2a),
+  exact 4-codes-per-byte packing, FP32 masters, and 1-bit defaults unchanged.
+  Quantization, packing, serialization, checkpoint reload, and packed reload
+  all have tests; **145 tests** pass.
+- Controlled config `configs/qat_ffn_mixed_2bit.yaml` differs from the mixed
+  FFN baseline only in `quantization.bits: 2`; the 17 FFN exclusions and all
+  data/optimizer/pilot settings are identical.
+- **2-bit pilot** (job 12923, A100): **2.99% dev-128 WER / 0.93% CER**,
+  **1,131,062,436 B**, effective **2.0000 bits/quantized weight**, packed
+  reload max |Δlogit| 0.0 and argmax 1.0. Mixed 1-bit reference: 9.00% /
+  1,089,643,604 B. The gate passes; a full 10k/1,875 run is prepared.
+- No test-clean was used for selection or tuning. Full/test results are
+  **not yet measured** and will not be claimed until the jobs complete.
+
 ## Unreleased — both attention pilots measured; neither promoted
 
 - Completed both 2k/500/dev-128 pilots on A100s with the fixed 17 FFN

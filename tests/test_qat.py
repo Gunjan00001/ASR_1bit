@@ -425,3 +425,30 @@ def test_checkpoint_manifest_records_selection(tiny_model, tmp_path):
     }
     manifest = save_qat_checkpoint(model, tmp_path, layers=ATTN_FFN, selection=selection)
     assert manifest["selection"] == selection
+
+
+def test_2bit_checkpoint_manifest_and_reload(tiny_model, tmp_path):
+    from transformers import Wav2Vec2ConformerForCTC
+
+    model = copy.deepcopy(tiny_model)
+    model, _report = setup_qat_model(model, ATTN_FFN, bits=2)
+    freeze_feature_extractor(model)
+    model.eval()
+    input_values, _labels = _batch()
+    with torch.no_grad():
+        expected = model(input_values=input_values).logits
+
+    manifest = save_qat_checkpoint(model, tmp_path, layers=ATTN_FFN, bits=2)
+    assert manifest["bits"] == 2
+    assert manifest["is_1bit_packed"] is False
+
+    reloaded, _ = load_qat_checkpoint(
+        tmp_path, Wav2Vec2ConformerForCTC, ATTN_FFN, bits=2
+    )
+    reloaded.eval()
+    with torch.no_grad():
+        got = reloaded(input_values=input_values).logits
+    assert torch.allclose(expected, got, atol=1e-5)
+
+    with pytest.raises(ValueError, match="bit width"):
+        load_qat_checkpoint(tmp_path, Wav2Vec2ConformerForCTC, ATTN_FFN, bits=1)

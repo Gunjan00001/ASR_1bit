@@ -51,3 +51,19 @@ def test_attention_pilot_resolves_relative_extends_and_watcher_passes_env():
     assert "extends: ${EXTENDS}" in pbs
     # qsub does not inherit shell variables by default.
     assert 'qsub -v "CONFIG=$cfg,POLICY_ID=$id"' in watcher
+
+
+def test_2bit_full_and_final_eval_pipeline_wired():
+    full = (ROOT / "cluster" / "qat_ffn_2bit_full.pbs").read_text()
+    final = (ROOT / "cluster" / "final_eval_2bit_full.pbs").read_text()
+    watcher = (ROOT / "scripts" / "wait_for_ffn_2bit_full.sh").read_text()
+    assert "extends: qat_ffn_mixed_2bit.yaml" in full
+    assert "eval_utterances: 256" in full
+    assert "save_steps: 250" in full
+    assert "pack_qat_model.py" in full and "verify_packed_artifact.py" in full
+    assert "qat_ffn_mixed_2bit_full" in final
+    assert "run_final_eval.py" in final
+    assert "--n 2620" in final and "--no-benchmark" in final
+    assert "qat_ffn_2bit_full.pbs" in watcher
+    assert "final_eval_2bit_full.pbs" in watcher
+    assert "check_cluster_resources.py" in watcher

@@ -122,6 +122,11 @@ ARM_DEFS = {
         "config": "configs/cluster_effective_qat_ffn_mixed_full.yaml",
         "checkpoint": "checkpoints/qat_ffn_mixed_full",
     },
+    "qat_ffn_mixed_2bit_full": {
+        "kind": "qat",
+        "config": "configs/cluster_effective_qat_ffn_mixed_2bit_full.yaml",
+        "checkpoint": "checkpoints/qat_ffn_mixed_2bit_full",
+    },
     "qat_attn_ffn": {
         "kind": "qat",
         "config": "configs/qat_attn_ffn.yaml",
@@ -194,16 +199,18 @@ def build_arm(name: str, arm: dict, model_id: str, device: torch.device) -> tupl
         cfg = load_config(cfg_path)
         quant = cfg.get("quantization", {})
         exclude_layers = list(quant.get("exclude_layers") or [])
+        bits = int(quant.get("bits", 1))
         model, report = load_qat_checkpoint(
             checkpoint, Wav2Vec2ConformerForCTC, cfg["layers"],
             scale_mode=quant.get("scale", "per_tensor_mean_abs"),
             ste_clip=quant.get("ste_clip"),
-            exclude_layers=exclude_layers,
+            exclude_layers=exclude_layers, bits=bits,
         )
         info = {
             "kind": "qat",
             "layers": cfg["layers"],
             "scale_mode": quant.get("scale", "per_tensor_mean_abs"),
+            "bits": bits,
             "exclude_layers": exclude_layers,
             "n_replaced": report["n_replaced"],
             "n_excluded": report["n_excluded"],
@@ -314,7 +321,8 @@ def main() -> int:
         else:
             size = {
                 "total_params": total_params,
-                **quick_size_report(model, scale_mode=info["scale_mode"]),
+                **quick_size_report(model, scale_mode=info["scale_mode"],
+                                    bits=info.get("bits")),
             }
         report["size"] = size
 

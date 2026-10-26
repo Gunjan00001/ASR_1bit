@@ -46,6 +46,7 @@ def replace_linears(
     scale_mode: str = "per_tensor_mean_abs",
     ste_clip: float | None = None,
     exclude_layers: list[str] | None = None,
+    bits: int = 1,
 ) -> dict:
     """Replace selected ``nn.Linear`` layers in-place with ``layer_cls``.
 
@@ -100,7 +101,9 @@ def replace_linears(
             # Modules are attributes of a parent module, not of themselves.
             # setattr on the parent is the only way to swap the child in place.
             parent, attr = get_parent_module(model, name)
-            replacement = layer_cls.from_linear(module, scale_mode=scale_mode, ste_clip=ste_clip)
+            replacement = layer_cls.from_linear(
+                module, scale_mode=scale_mode, ste_clip=ste_clip, bits=bits
+            )
             setattr(parent, attr, replacement)
             replaced.append(_describe(name, replacement, category))
         else:
@@ -119,6 +122,7 @@ def replace_linears(
         "exclude_layers": sorted(excluded_set),
         "scale_mode": scale_mode,
         "ste_clip": ste_clip,
+        "bits": int(bits),
         "layer_cls": layer_cls.__name__,
     }
 
@@ -140,6 +144,7 @@ def report_replacement(report: dict) -> str:
         f"(scale_mode={report['scale_mode']}, ste_clip={report['ste_clip']})",
         f"  replaced: {report['n_replaced']} layers, {report['replaced_params']:,} params",
         f"  retained: {report['n_retained']} layers, {report['retained_params']:,} params",
+        f"  bit width: {report.get('bits', 1)}",
     ]
     if report.get("n_excluded"):
         lines.append(

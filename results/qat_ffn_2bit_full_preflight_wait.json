@@ -1,0 +1,92 @@
+{
+  "purpose": "read-only preflight for the full FFN control vs mixed-precision run",
+  "timestamp_utc": "2026-10-26T16:00:32.311816+00:00",
+  "git_commit": "09a46278f0a4f3b3cdb535df6d4d80d6cb75d30f",
+  "node": "jiit-gpu01",
+  "queue": "gpu",
+  "job_name": "qat_ffn_2bit_full",
+  "pbs": {
+    "state": "job-busy",
+    "available_cpus": 96,
+    "assigned_cpus": 96,
+    "free_cpus": 0,
+    "available_host_mem_bytes": 2162400690176,
+    "assigned_host_mem_bytes": 768799145984,
+    "free_host_mem_bytes": 1393601544192,
+    "resources_available_ngpus": "8"
+  },
+  "gpus": [
+    {
+      "index": 0,
+      "free_mb": 60059,
+      "utilization_pct": 100
+    },
+    {
+      "index": 1,
+      "free_mb": 61716,
+      "utilization_pct": 14
+    },
+    {
+      "index": 2,
+      "free_mb": 63115,
+      "utilization_pct": 99
+    },
+    {
+      "index": 3,
+      "free_mb": 62003,
+      "utilization_pct": 90
+    },
+    {
+      "index": 4,
+      "free_mb": 63553,
+      "utilization_pct": 76
+    },
+    {
+      "index": 5,
+      "free_mb": 60169,
+      "utilization_pct": 84
+    },
+    {
+      "index": 6,
+      "free_mb": 50547,
+      "utilization_pct": 100
+    },
+    {
+      "index": 7,
+      "free_mb": 50059,
+      "utilization_pct": 46
+    }
+  ],
+  "gpu_free_count_above_threshold": 8,
+  "gpu_query_error": null,
+  "disk_free_bytes": 348011425693696,
+  "existing_jobs": [
+    "asr1bit-q",
+    "asr1bit-q",
+    "asr1bit-b",
+    "qat_ffn_2"
+  ],
+  "duplicate_jobs": [
+    "qat_ffn_2"
+  ],
+  "existing_outputs": [
+    "results/qat_ffn_control_full.json",
+    "results/qat_ffn_mixed_full.json"
+  ],
+  "partial_checkpoints": [
+    "checkpoints/qat_ffn_control_full",
+    "checkpoints/qat_ffn_mixed_full"
+  ],
+  "requirements": {
+    "cpus": 1,
+    "gpus": 1,
+    "gpu_free_gb": 25.0,
+    "host_free_gb": 64.0,
+    "disk_free_gb": 40.0
+  },
+  "ready": false,
+  "blocked_reasons": [
+    "free CPUs 0 < required 1",
+    "duplicate jobs already queued/running: ['qat_ffn_2']"
+  ]
+}

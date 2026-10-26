@@ -1,0 +1,13 @@
+# Controlled 2-bit FFN experiment.
+#
+# This is the v1.6.0 mixed-precision FFN configuration with exactly one
+# quantization change: the 79 selected FFN BitLinear matrices use the symmetric
+# 2-bit codebook instead of 1-bit signs. The fixed 17-layer FP32 exclusion list,
+# layer selection, attention FP32 policy, data, seed, optimizer, LR, batch,
+# accumulation, and pilot/full budgets are inherited unchanged.
+extends: qat_ffn_mixed.yaml
+
+compute_profile: cloud-gpu
+
+quantization:
+  bits: 2

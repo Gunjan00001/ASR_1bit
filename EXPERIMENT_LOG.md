@@ -1165,6 +1165,46 @@ normalized KD loss), using the same pilot gate and fixed FFN list.
 
 ---
 
+## E33 — Genuine 2-bit quantizer and pilot (gate passed)
+
+**Question:** can a real 2-bit weight codebook improve the accuracy/compression
+trade-off over the 1-bit mixed FFN at the same 79 FFN layers and fixed 17 FP32
+exclusions?
+
+**Implementation:** added a symmetric mid-rise 2-bit quantizer with explicit
+signed levels `{-1.5,-0.5,+0.5,+1.5}*alpha`, codes 0..3 (four per uint8),
+saturating clipping beyond ±2a, zero-scale safety, FP32 masters, STE gradients,
+and exact packed serialization/reload. `bits` is configurable; 1-bit behavior
+and historical artifacts are unchanged. Tests cover levels, boundaries,
+reconstruction, shapes, zero scales, gradients, packing, state-dict and packed
+artifact reload, checkpoint bit-width mismatch, and config isolation. **145
+tests pass.**
+
+**Config:** `configs/qat_ffn_mixed_2bit.yaml` differs from
+`qat_ffn_mixed.yaml` only by `quantization.bits: 2`; the 17 FFN exclusions,
+layers, data, seed, optimizer, LR, batch/accum, pilot/full budgets, and eval
+protocol are identical.
+
+**Pilot (job 12923, A100-SXM4-80GB):** 2,000 train.100, 500 steps, seed 42,
+dev-128, best-dev step 500. **WER 0.0299 / CER 0.0093**; dev history 0.0328 at
+250, 0.0299 at 500. Artifact **1,131,062,436 B**, payload 82,837,504 B,
+**2.0000 effective bits/quantized weight**, 79 BitLinear / 17 FP32 exclusions.
+Packed reload passed: max |Δlogit| 0.0, argmax 1.0, 2/2 decoded. GPU peak
+30.81 GB; train runtime 1,274 s; eval RTF 0.00641. Mixed 1-bit reference:
+0.0900 / 0.0284 at 1,089,643,604 B. The 2-bit pilot gains **6.01 pp WER for
++3.80% size** and **passes the pilot gate.**
+
+**Full run:** `cluster/qat_ffn_2bit_full.pbs` is prepared for 10,000
+utterances / 1,875 steps / 256-dev selection / fixed 17 exclusions; the
+one-shot watcher `scripts/wait_for_ffn_2bit_full.sh` will submit it and the
+final test-256/full-test job when a 1-CPU/1-GPU slot is available. At the time
+of this entry the node had 0 free CPUs. **No full or test result is claimed.**
+
+**Next:** full 2-bit run, then test-256 and full test-clean once. Do not tune
+on test.
+
+---
+
 ## How to add a new log entry
 
 When you run a new experiment, append:

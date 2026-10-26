@@ -173,7 +173,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (131 tests) | ✅ green |
+| 7 | Test gate (145 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
@@ -193,6 +193,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | R2 | Research: FFN per-layer sensitivity | ✅ measured: 96 layers, 32 dev; `ffn_in` 1.9× `ffn_out` |
 | R3 | Research: mixed-precision FFN | ✅ **full measured**: mixed 0.0527 dev / 0.0546 full test at 1.090 GB; control 0.1163 / 0.1132 at 0.813 GB |
 | R4 | Research: attention mixed precision | ✅ both pilots measured: A 10.79% / 0.992 GB, B 17.92% / 0.797 GB; neither promoted over mixed FFN 9.00% / 1.090 GB |
+| R5 | Research: genuine 2-bit FFN | ✅ pilot 2.99% dev-128 / 0.93% CER at 1.131 GB; gate passed; full run prepared and waiting for a CPU slot |
 
 > **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes
@@ -504,7 +505,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **131 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **145 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -546,6 +547,9 @@ This is an experimental choice, not a permanent rule.
   error, zero weights, binary exactness, and finite/bounded random weights.
 - `test_attention_policy.py` (3) — category/sensitive policy generation, 17-FFN
   preservation, size arithmetic, and generated-config loading.
+- `test_two_bit.py` (11), `test_2bit_config.py` (1) — 2-bit codebook, boundaries,
+  reconstruction, zero-scale safety, packing, serialization, packed reload,
+  checkpoint reload, and exact config isolation.
 - Mixed-precision additions in `test_binarization.py`, `test_bitlinear.py`,
   `test_packed.py`, `test_layer_replacement.py`, and `test_qat.py`: per-channel
   scales/broadcasting/zero rows/gradients, exact-layer exclusion, manifest
@@ -890,7 +894,7 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 131 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 145 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
@@ -910,7 +914,7 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 131 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 145 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
@@ -1080,7 +1084,7 @@ one-bit-asr/
 ├── cluster/            pick_gpu.sh + PBS jobs (attention/FFN QAT, attention-only
 │                       A100 arm, distillation, layer screen, mixed pilot,
 │                       hardened full FFN control/mixed job), README.md
-├── tests/              131 tests (STE, binarization, BitLinear, replacement,
+├── tests/              145 tests (STE, binarization, BitLinear, replacement,
 │                       QAT, evaluate, config, distillation, packed, streaming,
 │                       latency, callbacks, resume, cluster preflight,
 │                       mixed-precision exclusions)

@@ -45,7 +45,8 @@ from onebit_asr.training.qat import load_qat_checkpoint
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def build_packed_from_artifact(base_model, artifact: dict, manifest: dict):
+def build_packed_from_artifact(base_model, artifact: dict, manifest: dict,
+                               bits: int = 1):
     """Replace every artifact-packed layer with a PackedBitLinear.
 
     The base model supplies the architecture/config; all numbers come from the
@@ -72,7 +73,7 @@ def build_packed_from_artifact(base_model, artifact: dict, manifest: dict):
         bias_key = f"{module_name}.bias"
         bias = artifact.get(bias_key)
         layer = PackedBitLinear.from_artifact(
-            packed, tuple(weight_shapes[base]), alpha, bias
+            packed, tuple(weight_shapes[base]), alpha, bias, bits=bits
         )
         parent, attr = get_parent_module(base_model, module_name)
         setattr(parent, attr, layer)
@@ -112,6 +113,7 @@ def main() -> int:
     scale_mode = quant.get("scale", "per_tensor_mean_abs")
     ste_clip = quant.get("ste_clip")
     exclude_layers = list(quant.get("exclude_layers") or [])
+    bits = int(quant.get("bits", 1))
     checkpoint = ROOT / args.checkpoint
     artifact_path = ROOT / args.artifact
     manifest_path = Path(args.manifest) if args.manifest else Path(str(artifact_path) + ".manifest.json")
@@ -126,18 +128,20 @@ def main() -> int:
         raise SystemExit("artifact layer selection does not match the config")
     if "exclude_layers" in manifest and sorted(manifest.get("exclude_layers") or []) != sorted(exclude_layers):
         raise SystemExit("artifact mixed-precision exclusion does not match the config")
+    if int(manifest.get("bits", 1)) != bits:
+        raise SystemExit(f"artifact bit width {manifest.get('bits', 1)} does not match config {bits}")
 
     print("Loading QAT reference (FP32 masters) ...")
     reference, _report = load_qat_checkpoint(
         checkpoint, Wav2Vec2ConformerForCTC, cfg["layers"],
         scale_mode=scale_mode, ste_clip=ste_clip,
-        exclude_layers=exclude_layers,
+        exclude_layers=exclude_layers, bits=bits,
     )
     reference.eval()
 
     print("Rebuilding the model from the packed artifact ...")
     packed_base = Wav2Vec2ConformerForCTC.from_pretrained(checkpoint)
-    packed, n_replaced = build_packed_from_artifact(packed_base, artifact, manifest)
+    packed, n_replaced = build_packed_from_artifact(packed_base, artifact, manifest, bits=bits)
     packed.eval()
     print(f"Rebuilt {n_replaced} packed layers")
 

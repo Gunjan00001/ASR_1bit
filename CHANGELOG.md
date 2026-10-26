@@ -8,21 +8,22 @@ an exact, reproducible repository state.
 
 ---
 
-## Unreleased — preliminary attention sensitivity screen + policies
+## Unreleased — both attention pilots measured; neither promoted
 
-- Added `weight_reconstruction_error`, 4 tests, and a 3-test attention-policy
-  config generator and a pilot pack/reload regression test; **130 tests** pass.
-- Ran a **preliminary CPU screen on 16 fixed dev utterances** (FP32 ref WER
-  0.0256); all 96 attention layers measured with WER/CER, logit/KL, argmax, and
-  weight reconstruction error. `attention_output` is least sensitive
-  (mean ΔWER +0.0047); `attention_k` is most sensitive (+0.0069).
-- Generated two configs without changing the 17 FFN exclusions:
-  `attention_v1_cpu16_category` (24 `attention_output` layers quantized;
-  estimated 0.992 GB) and `attention_v1_cpu16_sensitive24` (top-24 rel-L2
-  attention FP32, 72 quantized; estimated 0.797 GB).
-- The comparable 2k/500 pilot job is prepared (`cluster/qat_attention_mixed_pilot.pbs`).
-  It was **not submitted**: 0 free PBS CPUs (8 GPUs free). No attention QAT/WER
-  result exists; v1.6.0 results remain unchanged.
+- Completed both 2k/500/dev-128 pilots on A100s with the fixed 17 FFN
+  exclusions. Strategy A (`attention_output`): **10.79% WER / 3.30% CER**,
+  **992,129,260 B**. Strategy B (sensitive-24): **17.92% WER / 6.17% CER**,
+  **797,100,884 B**. Mixed FFN reference: **9.00% / 2.84%**, 1,089,643,604 B.
+- Absolute deltas vs mixed: A **+1.79 pp WER** for 8.95% smaller; B
+  **+8.92 pp WER** for 26.85% smaller. Both packed artifacts reload exactly
+  (max |Δlogit| 0.0, argmax 1.0). A is the better attention strategy, but
+  **neither meets promotion**; no full run or test evaluation was done.
+- Fixed two pilot-job bugs found by the first attempt: relative `extends`
+  resolving to `configs/configs/...`, and `qsub` not passing `CONFIG`/
+  `POLICY_ID` (which ran A twice). Failed jobs 12918/12919 trained nothing;
+  corrected jobs 12920/12921 produced all results.
+- Added `results/attention_pilots_comparison.json`, pilot pipeline tests, and a
+  queue watcher. **131 tests** pass. No historical result was overwritten.
 
 ---
 

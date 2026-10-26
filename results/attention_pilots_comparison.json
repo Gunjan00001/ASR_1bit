@@ -1,0 +1,101 @@
+{
+  "generated_at": "2026-10-26",
+  "protocol": "2,000 train.100 utterances, 500 steps, seed 42, dev-128, fp16, best-dev checkpoint, packed reload n=2",
+  "reference": {
+    "name": "mixed-precision FFN pilot",
+    "wer": 0.08995893990294886,
+    "cer": 0.02841307703100884,
+    "artifact_bytes": 1089643604,
+    "artifact_gb": 1.089643604,
+    "best_step": 500,
+    "quantized_layers": 79,
+    "exclusions": 17,
+    "rtf": 0.0034528458976918765,
+    "latency_mean_s": 0.02606022122199647,
+    "gpu": "N/A (historical pilot)",
+    "peak_allocated_bytes": null,
+    "train_runtime_s": null,
+    "reload": {
+      "passed": true,
+      "max_abs_logit_diff": 0.0,
+      "mean_argmax_agreement": 1.0
+    }
+  },
+  "strategy_A": {
+    "wer": 0.10787607316162748,
+    "cer": 0.03297320050512137,
+    "n_utterances": 128,
+    "artifact_bytes": 992129260,
+    "artifact_gb": 0.99212926,
+    "quantized_layers": 103,
+    "exclusions": 17,
+    "best_step": 500,
+    "train_runtime_s": 1111.7643,
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "peak_allocated_bytes": 30848374272,
+    "rtf": 0.0048972896524835585,
+    "latency_mean_s": 0.036962104742997326,
+    "pbs_jobid": "12920.jiit-master",
+    "reload": {
+      "passed": true,
+      "max_abs_logit_diff": 0.0,
+      "mean_argmax_agreement": 1.0
+    },
+    "delta_wer_pp_vs_mixed": 1.7917133258678621,
+    "delta_cer_pp_vs_mixed": 0.45601234741125296,
+    "size_change_vs_mixed_bytes": -97514344,
+    "size_change_vs_mixed_pct": -8.949196199751198,
+    "size_reduction_vs_fp32_pct": 58.2085400168492
+  },
+  "strategy_B": {
+    "wer": 0.1791713325867861,
+    "cer": 0.061737056264908094,
+    "n_utterances": 128,
+    "artifact_bytes": 797100884,
+    "artifact_gb": 0.797100884,
+    "quantized_layers": 151,
+    "exclusions": 41,
+    "best_step": 500,
+    "train_runtime_s": 839.3907,
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "peak_allocated_bytes": 31039595008,
+    "rtf": 0.004349085445943253,
+    "latency_mean_s": 0.032824554640683345,
+    "pbs_jobid": "12921.jiit-master",
+    "reload": {
+      "passed": true,
+      "max_abs_logit_diff": 0.0,
+      "mean_argmax_agreement": 1.0
+    },
+    "delta_wer_pp_vs_mixed": 8.921239268383726,
+    "delta_cer_pp_vs_mixed": 3.3323979233899252,
+    "size_change_vs_mixed_bytes": -292542720,
+    "size_change_vs_mixed_pct": -26.847559966038215,
+    "size_reduction_vs_fp32_pct": 66.4237201347936
+  },
+  "attention_winner": "A",
+  "attention_winner_reason": "Lower measured dev WER/CER than B (+1.79 pp vs mixed vs B's +8.92 pp); B is smaller but costs 7.13 pp more WER than A.",
+  "promotion": false,
+  "promotion_reason": "Neither candidate beats the mixed FFN pilot's 8.996% dev WER; A costs +1.79 pp for 8.95% size reduction, B +8.92 pp for 26.85%.",
+  "full_run": false,
+  "test_evaluation": false,
+  "failed_attempts": [
+    {
+      "job": "12918",
+      "strategy": "A",
+      "outcome": "config path configs/configs; no training"
+    },
+    {
+      "job": "12919",
+      "strategy": "A (B env not passed)",
+      "outcome": "same path failure; no training"
+    }
+  ],
+  "notes": [
+    "Artifact sizes are measured packed safetensors, not estimates.",
+    "Mixed artifact and reload verification are historical; mixed GPU/peak/duration were not recorded.",
+    "RTF is from each evaluation pass and is not a warmed-up benchmark; mixed and attention runs used different GPUs, so RTF is descriptive only.",
+    "No test-clean was used for selection or tuning.",
+    "The 17 FFN exclusions are unchanged in both configs."
+  ]
+}

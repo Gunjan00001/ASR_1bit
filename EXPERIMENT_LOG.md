@@ -1122,6 +1122,49 @@ trade-off; do not tune test.
 
 ---
 
+## E32 — Both attention mixed-precision pilots (A/B), no promotion
+
+**Question:** does quantizing attention on top of the established mixed FFN
+policy improve the accuracy/compression trade-off at the comparable pilot
+budget?
+
+**What:** ran Strategy A (`attention_output` quantized) and Strategy B
+(72 attention projections quantized; 24 sensitive attention layers FP32) with
+the fixed 17 FFN exclusions, 2,000 `train.100` utterances, 500 steps, seed 42,
+dev-128, fp16, A100-SXM4-80GB, best-dev checkpoint, packed artifact, and
+packed reload verification. Test-clean was never used.
+
+The first submission (jobs 12918/12919) failed before training for two
+deterministic job-script reasons: the effective config's `extends` resolved to
+`configs/configs/...`, and `qsub` did not pass `CONFIG`/`POLICY_ID`, so both
+jobs ran A. No training occurred. After fixing both and adding regression
+tests, jobs **12920 (A)** and **12921 (B)** completed successfully.
+
+| Arm | WER | CER | Artifact bytes | ΔWER vs mixed | Size vs mixed | Best step | Train runtime | Peak GPU alloc | Reload |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| Mixed FFN (historical) | 0.0900 | 0.0284 | 1,089,643,604 | — | — | 500 | N/A | N/A | pass 0.0/1.0 |
+| A | 0.1079 | 0.0330 | 992,129,260 | +1.79 pp | −8.95% | 500 | 1,111.8 s | 30.85 GB | pass 0.0/1.0 |
+| B | 0.1792 | 0.0617 | 797,100,884 | +8.92 pp | −26.85% | 500 | 839.4 s | 31.04 GB | pass 0.0/1.0 |
+
+**Did it work? Both pilots ran; neither is promotable.** A is the better
+attention strategy (B costs 7.13 pp more WER for 19.7% less size), but A still
+costs +1.79 pp WER for only 8.95% size reduction versus mixed FFN. B costs
++8.92 pp for 26.85%. The mixed FFN model remains the best measured
+accuracy/compression point. Per the established promotion rule, neither
+candidate advances to the full 10k/1,875 run, and no test-256/test-clean
+evaluation was performed.
+
+**Artifacts:** `results/attention_mixed_strategy_{A,B}_pilot.json`,
+`..._size_report.json`, `packed_verify_attention_mixed_strategy_{A,B}_pilot.json`;
+comparison: `results/attention_pilots_comparison.json`. Failed logs:
+`qat_attn_mixed_pilot.o12918`, `o12919`. **131 tests pass.**
+
+**Next:** do not spend a full run on this 1-bit attention/FFN interaction.
+Test a different quantization method (2-bit attention/FFN, or a properly
+normalized KD loss), using the same pilot gate and fixed FFN list.
+
+---
+
 ## How to add a new log entry
 
 When you run a new experiment, append:

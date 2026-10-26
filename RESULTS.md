@@ -200,7 +200,24 @@ Mixed minus control dev WER: **-0.1404**. The two arms used the same 2,000 train
 - `packed_verify_ffn_mixed_pilot.json`: passed=True, max |Δ logit|=0.0, argmax=1.0, decoded=2/2
 
 
-## 8. Honest reading
+## 8. Attention mixed-precision pilots (A100, dev-128)
+
+Both arms inherit the validated mixed FFN config, the fixed 17 FFN exclusions,
+2,000 `train.100` utterances, 500 steps, seed 42, batch 4 × accum 4, fp16, and
+best-dev-128 selection. Packed reloads were verified with n=2.
+
+| Arm | Dev-128 WER | Dev-128 CER | Artifact bytes | ΔWER vs mixed | Size vs mixed | GPU | Peak alloc | Train runtime | Eval RTF | Reload |
+|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---|
+| Mixed FFN (historical) | 0.0900 | 0.0284 | 1,089,643,604 | — | — | N/A | N/A | N/A | 0.00345 | pass (0.0 / 1.0) |
+| A: attention-output | 0.1079 | 0.0330 | 992,129,260 | +1.79 pp | −8.95% | A100-SXM4-80GB | 30,848,374,272 B | 1,111.8 s | 0.00490 | pass (0.0 / 1.0) |
+| B: sensitive-24 | 0.1792 | 0.0617 | 797,100,884 | +8.92 pp | −26.85% | A100-SXM4-80GB | 31,039,595,008 B | 839.4 s | 0.00435 | pass (0.0 / 1.0) |
+
+A is the better attention strategy, but **neither is promoted**: both lose
+accuracy versus the mixed FFN reference. B is 19.7% smaller than A but costs
+7.13 pp more WER. No full run or test-clean evaluation was performed. The
+comparison JSON is `results/attention_pilots_comparison.json`.
+
+## 9. Honest reading
 
 - Accuracy numbers are greedy CTC on fixed LibriSpeech subsets; they are not
   comparable to LM-assisted leaderboard numbers.

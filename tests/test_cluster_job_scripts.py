@@ -41,3 +41,13 @@ def test_attention_pilot_pbs_packs_and_verifies_artifact():
     assert "results/packed_verify_${POLICY_ID}_pilot.json" in text
     assert "attention_v1_cpu16_category.yaml" in text
     assert "attention_v1_cpu16_sensitive24.yaml" not in text  # selected at submit time
+
+
+def test_attention_pilot_resolves_relative_extends_and_watcher_passes_env():
+    pbs = (ROOT / "cluster" / "qat_attention_mixed_pilot.pbs").read_text()
+    watcher = (ROOT / "scripts" / "wait_for_attention_pilots.sh").read_text()
+    # Effective config lives in configs/; do not produce configs/configs/...
+    assert 'configs/*) EXTENDS="${CONFIG#configs/}"' in pbs
+    assert "extends: ${EXTENDS}" in pbs
+    # qsub does not inherit shell variables by default.
+    assert 'qsub -v "CONFIG=$cfg,POLICY_ID=$id"' in watcher

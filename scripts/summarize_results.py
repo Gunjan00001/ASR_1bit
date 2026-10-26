@@ -23,6 +23,8 @@ TRAINING_ARMS = [
     ("qat_attn_repro.json", "QAT attention-only reproduction (Kaggle T4)", "cloud-gpu"),
     ("qat_attn_a100.json", "QAT attention-only (A100 re-run)", "cloud-gpu"),
     ("qat_ffn_a100.json", "QAT FFN-only (A100)", "cloud-gpu"),
+    ("qat_ffn_control_pilot.json", "Pilot: FFN-only per-tensor control (A100, dev-128)", "cloud-gpu"),
+    ("qat_ffn_mixed_pilot.json", "Pilot: mixed-precision FFN (A100, dev-128)", "cloud-gpu"),
     ("qat_ffn_control_devsel.json", "QAT FFN-only, dev-selected control", "cloud-gpu"),
     ("qat_ffn_per_channel.json", "QAT FFN-only, per-output-channel scales", "cloud-gpu"),
     ("qat_attn_ffn.json", "QAT attention+FFN (A100)", "cloud-gpu"),
@@ -84,6 +86,8 @@ def size_table() -> str:
         ("qat_attn_repro_size_report.json", "QAT attention-only repro"),
         ("qat_attn_a100_size_report.json", "QAT attention-only (A100)"),
         ("qat_ffn_a100_size_report.json", "QAT FFN-only (A100)"),
+        ("qat_ffn_control_pilot_size_report.json", "Pilot: FFN-only per-tensor control"),
+        ("qat_ffn_mixed_pilot_size_report.json", "Pilot: mixed-precision FFN"),
         ("qat_ffn_control_devsel_size_report.json", "QAT FFN-only, dev-selected control"),
         ("qat_ffn_per_channel_size_report.json", "QAT FFN-only, per-output-channel scales"),
         ("qat_attn_ffn_size_report.json", "QAT attention+FFN (A100)"),
@@ -243,6 +247,52 @@ def screening_section() -> str:
                     f"- `{filename}`: passed={v.get('passed')}, "
                     f"max |Δ logit|={v.get('max_abs_logit_diff')}, "
                     f"argmax={v.get('mean_argmax_agreement')}"
+                )
+
+    control = load("qat_ffn_control_pilot.json")
+    mixed_pilot = load("qat_ffn_mixed_pilot.json")
+    if control and mixed_pilot:
+        lines.append("\n### Controlled mixed-precision pilot (dev-128, 2,000 utts, 500 steps)\n")
+        lines.append(
+            "| Arm | WER | CER | Best step | Final step | Restored best | Artifact (measured) |"
+        )
+        lines.append("|---|---:|---:|---:|---:|---|---:|")
+        for label, d, size_file in (
+            ("FFN-only control (96 BitLinear)", control,
+             "qat_ffn_control_pilot_size_report.json"),
+            ("Mixed FFN (79 BitLinear + 17 FP32)", mixed_pilot,
+             "qat_ffn_mixed_pilot_size_report.json"),
+        ):
+            size = load(size_file)
+            t = d.get("training", {})
+            artifact = size.get("packed_artifact_bytes_measured")
+            lines.append(
+                f"| {label} | {d.get('eval', {}).get('wer'):.4f} | "
+                f"{d.get('eval', {}).get('cer'):.4f} | {t.get('best_step')} | "
+                f"{t.get('steps_completed')} | {t.get('restored_best')} | "
+                f"{artifact:,} B |" if artifact is not None else
+                f"| {label} | {d.get('eval', {}).get('wer'):.4f} | "
+                f"{d.get('eval', {}).get('cer'):.4f} | {t.get('best_step')} | "
+                f"{t.get('steps_completed')} | {t.get('restored_best')} | not measured |"
+            )
+        delta = mixed_pilot.get("eval", {}).get("wer", 0) - control.get("eval", {}).get("wer", 0)
+        lines.append(
+            f"\nMixed minus control dev WER: **{delta:+.4f}**. The two arms used the "
+            "same 2,000 training IDs, 128 eval IDs, seed, budget, batch size, and LR. "
+            "This is a **dev-128 pilot**, not a full-test result; the full 10k/1,875-step "
+            "run is the next controlled step. Artifact reload checks:"
+        )
+        for filename in (
+            "packed_verify_ffn_control_pilot.json",
+            "packed_verify_ffn_mixed_pilot.json",
+        ):
+            v = load(filename)
+            if v:
+                lines.append(
+                    f"- `{filename}`: passed={v.get('passed')}, "
+                    f"max |Δ logit|={v.get('max_abs_logit_diff')}, "
+                    f"argmax={v.get('mean_argmax_agreement')}, "
+                    f"decoded={v.get('decoded_match_count')}/{v.get('n_utterances')}"
                 )
     return "\n".join(lines) + "\n"
 

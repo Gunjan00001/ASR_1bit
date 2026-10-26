@@ -21,6 +21,8 @@ separately, and each JSON records its own dependency versions.
 | QAT attention-only reproduction (Kaggle T4) | cloud-gpu | 0.0408 | 0.0124 | 0.0121 | 1875 | 346.7 | 96 | `results/qat_attn_repro.json` |
 | QAT attention-only (A100 re-run) | cloud-gpu | 0.0421 | 0.0128 | 0.0285 | 1875 | 97.2 | 96 | `results/qat_attn_a100.json` |
 | QAT FFN-only (A100) | cloud-gpu | 0.1186 | 0.0337 | 0.0293 | 1875 | 165.4 | 96 | `results/qat_ffn_a100.json` |
+| Pilot: FFN-only per-tensor control (A100, dev-128) | cloud-gpu | 0.2303 | 0.0684 | 0.0036 | 500 | 342.2 | 96 | `results/qat_ffn_control_pilot.json` |
+| Pilot: mixed-precision FFN (A100, dev-128) | cloud-gpu | 0.0900 | 0.0284 | 0.0035 | 500 | 183.9 | 79 | `results/qat_ffn_mixed_pilot.json` |
 | QAT FFN-only, dev-selected control | cloud-gpu | — | — | — | — | — | — | not measured |
 | QAT FFN-only, per-output-channel scales | cloud-gpu | — | — | — | — | — | — | not measured |
 | QAT attention+FFN (A100) | cloud-gpu | 0.2082 | 0.0641 | 0.0297 | 1875 | 298.6 | 192 | `results/qat_attn_ffn.json` |
@@ -37,6 +39,8 @@ separately, and each JSON records its own dependency versions.
 | QAT attention-only repro | per_tensor_mean_abs | 96 | 100663296 | 12.6 | 1970.9 | 402.7 | 1983.6 |
 | QAT attention-only (A100) | per_tensor_mean_abs | 96 | 100663296 | 12.6 | 1970.9 | 402.7 | 1983.6 |
 | QAT FFN-only (A100) | per_tensor_mean_abs | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
+| Pilot: FFN-only per-tensor control | per_tensor_mean_abs | 96 | 402653184 | 50.3 | 762.9 | 1610.6 | 813.3 |
+| Pilot: mixed-precision FFN | per_tensor_mean_abs | 79 | 331350016 | 41.4 | 1048.1 | 1325.4 | 1089.6 |
 | QAT FFN-only, dev-selected control | — | — | — | — | — | — | not measured |
 | QAT FFN-only, per-output-channel scales | — | — | — | — | — | — | not measured |
 | QAT attention+FFN (A100) | per_tensor_mean_abs | 192 | 503316480 | 62.9 | 360.2 | 2013.3 | 423.3 |
@@ -162,6 +166,17 @@ The 10% gate failed, so no per-channel QAT run was launched. This is a negative 
 - per-channel config: 96 BitLinear; smoke WER 0.9803 (8 steps — pipeline check, not accuracy)
 - `packed_verify_ffn_pc_smoke.json`: passed=True, max |Δ logit|=0.0, argmax=1.0
 - `packed_verify_ffn_mixed_smoke.json`: passed=True, max |Δ logit|=0.0, argmax=1.0
+
+### Controlled mixed-precision pilot (dev-128, 2,000 utts, 500 steps)
+
+| Arm | WER | CER | Best step | Final step | Restored best | Artifact (measured) |
+|---|---:|---:|---:|---:|---|---:|
+| FFN-only control (96 BitLinear) | 0.2303 | 0.0684 | 500 | 500 | True | 813,346,080 B |
+| Mixed FFN (79 BitLinear + 17 FP32) | 0.0900 | 0.0284 | 500 | 500 | True | 1,089,643,604 B |
+
+Mixed minus control dev WER: **-0.1404**. The two arms used the same 2,000 training IDs, 128 eval IDs, seed, budget, batch size, and LR. This is a **dev-128 pilot**, not a full-test result; the full 10k/1,875-step run is the next controlled step. Artifact reload checks:
+- `packed_verify_ffn_control_pilot.json`: passed=True, max |Δ logit|=0.0, argmax=1.0, decoded=2/2
+- `packed_verify_ffn_mixed_pilot.json`: passed=True, max |Δ logit|=0.0, argmax=1.0, decoded=2/2
 
 
 ## 8. Honest reading

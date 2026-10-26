@@ -8,11 +8,13 @@ an exact, reproducible repository state.
 
 ---
 
-## Unreleased — v1.6.0 mixed-precision research checkpoint (pilot pending)
+## Unreleased — v1.6.0 mixed-precision research checkpoint (pilot complete; full run pending)
 
-**Scope:** implementation, screening, and validation only. **No new WER is
-claimed**; all accuracy numbers remain the v1.5.0 measurements. The GPU pilot
-was blocked by the shared cluster being fully allocated and is not run.
+**Scope:** implementation, screening, validation, and the controlled pilot.
+**No new full-test WER is claimed**; all full-test accuracy numbers remain the
+v1.5.0 measurements. The pilot's dev-128 result is recorded separately. The
+first pilot attempt was blocked by node allocation; the 2026-10-26 rerun
+completed.
 
 ### Added
 - `per_output_channel_mean_abs` scaling (`alpha_i = mean_j |W[i,j]|`), with
@@ -35,7 +37,7 @@ was blocked by the shared cluster being fully allocated and is not run.
 - `cluster/screen_ffn_sensitivity.pbs`, `cluster/qat_ffn_pilot.pbs`.
 - 19 new tests; **107 total**, all passing.
 
-### Screened / measured (no WER claim)
+### Screened / measured
 - Per-channel reconstruction gate: FFN-only QAT masters 0.6458→0.6306 (**2.28%**),
   FP32 0.6508→0.6343 (**2.43%**), gate 10% → **FAIL**. No per-channel QAT run.
 - FFN layer screen (32 dev utts, FP32 ref WER 0.0287): `ffn_in` mean ΔWER
@@ -43,13 +45,22 @@ was blocked by the shared cluster being fully allocated and is not run.
   19, 11, 8, …), selected from measurements rather than position.
 - Mixed-precision smoke: 79/79 BitLinear gradients, 17 excluded FP32 layers,
   save/load verified, artifact reload **max |Δ logit| 0.0, argmax 1.0**.
-- Mixed artifact: 79 BitLinear layers + 17 FP32 FFN layers, expected ~1.10 GB;
-  effective ~1.00 bit/quantized weight, ~14.7 bits/model parameter.
+- Mixed artifact: 79 BitLinear layers + 17 FP32 FFN layers; effective
+  ~1.00 bit/quantized weight, ~14.7 bits/model parameter.
+- **Controlled pilot (job 12772, 2026-10-26; 2k/500 steps; dev-128; same seed,
+  train/eval IDs, batch, and LR):** FFN-only control **0.2303 WER / 0.8133 GB**;
+  mixed FFN **0.0900 WER / 1.0896 GB**; mixed minus control **−14.04 pp**.
+  Both checkpoints save/load and both packed artifacts reload with **max
+  |Δ logit| 0, argmax 1.0, decoded 2/2**. This is a pilot, not a full-test
+  result.
 
-### Blocked
-- The controlled pilot (control vs mixed, 2k/500 steps) was queued and canceled
-  because the GPU node had all 96 CPUs assigned and no free GPU slot. Command to
-  run when a slot frees: `qsub cluster/qat_ffn_pilot.pbs`. No mixed WER exists.
+### Blocked then resolved
+- The 2026-10-25 pilot attempt was queued and canceled because the GPU node had
+  all 96 CPUs assigned and no free slot. The 2026-10-26 rerun (job `12772`)
+  completed on a free A100. Outputs: `results/qat_ffn_{control,mixed}_pilot.json`,
+  `results/qat_ffn_{control,mixed}_pilot_size_report.json`, and
+  `results/packed_verify_ffn_{control,mixed}_pilot.json`. No full-test mixed WER
+  exists yet.
 
 ---
 

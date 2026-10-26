@@ -61,9 +61,12 @@ which later becomes busy.
 
 > **Node allocation:** `jiit-gpu01` has 96 CPUs and 8 A100s, but PBS assigns
 > whole CPUs and GPU slots. When `resources_assigned.ncpus = 96`, new jobs stay
-> queued even if `nvidia-smi` shows free GPU memory. The mixed-precision pilot
-> was queued and canceled for this reason; rerun `qat_ffn_pilot.pbs` when a slot
-> frees.
+> queued even if `nvidia-smi` shows free GPU memory. The 2026-10-25 pilot attempt
+> was queued/canceled for this reason; the 2026-10-26 rerun (job `12772`)
+> completed on a free A100. Outputs:
+> `results/qat_ffn_control_pilot.json`, `results/qat_ffn_mixed_pilot.json`,
+> their size reports, and `results/packed_verify_ffn_{control,mixed}_pilot.json`.
+> No full 10k run has been started.
 
 Each job writes a live log under `logs/` on the shared home filesystem (PBS
 buffers its own `-o` output, so `tee` is used instead), runs `pack_qat_model.py`

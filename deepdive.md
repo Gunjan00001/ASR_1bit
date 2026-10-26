@@ -527,16 +527,21 @@ is ~1.10 GB — still well under the attention-only 1.983 GB. The implementation
 was validated on CPU: 79/79 quantized layers get gradients, the 17 FP layers stay
 FP, save/load works, and the packed artifact reloads with max |Δ logit| 0.
 
-**No mixed WER is claimed.** The controlled GPU pilot was blocked by the shared
-cluster being fully allocated. When a slot frees, run:
+**The controlled pilot ran (2026-10-26).** At the same 2,000 training
+utterances, 500 steps, seed 42, and 128 dev utterances:
 
-```bash
-qsub cluster/qat_ffn_pilot.pbs
-```
+| Arm | Dev-128 WER | CER | Best step | Artifact |
+|---|---:|---:|---:|---:|
+| FFN-only per-tensor control | 0.2303 | 0.0684 | 500 | 0.8133 GB |
+| Mixed FFN (79 1-bit + 17 FP32) | **0.0900** | 0.0284 | 500 | 1.0896 GB |
 
-It runs the per-tensor FFN control and the mixed arm with the same 2k/500-step
-pilot, dev-only selection, and best-state restore. Only if the mixed dev WER is
-not worse should it be promoted to the 10k/1,875-step full run.
+Mixed minus control: **−14.04 pp**. The mixed artifact is 2.18× smaller than
+FP32 but 0.276 GB larger than the control; this is a trade-off, not a strict
+dominance. Both checkpoints reload and both packed artifacts reproduce logits
+exactly. **This is a clear pilot signal, not a full-test claim.** The next
+controlled step is the full 10k/1,875-step run with both arms and 256-dev
+selection; the pilot script (`cluster/qat_ffn_pilot.pbs`) is not the full run.
+Do not tune the 17-layer exclusion list after seeing the pilot.
 
 ---
 

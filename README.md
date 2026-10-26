@@ -14,15 +14,16 @@ sizes. The full measured comparison is in [`RESULTS.md`](RESULTS.md). No number
 here is estimated; failed and negative results are kept, and the full research
 history is in [`planning.md`](planning.md).
 
-> **v1.6 research checkpoint (in progress, no new WER claimed).**
-> Per-output-channel scaling was implemented and screened: it reduced FFN
-> reconstruction error by only **2.3–2.4%**, below the pre-registered 10% gate,
-> so no per-channel QAT was run. A one-layer **FFN sensitivity screen** identified
-> 17 sensitive layers (`ffn_in` is ~1.9× more sensitive than `ffn_out`); a
-> **mixed-precision FFN config** (79 1-bit + 17 FP32 layers) is implemented and
-> validated (107 tests, CPU smoke, artifact reload exact), but its GPU pilot was
-> blocked by the shared cluster being fully allocated. See
-> `EXPERIMENT_LOG.md` E24–E26 and `RESULTS.md` §7.
+> **v1.6 research checkpoint (pilot measured; no new full-test WER).**
+> Per-output-channel scaling was screened out (2.3–2.4% reconstruction gain,
+> 10% gate). A one-layer **FFN sensitivity screen** selected 17 sensitive layers
+> (`ffn_in` is ~1.9× more sensitive than `ffn_out`). The controlled pilot then
+> measured, at identical 2,000-train/500-step budget, seed 42, and 128 dev
+> utterances: FFN-only control **0.2303 WER / 0.8133 GB** vs mixed FFN
+> **0.0900 WER / 1.0896 GB** (FP32 2.374 GB). Both artifacts reload with max
+> |Δ logit| 0. This is a **pilot**, not a full-test result; the full
+> 10k/1,875-step run is the next controlled step. See `EXPERIMENT_LOG.md`
+> E24–E27 and `RESULTS.md` §7.
 
 > This README is written for an engineer joining at this checkpoint. It states
 > what exists, what was measured, and — just as importantly — what has **not**
@@ -138,7 +139,7 @@ A true streaming encoder would need cached convolution/attention state.*
 | QAT attention-only: 4.49% full test | Distillation λ_kd=0.1: 19.98% — ~0.5 pp gain | Distillation λ_kd=0.5: 22.18% (worse than QAT) |
 | QAT FFN-only: 11.34% at 2.9× | Packed inference: storage win, 1.10× slower | Any inference speedup from binarization |
 | Bit packing + honest size accounting | Chunked streaming: partial transcripts, poor WER | 5.6× compression at near-FP32 accuracy on this recipe |
-| FFN layer-sensitivity screen: specific layers, `ffn_in` 1.9× `ffn_out` | Mixed-precision FFN: implementation validated; GPU pilot blocked | Per-output-channel scaling: 2.3–2.4% reconstruction gain (gate 10%) |
+| FFN layer-sensitivity screen: specific layers, `ffn_in` 1.9× `ffn_out` | Mixed-precision FFN pilot: 0.0900 vs control 0.2303 (dev-128), 1.09 vs 0.813 GB; full run pending | Per-output-channel scaling: 2.3–2.4% reconstruction gain (gate 10%) |
 
 **The central scientific finding:** QAT recovers every *isolated* binarization,
 but the *combined* attention+FFN arm is worse than either isolated arm. The two
@@ -190,7 +191,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 19 | Streaming ASR | ✅ prototype measured (chunked WER/RTF) |
 | R1 | Research: per-output-channel scaling | ⛔ screened out: 2.3–2.4% reconstruction gain vs 10% gate |
 | R2 | Research: FFN per-layer sensitivity | ✅ measured: 96 layers, 32 dev; `ffn_in` 1.9× `ffn_out` |
-| R3 | Research: mixed-precision FFN | 🔧 implemented + CPU/artifact validated; GPU pilot blocked |
+| R3 | Research: mixed-precision FFN | ✅ pilot measured: mixed 0.0900 vs control 0.2303 dev-128; full run pending |
 
 > **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes
@@ -363,6 +364,18 @@ here, not the solution to the FFN/attention interaction.
 latency/RTF (≈0.006–0.007 end-to-end; difference <10%). The 1-bit runtime
 expands `alpha·sign(W)` to FP before `F.linear`, so binarization buys **disk
 size**, not wall-clock speed. See §25 and `RESULTS.md` §5.
+
+### v1.6 controlled pilot (dev-128, 2,000 utterances, 500 steps)
+
+| Arm | WER | CER | Best step | Artifact |
+|---|---:|---:|---:|---:|
+| FFN-only per-tensor control (96 BitLinear) | **0.2303** | 0.0684 | 500 | **0.8133 GB** |
+| Mixed FFN (79 BitLinear + 17 FP32) | **0.0900** | 0.0284 | 500 | **1.0896 GB** |
+
+Mixed minus control: **−14.04 pp** at the same 2,000 training IDs, 128 eval IDs,
+seed, batch, and LR. Both artifacts reload with max |Δ logit| 0. This is a
+**pilot**, not the 256-dev/full-test protocol; the full 10k/1,875-step run is
+the next controlled step.
 
 ## 9. Phase 4 — BitLinear design
 
@@ -650,9 +663,9 @@ parameters and removing FP master weights from deployment state are future work.
 - **No true streaming encoder** — `streaming.py` is chunked pseudo-streaming
   (full encoder per overlapping window). Its chunked WER is much worse than the
   full-utterance WER on the demo (Phase 19).
-- **No 2-bit / INT8 arm.** Mixed precision (FP32/1-bit per layer) and
-  per-output-channel scaling are implemented; 2-bit, INT8, and learned alpha are
-  not. The per-channel screen was below the 10% gate, so that arm was not trained.
+- **No 2-bit / INT8 arm.** Mixed precision (FP32/1-bit per layer) is implemented
+  and piloted; per-output-channel scaling is implemented but screened out;
+  2-bit, INT8, and learned alpha are not. The mixed full run is pending.
 - **Distillation is a marginal tuning knob**: λ_kd=0.5 made the combined arm
   worse (0.2232); λ_kd=0.1 improves it to **0.2022 dev / 0.1998 full test**, a
   small gain over QAT alone (0.2080 / 0.2050).
@@ -933,10 +946,13 @@ pinned dependencies, recorded provenance in every results JSON.
 
 The attention+FFN QAT run is done. The open questions and next experiments are:
 
-0. **Run the mixed-precision FFN pilot/full** (`cluster/qat_ffn_pilot.pbs`). The
-   17 sensitive layers are selected from `results/layer_sensitivity_ffn.json`;
-   the control and mixed arms use the same 2k/500-step pilot, then 10k/1875 full
-   budget, dev-only selection. Promote only if the mixed dev WER ≤ control.
+0. **Run the full mixed-precision FFN controlled run.** The pilot is done:
+   mixed **0.0900** vs control **0.2303** dev-128 at 500 steps/2k; artifacts
+   **1.0896 GB** vs **0.8133 GB** (FP32 2.374 GB). The full protocol is 10,000
+   `train.100` utterances, 1,875 steps, both arms, 256-dev selection; only after
+   that run test-256/full test. Do not tune the 17-layer exclusion list after
+   seeing the pilot. The pilot script is not the full run; use the same base
+   configs with the full training block.
 1. **Improve the attention+FFN recipe** — longer training, LR/early-stop sweep,
    and KD tuning (mean-normalized KL) after the mixed pilot.
 2. **True binary compute** — integrate an XNOR+popcount kernel with 1-bit
@@ -985,7 +1001,8 @@ future research or unavailable infrastructure.
   implemented; the chunked prototype is measured and documented as such.
 - **2-bit / INT8**, LM decoding, learned scaling — optional or out of the pinned
   protocol. Per-output-channel scaling is implemented but was screened out; mixed
-  precision (FP32/1-bit per layer) is implemented but the pilot is pending.
+  precision (FP32/1-bit per layer) is implemented and piloted; its full run is
+  pending.
 - **Kaggle T4 clean re-run** — the Kaggle CLI/credentials are unavailable in
   this environment, and the weekly quota was exhausted historically. The A100
   re-run reproduces the attention-only result and the packing pipeline, so this
@@ -1008,9 +1025,11 @@ T4 attention-only run at **0.0392** (256 dev); the A100 full-test result is
 
 > **v1.6 research extension (not a completed phase):** per-output-channel
 > scaling was screened out (2.3–2.4% reconstruction gain, gate 10%); the FFN
-> layer-sensitivity screen was measured; mixed precision (FP32/1-bit per layer)
-> is implemented and validated, but its GPU pilot is pending. **No mixed WER is
-> claimed**, and the final WER table above is unchanged.
+> layer-sensitivity screen was measured; the controlled mixed-precision pilot
+> measured **0.0900 vs 0.2303** dev-128 WER (mixed vs control) with artifacts
+> **1.0896 vs 0.8133 GB**; both artifacts reload exactly. This is a pilot, not a
+> full-test result. **The final WER table above is unchanged**; the full
+> 10k/1,875-step run is the next controlled step.
 
 ## Layout
 

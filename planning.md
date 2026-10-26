@@ -525,5 +525,26 @@ investigated/prototyped to the plan's optional scope) are complete.
 1.983 GB); FFN-only 0.1134 (0.813 GB); attention+FFN 0.2050 (0.423 GB);
 attention+FFN + KD λ_kd=0.1 **0.1998** (0.423 GB).
 
+### 10.11 v1.6 mixed-precision pilot (measured 2026-10-26)
+
+The per-output-channel screen failed its 10% gate (2.3–2.4%), so no per-channel
+QAT was run. The one-layer FFN sensitivity screen then selected 17 sensitive
+layers (union of top 12 by relative L2 and top 8 by WER delta; 14 `ffn_in`,
+3 `ffn_out`). The controlled pilot (`cluster/qat_ffn_pilot.pbs`, job `12772`)
+compared per-tensor FFN-only QAT against the mixed policy:
+
+| Arm | Dev-128 WER | CER | Best/final step | Artifact |
+|---|---:|---:|---:|---:|
+| FFN-only control (96 BitLinear) | 0.2303 | 0.0684 | 500 / 500 | 813,346,080 B |
+| Mixed FFN (79 BitLinear + 17 FP32) | **0.0900** | 0.0284 | 500 / 500 | 1,089,643,604 B |
+
+Both arms used the same 2,000 training IDs, 128 eval IDs, seed 42, batch 4 ×
+accum 4, lr 2e-5, and 500 steps. Mixed minus control: **−14.04 pp**. Both
+checkpoints restored the best state (which was step 500), and both packed
+artifacts reload with max |Δ logit| 0. This is a **dev-128 pilot**, not a
+full-test result. The full 10k/1,875-step run with 256-dev selection is the next
+controlled step; it has not been started. Do not tune the 17-layer list after
+seeing the pilot.
+
 
 

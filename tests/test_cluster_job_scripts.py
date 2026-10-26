@@ -28,3 +28,16 @@ def test_full_pbs_uses_unique_full_outputs_and_full_protocol():
     assert "save_strategy: \"steps\"" in text
     assert "save_steps: 250" in text
     assert "qat_ffn_mixed.yaml" in text
+
+
+def test_attention_pilot_pbs_packs_and_verifies_artifact():
+    text = (ROOT / "cluster" / "qat_attention_mixed_pilot.pbs").read_text()
+    assert "--pilot" in text
+    assert "POLICY_ID" in text
+    assert "pack_qat_model.py" in text
+    assert "verify_packed_artifact.py" in text
+    assert "results/${POLICY_ID}_pilot.json" in text
+    assert "results/${POLICY_ID}_pilot_size_report.json" in text
+    assert "results/packed_verify_${POLICY_ID}_pilot.json" in text
+    assert "attention_v1_cpu16_category.yaml" in text
+    assert "attention_v1_cpu16_sensitive24.yaml" not in text  # selected at submit time

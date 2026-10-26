@@ -69,5 +69,28 @@ $PY scripts/train_qat.py \
     --pilot \
     --output "results/${POLICY_ID}_pilot.json" \
     --checkpoint-dir "checkpoints/${POLICY_ID}_pilot"
-echo "train_qat exit: $?"
+TRAIN_RC=$?
+echo "train_qat exit: $TRAIN_RC"
+
+if [ ! -s "results/${POLICY_ID}_pilot.json" ]; then
+  echo "ABORT: no pilot result JSON; not packing"
+  exit 4
+fi
+
+PACKED="checkpoints/${POLICY_ID}_pilot_packed/model_packed.safetensors"
+SIZE_REPORT="results/${POLICY_ID}_pilot_size_report.json"
+$PY scripts/pack_qat_model.py \
+    --config "$EFFECTIVE" \
+    --checkpoint "checkpoints/${POLICY_ID}_pilot" \
+    --output "$PACKED" \
+    --report "$SIZE_REPORT"
+echo "pack exit: $?"
+
+ONEBIT_AUDIO_DECODER=soundfile $PY scripts/verify_packed_artifact.py \
+    --config "$EFFECTIVE" \
+    --checkpoint "checkpoints/${POLICY_ID}_pilot" \
+    --artifact "$PACKED" \
+    --n 2 \
+    --output "results/packed_verify_${POLICY_ID}_pilot.json"
+echo "verify exit: $?"
 echo "=== finished at $(date -Is) ==="

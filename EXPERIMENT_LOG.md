@@ -934,7 +934,7 @@ real PBS check, not an assumption from a free GPU.
   GPUs, host memory, disk, duplicate jobs, existing outputs).
 - `cluster/qat_ffn_full.pbs` runs both arms sequentially, skips completed arms,
   resumes partial arms, and packs/verifies both artifacts.
-- 13 new tests (callbacks, resume, preflight); **129 total** pass.
+- 13 new tests (callbacks, resume, preflight); **130 total** pass.
 - A CPU smoke of the updated mixed training path was started to validate the
   result/resume plumbing (pipeline check, not accuracy).
 
@@ -1101,11 +1101,14 @@ Configs: `configs/attention_v1_cpu16_category.yaml`,
 `configs/attention_v1_cpu16_sensitive24.yaml`; metadata:
 `results/attention_v1_cpu16_*.json`.
 
-**Pilot:** the job `cluster/qat_attention_mixed_pilot.pbs` is prepared for the
-same 2k/500/seed-42/dev-128 budget as the mixed FFN pilot (primary reference
+**Pilot:** the job `cluster/qat_attention_mixed_pilot.pbs` is prepared (training,
+packing, and packed-artifact reload verification) for the same
+2k/500/seed-42/dev-128 budget as the mixed FFN pilot (primary reference
 0.0900 dev-128, 1.0896 GB). It was **not submitted**: 0 free PBS CPUs (8 GPUs
 free). No attention QAT or WER result exists; the 17 FFN list and v1.6.0
-results are untouched.
+results are untouched. The audit re-checked the GPU queue on the same day:
+0/96 CPUs free, 8 GPUs free; `workq` has no GPUs, so the 1-CPU/1-GPU pilot is
+still blocked. The pilot PBS now also packs and reloads the artifact; 130 tests pass.
 
 **Next action:** when a 1-CPU/1-GPU slot is available, run the conservative
 policy first:

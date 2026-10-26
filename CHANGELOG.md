@@ -11,7 +11,7 @@ an exact, reproducible repository state.
 ## Unreleased — preliminary attention sensitivity screen + policies
 
 - Added `weight_reconstruction_error`, 4 tests, and a 3-test attention-policy
-  config generator; **129 tests** pass.
+  config generator and a pilot pack/reload regression test; **130 tests** pass.
 - Ran a **preliminary CPU screen on 16 fixed dev utterances** (FP32 ref WER
   0.0256); all 96 attention layers measured with WER/CER, logit/KL, argmax, and
   weight reconstruction error. `attention_output` is least sensitive

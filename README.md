@@ -173,7 +173,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | 4 | Toy BitLinear | ✅ done |
 | 5 | Binary quantization + scaling | ✅ done |
 | 6 | Straight-Through Estimator | ✅ done |
-| 7 | Test gate (129 tests) | ✅ green |
+| 7 | Test gate (130 tests) | ✅ green |
 | 8 | Configurable layer replacement | ✅ done |
 | 9 | First 1-bit experiment (PTQ) | ✅ done |
 | 10 | 1-bit PTQ evaluation + size accounting | ✅ done |
@@ -504,7 +504,7 @@ This is an experimental choice, not a permanent rule.
 
 ## 18. Phase 7 test coverage
 
-`pytest tests/ -q` → **129 passed** (tiny synthetic tensors/models only; the
+`pytest tests/ -q` → **130 passed** (tiny synthetic tensors/models only; the
 593M checkpoint is never loaded for unit tests).
 
 - `test_ste.py` — forward = sign; pure pass-through backward; upstream value
@@ -540,7 +540,7 @@ This is an experimental choice, not a permanent rule.
   directories skipped) and a tiny HF Trainer interrupt/restart.
 - `test_cluster_resources.py` (5) — PBS size/node/qstat/nvidia-smi parsing and
   ready/duplicate decisions for the full-run preflight.
-- `test_cluster_job_scripts.py` (2) — static full-PBS CUDA preflight API and
+- `test_cluster_job_scripts.py` (3) — static full-PBS CUDA preflight API and
   full-protocol/output checks.
 - `test_sensitivity.py` (4) — per-tensor/per-channel weight reconstruction
   error, zero weights, binary exactness, and finite/bounded random weights.
@@ -890,7 +890,7 @@ pip install -r requirements.txt
 pip install -e .
 .venv\Scripts\python.exe scripts\check_env.py          # Phase 0 -> PASS
 .\scripts\setup_windows_ffmpeg.ps1                     # Windows audio decoding
-.venv\Scripts\python.exe -m pytest tests/ -q           # 129 passed
+.venv\Scripts\python.exe -m pytest tests/ -q           # 130 passed
 .venv\Scripts\python.exe scripts\inspect_model.py      # Phase 1 (read-only)
 .venv\Scripts\python.exe scripts\infer.py --demo       # Phase 2 smoke test
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8   # protocol intact
@@ -910,7 +910,7 @@ pinned dependencies, recorded provenance in every results JSON.
 
 ```powershell
 .venv\Scripts\python.exe scripts\check_env.py                    # PASS
-.venv\Scripts\python.exe -m pytest tests/ -q                     # 129 passed
+.venv\Scripts\python.exe -m pytest tests/ -q                     # 130 passed
 .venv\Scripts\python.exe scripts\inspect_model.py                # 194 Linears, 593,376,928 params
 .venv\Scripts\python.exe scripts\verify_eval_equivalence.py --n 8 # 0 mismatches
 .venv\Scripts\python.exe scripts\quantize.py                     # WER 1.0000, delta +0.9798
@@ -972,7 +972,7 @@ The attention+FFN QAT run is done. The open questions and next experiments are:
    generated without touching the 17 FFN exclusions:
    `attention_v1_cpu16_category` (quantize `attention_output`; ~0.992 GB) and
    `attention_v1_cpu16_sensitive24` (keep the top-24 rel-L2 attention layers;
-   ~0.797 GB). The comparable 2k/500 pilot job is prepared, but the node has
+   ~0.797 GB). The comparable 2k/500 pilot job is prepared (training + pack + reload verification), but the node has
    **0 free CPUs** (8 GPUs free), so it was not submitted. No attention WER or
    QAT result exists yet.
 2. **2-bit / INT8 or better-calibrated mixed precision** — a separate controlled
@@ -1079,7 +1079,7 @@ one-bit-asr/
 ├── cluster/            pick_gpu.sh + PBS jobs (attention/FFN QAT, attention-only
 │                       A100 arm, distillation, layer screen, mixed pilot,
 │                       hardened full FFN control/mixed job), README.md
-├── tests/              129 tests (STE, binarization, BitLinear, replacement,
+├── tests/              130 tests (STE, binarization, BitLinear, replacement,
 │                       QAT, evaluate, config, distillation, packed, streaming,
 │                       latency, callbacks, resume, cluster preflight,
 │                       mixed-precision exclusions)

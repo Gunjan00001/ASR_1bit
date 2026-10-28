@@ -1205,6 +1205,40 @@ on test.
 
 ---
 
+## E34 — 2-bit full run and final evaluation (promoted)
+
+**Question:** does the 2-bit pilot gain survive the full 10k/1,875-step protocol
+and hold on test-clean?
+
+**What:** job 12932, `configs/qat_ffn_mixed_2bit.yaml` (only `bits: 2` differs
+from the mixed FFN baseline), 10,000 train.100, 3 epochs / 1,875 steps, seed 42,
+256-dev selection, fixed 17 FP32 FFN exclusions, A100-SXM4-80GB. The selected
+best-dev state was restored and packed; job 12935 evaluated test-256 and full
+test-clean once. Test was never used for selection or tuning.
+
+| Split | WER | CER | Artifact bytes |
+|---|---:|---:|---:|
+| Dev-256 (selected step 1500) | **0.0244** | **0.0067** | 1,131,062,436 |
+| Test-256 | **0.0245** | **0.0071** | 1,131,062,436 |
+| Full test-clean (2620) | **0.0258** | **0.0073** | 1,131,062,436 |
+
+**Integrity:** 79 2-bit BitLinear layers + 17 FP32 exclusions; packed payload
+82,837,504 B; **2.0000 effective bits/quantized weight**; packed reload max
+|Δlogit| 0.0, argmax 1.0, 2/2 decoded. Train runtime 2,961.9 s; peak allocated
+32.43 GB (reserved 38.16 GB); test-256 RTF 0.01288, p50 0.088 s.
+
+**Promotion:** PASS. Against the mixed 1-bit FFN (5.46% full test at
+1,089,643,604 B), 2-bit improves full-test WER by **2.88 pp** for +3.8% size.
+Against FP32 (1.93% at 2.374 GB), it is **+0.65 pp WER at 47.6% smaller size**.
+The 2-bit model is the new best compressed point. Packing is storage-only; the
+runtime expands codes to FP weights, so this is not a compute acceleration.
+
+**Next:** test 2-bit attention on top of this 2-bit FFN (fixed 17 exclusions),
+using the same pilot gate, to target <1.0 GB without sacrificing the new
+accuracy level.
+
+---
+
 ## How to add a new log entry
 
 When you run a new experiment, append:

@@ -4,7 +4,7 @@ Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
 
-**Current checkpoint:** `v1.6.0` — mixed-precision FFN full comparison (still the deployment point). The attention pilots are complete in `results/attention_pilots_comparison.json`; neither was promoted. On
+**Current best compressed model:** genuine 2-bit FFN full run — **2.58% full test-clean WER**, **1,131,062,436 B**, 79 2-bit + 17 FP32 exclusions. It supersedes the mixed 1-bit FFN (5.46%, 1.0896 GB) and is within +0.65 pp of FP32 at 47.6% smaller size. The `v1.6.0` tag still marks the historical mixed-FFN release. On
 **full LibriSpeech test-clean (2620 utterances)**: FP32 **0.0193** at 2.374 GB;
 attention-only 1-bit QAT **0.0449** at 1.983 GB; **mixed-precision FFN
 (79 one-bit + 17 fixed FP32 layers) 0.0546 at 1.090 GB**; full FFN-only control
@@ -193,7 +193,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | R2 | Research: FFN per-layer sensitivity | ✅ measured: 96 layers, 32 dev; `ffn_in` 1.9× `ffn_out` |
 | R3 | Research: mixed-precision FFN | ✅ **full measured**: mixed 0.0527 dev / 0.0546 full test at 1.090 GB; control 0.1163 / 0.1132 at 0.813 GB |
 | R4 | Research: attention mixed precision | ✅ both pilots measured: A 10.79% / 0.992 GB, B 17.92% / 0.797 GB; neither promoted over mixed FFN 9.00% / 1.090 GB |
-| R5 | Research: genuine 2-bit FFN | ✅ pilot 2.99% dev-128 / 0.93% CER at 1.131 GB; gate passed; full run prepared and waiting for a CPU slot |
+| R5 | Research: genuine 2-bit FFN | ✅ **promoted**: 2.45% test-256, 2.58% full test-clean, 1.131 GB; 2.0000 effective bits/quantized weight |
 
 > **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes

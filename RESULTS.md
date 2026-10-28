@@ -222,18 +222,31 @@ comparison JSON is `results/attention_pilots_comparison.json`.
 Controlled pilot: the mixed-FFN config with only `quantization.bits: 2`
 changed. Four signed levels `{-1.5,-0.5,+0.5,+1.5}*alpha`, four codes/byte,
 fixed 17 FFN exclusions, 2,000 train.100 utterances, 500 steps, seed 42,
-dev-128, best-dev step 500. **Pilot only — not a full-test result.**
+dev-128, best-dev step 500. Pilot and full results are reported separately below.
 
 | Arm | Dev-128 WER | Dev-128 CER | Artifact bytes | ΔWER vs mixed | Size vs mixed | Quantized layers | Excluded | Reload |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | Mixed FFN 1-bit (historical) | 0.0900 | 0.0284 | 1,089,643,604 | — | — | 79 | 17 | pass 0.0/1.0 |
 | 2-bit FFN pilot | **0.0299** | **0.0093** | **1,131,062,436** | **−6.01 pp** | +3.80% | 79 | 17 | pass 0.0/1.0 |
 
-The 2-bit artifact pays **+41.4 MB** for a **6.0 pp** dev accuracy gain; effective
+### Full controlled run and final evaluation (measured)
+
+| Split | WER | CER | Artifact bytes | Best step |
+|---|---:|---:|---:|---:|
+| Dev-256 | **0.0244** | **0.0067** | 1,131,062,436 | 1500 |
+| Test-256 | **0.0245** | **0.0071** | 1,131,062,436 | 1500 |
+| Full test-clean (2620) | **0.0258** | **0.0073** | 1,131,062,436 | 1500 |
+
+The full run used 10,000 train.100 utterances, 1,875 steps, seed 42, 256-dev
+selection, fixed 17 FFN exclusions, and 79 2-bit FFN layers. GPU: A100-SXM4-80GB;
+train runtime 2,961.9 s; peak allocated 32.43 GB (reserved 38.16 GB); test-256
+RTF 0.01288, p50 0.088 s; packed reload max |Δlogit| 0.0, argmax 1.0. Effective
 storage is **2.0000 bits/quantized weight** (15.2492 bits/total parameter,
-measured). GPU: A100-SXM4-80GB; peak allocation 30.81 GB; train runtime 1,274 s;
-eval RTF 0.00641. Packing is storage-only (the runtime expands codes to FP
-weights). Full 10k/test results are **not measured**.
+measured). Packing is storage-only; the runtime expands codes to FP weights.
+
+The 2-bit model is **better than the mixed 1-bit FFN** (2.58% vs 5.46% full test)
+at +3.8% artifact size, and within **+0.65 pp** of FP32 at **47.6% smaller size**
+(1.131 GB vs 2.374 GB). **Promoted as the new best compressed model.**
 
 ## 11. Honest reading
 

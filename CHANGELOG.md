@@ -22,8 +22,11 @@ an exact, reproducible repository state.
   **1,131,062,436 B**, effective **2.0000 bits/quantized weight**, packed
   reload max |Δlogit| 0.0 and argmax 1.0. Mixed 1-bit reference: 9.00% /
   1,089,643,604 B. The gate passes; a full 10k/1,875 run is prepared.
-- No test-clean was used for selection or tuning. Full/test results are
-  **not yet measured** and will not be claimed until the jobs complete.
+- Full run completed (job 12932, 10k/1,875, 256-dev, best step 1500): dev-256
+  **2.44% WER**, test-256 **2.45%**, full test-clean **2.58%**, artifact
+  **1,131,062,436 B**, 2.0000 bits/quantized weight, packed reload exact.
+  Promoted over mixed 1-bit (5.46% at 1.0896 GB); +0.65 pp vs FP32 at 47.6%
+  smaller size. Test was used once, after selection; no test tuning.
 
 ## Unreleased — both attention pilots measured; neither promoted
 

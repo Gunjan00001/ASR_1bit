@@ -248,7 +248,26 @@ The 2-bit model is **better than the mixed 1-bit FFN** (2.58% vs 5.46% full test
 at +3.8% artifact size, and within **+0.65 pp** of FP32 at **47.6% smaller size**
 (1.131 GB vs 2.374 GB). **Promoted as the new best compressed model.**
 
-## 11. Honest reading
+## 11. 2-bit attention pilots on the 2-bit FFN (A100, dev-128)
+
+Both pilots initialize from the selected 2-bit FFN full checkpoint (best-dev step
+1500), keep all 79 FFN layers 2-bit and the fixed 17 FFN exclusions, and use
+2,000 train.100 utterances, 500 steps, seed 42, batch 4 × accum 4, lr 2e-5,
+dev-128, best-dev selection. **Dev-only; no test evaluation.**
+
+| Arm | Attention quantized | Attention FP32 | Dev-128 WER | CER | Artifact bytes | ΔWER vs baseline | Size vs baseline | Best step | Reload |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 2-bit FFN baseline | 0 | 96 | **0.0243** | 0.0071 | 1,131,062,436 | — | — | 1500 | pass |
+| A: 36 least-sensitive | 36 | 60 | 0.0299 | 0.0088 | **989,509,572** | +0.56 pp | **−12.52%** | 500 | pass 0.0/1.0 |
+| B: 72, keep top-24 | 72 | 24 | 0.0448 | 0.0139 | **847,956,932** | +2.05 pp | **−25.03%** | 250 | pass 0.0/1.0 |
+
+A is the only viable candidate: it gets below 1.0 GB with a 0.56 pp dev
+degradation. B saves more (25.0%) but costs 2.05 pp dev WER. The 2-bit FFN
+baseline remains the measured overall winner; no full run or test evaluation was
+launched. A full A run requires explicit approval. GPU: A100-SXM4-80GB; A peak
+30.94 GB / 863.7 s; B peak 31.09 GB / 846.7 s; A/B packed reload exact.
+
+## 12. Honest reading
 
 - Accuracy numbers are greedy CTC on fixed LibriSpeech subsets; they are not
   comparable to LM-assisted leaderboard numbers.

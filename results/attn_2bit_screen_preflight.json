@@ -1,0 +1,45 @@
+{
+  "purpose": "read-only preflight for the full FFN control vs mixed-precision run",
+  "timestamp_utc": "2026-10-28T16:32:22.612999+00:00",
+  "git_commit": "597629f0f92c94f6e0858e5ab57a8310cedd9386",
+  "node": "jiit-gpu01",
+  "queue": "gpu",
+  "job_name": "screen_attn_2bit",
+  "pbs": {
+    "state": "job-busy",
+    "available_cpus": 96,
+    "assigned_cpus": 96,
+    "free_cpus": 0,
+    "available_host_mem_bytes": 2162400690176,
+    "assigned_host_mem_bytes": 343597383680,
+    "free_host_mem_bytes": 1818803306496,
+    "resources_available_ngpus": "8"
+  },
+  "gpus": [],
+  "gpu_free_count_above_threshold": 0,
+  "gpu_query_error": "TimeoutExpired: Command '['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5', 'jiit-gpu01', 'nvidia-smi', '--query-gpu=index,memory.free,utilization.gpu', '--format=csv,noheader,nounits']' timed out after 15 seconds",
+  "disk_free_bytes": 346820905533440,
+  "existing_jobs": [],
+  "duplicate_jobs": [],
+  "existing_outputs": [
+    "results/qat_ffn_control_full.json",
+    "results/qat_ffn_mixed_full.json"
+  ],
+  "partial_checkpoints": [
+    "checkpoints/qat_ffn_control_full",
+    "checkpoints/qat_ffn_mixed_full"
+  ],
+  "requirements": {
+    "cpus": 1,
+    "gpus": 1,
+    "gpu_free_gb": 25.0,
+    "host_free_gb": 64.0,
+    "disk_free_gb": 40.0
+  },
+  "ready": false,
+  "blocked_reasons": [
+    "free CPUs 0 < required 1",
+    "GPU query failed: TimeoutExpired: Command '['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5', 'jiit-gpu01', 'nvidia-smi', '--query-gpu=index,memory.free,utilization.gpu', '--format=csv,noheader,nounits']' timed out after 15 seconds",
+    "free GPUs 0 < required 1"
+  ]
+}

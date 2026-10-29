@@ -8,6 +8,14 @@ an exact, reproducible repository state.
 
 ---
 
+## Unreleased — 2-bit attention screen and A/B pilots
+
+- Added checkpoint-aware 2-bit attention screen on the 2-bit FFN base; dev-16
+  ranking only. A = 36 projections -> 989,509,572 B, 2.99% dev-128 (+0.56 pp);
+  B = 72 -> 847,956,932 B, 4.48% (+2.05 pp). Both reload exact.
+  A is the only viable candidate; B rejected. No full/test run launched.
+- **146 tests** pass.
+
 ## Unreleased — genuine 2-bit FFN: pilot passes gate
 
 - Added a configurable symmetric 2-bit weight quantizer with **four signed

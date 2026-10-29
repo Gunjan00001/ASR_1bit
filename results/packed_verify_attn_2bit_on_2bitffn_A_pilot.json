@@ -1,0 +1,45 @@
+{
+  "phase": "Phase 16/18 packed artifact reload verification",
+  "timestamp_utc": "2026-10-28T18:49:45.125059+00:00",
+  "platform": "Linux-4.18.0-477.27.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "pbs_jobid": "13155.jiit-master",
+  "config_path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/configs/cluster_effective_attn_2bit_on_2bitffn_A_pilot.yaml",
+  "checkpoint": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_pilot",
+  "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_pilot_packed/model_packed.safetensors",
+  "artifact_manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_pilot_packed/model_packed.safetensors.manifest.json",
+  "scale_mode": "per_tensor_mean_abs",
+  "layers": {
+    "attention_q": true,
+    "attention_k": true,
+    "attention_v": true,
+    "attention_output": true,
+    "ffn_in": true,
+    "ffn_out": true,
+    "feature_projection": false,
+    "ctc_head": false
+  },
+  "n_rebuilt_layers": 115,
+  "n_utterances": 2,
+  "max_abs_logit_diff": 0.0,
+  "mean_argmax_agreement": 1.0,
+  "decoded_match_count": 2,
+  "criteria": {
+    "max_logit_diff": 0.01,
+    "min_argmax_agreement": 0.99
+  },
+  "passed": true,
+  "utterances": [
+    {
+      "id": "1988-24833-0026",
+      "max_abs_logit_diff": 0.0,
+      "argmax_agreement": 1.0,
+      "decoded_match": true
+    },
+    {
+      "id": "2428-83699-0039",
+      "max_abs_logit_diff": 0.0,
+      "argmax_agreement": 1.0,
+      "decoded_match": true
+    }
+  ]
+}

@@ -1239,6 +1239,41 @@ accuracy level.
 
 ---
 
+## E35 — 2-bit attention on 2-bit FFN: sensitivity and A/B pilots
+
+**Question:** can selected attention projections be quantized to 2-bit on top of
+the promoted 2-bit FFN model, reaching <1.0 GB while staying near the 2.58%
+full-test baseline?
+
+**Screen:** the existing one-layer FP32 screen was not appropriate because the
+base model already has 2-bit FFN weights. Added
+`scripts/screen_attention_2bit_on_2bit_ffn.py`, which loads the selected 2-bit
+FFN full checkpoint, keeps its FFN/exclusions fixed, and perturbs exactly one
+attention projection to 2-bit. Fixed dev-16, seed 42, no test. Base 2-bit FFN:
+3.19% WER / 0.70% CER; FP32 reference 2.56% / 0.59%. All 96 layers screened.
+`attention_k` had the lowest mean degradation (+0.09 pp); the most sensitive
+projections were in layers 11, 14, 16, and 17.
+
+**Policies (from the measured ranking):** A = 36 least-sensitive attention
+projections 2-bit, 60 FP32; B = 72 least-sensitive, 24 most-sensitive FP32. Both
+use `qat.init_checkpoint=checkpoints/qat_ffn_mixed_2bit_full`, keep 79 FFN
+2-bit and 17 FP32 FFN exclusions, and change only attention precision.
+
+**Pilots (A100, jobs 13155/13156):** 2k/500/seed 42/dev-128.
+
+| Arm | WER | CER | Artifact | ΔWER vs baseline | Size vs baseline | Replaced/excluded | Best step | Reload |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| 2-bit FFN baseline (dev-128) | 0.0243 | 0.0071 | 1,131,062,436 | — | — | 79 / 17 | 1500 | pass |
+| A | 0.0299 | 0.0088 | **989,509,572** | +0.56 pp | −12.52% | 115 / 77 | 500 | pass 0.0/1.0 |
+| B | 0.0448 | 0.0139 | **847,956,932** | +2.05 pp | −25.03% | 151 / 41 | 250 | pass 0.0/1.0 |
+
+**Gate:** A is the only viable candidate (<1.0 GB, +0.56 pp dev). B is rejected.
+The 2-bit FFN baseline remains the measured winner. No full run or test
+evaluation was launched; a full A run requires explicit approval. Test data was
+never used for selection.
+
+---
+
 ## How to add a new log entry
 
 When you run a new experiment, append:

@@ -190,9 +190,11 @@ def main() -> int:
         )
 
     model_id = cfg["qat"]["init_from"]
-    print(f"Loading {model_id} (init_from) ...")
+    init_checkpoint = cfg["qat"].get("init_checkpoint")
+    model_path = init_checkpoint or model_id
+    print(f"Loading {model_path} ({'init_checkpoint' if init_checkpoint else 'init_from'}) ...")
     processor = Wav2Vec2Processor.from_pretrained(model_id)
-    model = Wav2Vec2ConformerForCTC.from_pretrained(model_id)
+    model = Wav2Vec2ConformerForCTC.from_pretrained(model_path)
     if model.config.pad_token_id is None:
         raise SystemExit("model.config.pad_token_id is None; CTC blank unknown")
     model, replacement = setup_qat_model(
@@ -420,6 +422,7 @@ def main() -> int:
         model, checkpoint_dir,
         layers=cfg["layers"], scale_mode=scale_mode, ste_clip=ste_clip,
         config_path=cfg.get("_config_path"), init_from=model_id,
+        init_checkpoint=init_checkpoint,
         exclude_layers=exclude_layers, selection=selection, bits=bits,
     )
     reloaded, _ = load_qat_checkpoint(
@@ -473,6 +476,7 @@ def main() -> int:
         "git_commit": git_commit(),
         "model_id": model_id,
         "init_from": model_id,
+        "init_checkpoint": init_checkpoint,
         "quantization": {
             "scale": scale_mode,
             "granularity": (

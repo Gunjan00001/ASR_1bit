@@ -452,3 +452,12 @@ def test_2bit_checkpoint_manifest_and_reload(tiny_model, tmp_path):
 
     with pytest.raises(ValueError, match="bit width"):
         load_qat_checkpoint(tmp_path, Wav2Vec2ConformerForCTC, ATTN_FFN, bits=1)
+
+
+def test_checkpoint_manifest_records_init_checkpoint(tiny_model, tmp_path):
+    model = _fresh_qat_model(tiny_model)
+    manifest = save_qat_checkpoint(
+        model, tmp_path, layers=ATTN_FFN,
+        init_checkpoint="checkpoints/qat_ffn_mixed_2bit_full",
+    )
+    assert manifest["init_checkpoint"] == "checkpoints/qat_ffn_mixed_2bit_full"

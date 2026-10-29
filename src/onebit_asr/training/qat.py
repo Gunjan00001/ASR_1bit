@@ -373,6 +373,7 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path, *,
                         ste_clip: float | None = None,
                         config_path: str | None = None,
                         init_from: str | None = None,
+                        init_checkpoint: str | None = None,
                         exclude_layers: list[str] | None = None,
                         selection: dict | None = None,
                         bits: int = 1) -> dict:
@@ -419,6 +420,7 @@ def save_qat_checkpoint(model: nn.Module, out_dir: str | Path, *,
         "quantization_granularity": granularity,
         "config_path": str(config_path) if config_path else None,
         "init_from": init_from,
+        "init_checkpoint": init_checkpoint,
         # Which dev-selected state these masters represent. The result JSON has
         # the full history; the manifest keeps the step/WER next to the weights
         # so a checkpoint is self-describing.

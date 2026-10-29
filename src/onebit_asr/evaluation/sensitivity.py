@@ -20,6 +20,7 @@ def weight_reconstruction_error(
     weight: torch.Tensor,
     scale_mode: str = "per_tensor_mean_abs",
     ste_clip: float | None = None,
+    bits: int = 1,
 ) -> float:
     """Relative Frobenius error ``||W - Wq||_F / ||W||_F`` for one weight.
 
@@ -33,5 +34,5 @@ def weight_reconstruction_error(
     denom = float(w.norm())
     if denom == 0.0:
         return 0.0
-    wq, _alpha = quantize_weight(w, scale_mode=scale_mode, ste_clip=ste_clip)
+    wq, _alpha = quantize_weight(w, scale_mode=scale_mode, ste_clip=ste_clip, bits=bits)
     return float((w - wq).norm() / denom)

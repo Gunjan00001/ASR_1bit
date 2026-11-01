@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>One-Bit ASR — Live Research Demo</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div>
+        <div class="eyebrow">RESEARCH PROTOTYPE / LIBRISPEECH CLEAN</div>
+        <h1>One-Bit ASR <span>Live</span></h1>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-button" id="themeToggle" type="button" title="Toggle light and dark theme" aria-label="Toggle light and dark theme">◐</button>
+      <a class="ghost-link" href="/api/models" target="_blank" rel="noreferrer">Model API</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="control-strip" aria-label="Session controls">
+      <label class="field">
+        <span>Model</span>
+        <select id="modelSelect" aria-label="ASR model"></select>
+      </label>
+      <label class="field">
+        <span>Device</span>
+        <select id="deviceSelect" aria-label="Inference device">
+          <option value="auto">Auto (CUDA if available)</option>
+          <option value="cpu">CPU</option>
+          <option value="cuda">CUDA</option>
+        </select>
+      </label>
+      <div class="status-cluster">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connecting to backend…</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="workspace">
+        <article class="card live-card">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">LIVE MICROPHONE</div>
+              <h2>Speak naturally</h2>
+            </div>
+            <div class="timer" id="timer">00:00.0</div>
+          </div>
+
+          <div class="wave-wrap">
+            <canvas id="levelCanvas" width="1200" height="120" aria-label="Live microphone level"></canvas>
+            <div class="wave-label"><span id="levelText">MIC IDLE</span><span id="audioClock">0.0 s captured</span></div>
+          </div>
+
+          <div class="record-row">
+            <button class="primary" id="recordButton" type="button">
+              <span class="mic-glyph" aria-hidden="true">●</span>
+              <span id="recordLabel">Start recording</span>
+            </button>
+            <button class="secondary" id="stopButton" type="button" disabled>Stop &amp; finalize</button>
+            <button class="quiet" id="resetButton" type="button">Reset</button>
+          </div>
+          <p class="microcopy">Audio stays in this browser session and server process. Nothing is uploaded or persisted by default.</p>
+        </article>
+
+        <article class="card transcript-card">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">TRANSCRIPT</div>
+              <h2>Words appear as you speak</h2>
+            </div>
+            <div class="transcript-actions">
+              <button class="quiet" id="copyButton" type="button">Copy</button>
+              <button class="quiet" id="downloadButton" type="button">Download TXT</button>
+            </div>
+          </div>
+          <div class="transcript-box" id="transcriptBox" aria-live="polite">
+            <div id="finalText" class="transcript-final"><span class="placeholder">Finalized words will appear here.</span></div>
+            <div id="partialText" class="transcript-partial"></div>
+          </div>
+          <div class="legend"><span class="legend-final">Finalized</span><span class="legend-partial">Provisional</span></div>
+          <div class="diagnostics" id="diagnostics">
+            <div><span>Last update latency</span><strong id="latencyValue">—</strong></div>
+            <div><span>Streaming RTF</span><strong id="rtfValue">—</strong></div>
+            <div><span>Audio duration</span><strong id="durationValue">0.0 s</strong></div>
+            <div><span>Partial updates</span><strong id="updatesValue">0</strong></div>
+            <div><span>First partial latency</span><strong id="firstPartialValue">—</strong></div>
+            <div><span>Finalization</span><strong id="finalizationValue">—</strong></div>
+          </div>
+          <p class="mode-note" id="modeNote">Mode: chunked-overlap approximation; final transcript is refined over the full utterance.</p>
+        </article>
+
+        <article class="card reference-card">
+          <details>
+            <summary>
+              <span><span class="eyebrow">OPTIONAL</span> Reference transcript &amp; metrics</span>
+              <span class="summary-hint">WER / CER only when a reference is entered</span>
+            </summary>
+            <div class="reference-body">
+              <label class="field full">
+                <span>Reference transcript</span>
+                <textarea id="referenceInput" rows="3" placeholder="Paste the known transcript here to compute WER and CER."></textarea>
+              </label>
+              <button class="secondary small" id="metricsButton" type="button">Calculate metrics</button>
+              <div class="metrics" id="metricsPanel" hidden>
+                <div><span>WER</span><strong id="werValue">—</strong></div>
+                <div><span>CER</span><strong id="cerValue">—</strong></div>
+                <div><span>Substitutions</span><strong id="subValue">—</strong></div>
+                <div><span>Deletions</span><strong id="delValue">—</strong></div>
+                <div><span>Insertions</span><strong id="insValue">—</strong></div>
+              </div>
+              <p class="microcopy">Normalization matches the research protocol: lowercase, punctuation stripped, whitespace collapsed.</p>
+            </div>
+          </details>
+        </article>
+
+        <article class="card feedback-card">
+          <details>
+            <summary>
+              <span><span class="eyebrow">OPTIONAL</span> Human feedback</span>
+              <span class="summary-hint">Stored only on this page</span>
+            </summary>
+            <div class="feedback-body">
+              <div class="feedback-row">
+                <label class="field"><span>Accuracy</span>
+                  <select id="accuracySelect"><option value="">Select…</option><option>Accurate</option><option>Partially accurate</option><option>Inaccurate</option></select>
+                </label>
+                <label class="check"><input id="noiseCheck" type="checkbox"> Background noise</label>
+                <label class="check"><input id="accentCheck" type="checkbox"> Accent / pronunciation</label>
+              </div>
+              <label class="field full"><span>Corrected transcript (optional)</span><textarea id="correctedInput" rows="2"></textarea></label>
+              <label class="field full"><span>Notes (optional)</span><textarea id="notesInput" rows="2" placeholder="What sounded wrong?"></textarea></label>
+              <button class="quiet" id="buildFeedback" type="button">Preview feedback JSON</button>
+              <pre id="feedbackPreview" hidden></pre>
+              <p class="microcopy">Feedback is not transmitted or persisted. Copy it locally if you want to keep it.</p>
+            </div>
+          </details>
+        </article>
+      </section>
+
+      <aside class="sidebar">
+        <article class="card model-card">
+          <div class="eyebrow">SELECTED MODEL</div>
+          <h2 id="modelName">—</h2>
+          <p id="modelDescription" class="muted">Loading model metadata…</p>
+          <dl class="model-facts">
+            <div><dt>Full test WER</dt><dd id="modelTestWer">—</dd></div>
+            <div><dt>Dev-256 WER</dt><dd id="modelDevWer">—</dd></div>
+            <div><dt>Artifact</dt><dd id="modelArtifact">—</dd></div>
+            <div><dt>Quantization</dt><dd id="modelQuant">—</dd></div>
+            <div><dt>Runtime</dt><dd id="modelRuntime">—</dd></div>
+          </dl>
+          <div class="limitations">
+            <div class="eyebrow">KNOWN LIMITATIONS</div>
+            <ul id="modelLimitations"></ul>
+          </div>
+        </article>
+
+        <article class="card stream-card">
+          <div class="eyebrow">STREAMING MODE</div>
+          <h2>Chunked overlap</h2>
+          <p class="muted" id="streamingExplanation">The encoder is not stateful in this implementation. Each window re-runs the full encoder; the final transcript is refined over the full utterance.</p>
+          <dl class="model-facts">
+            <div><dt>Audio chunk</dt><dd id="cfgChunk">320 ms</dd></div>
+            <div><dt>Window</dt><dd id="cfgWindow">2.0 s</dd></div>
+            <div><dt>Overlap</dt><dd id="cfgOverlap">0.5 s</dd></div>
+            <div><dt>EOU silence</dt><dd>0.8 s</dd></div>
+          </dl>
+          <details class="advanced">
+            <summary>Streaming settings</summary>
+            <div class="settings-grid">
+              <label class="field"><span>Chunk (ms)</span><input id="chunkInput" type="number" min="160" max="1000" step="80" value="320"></label>
+              <label class="field"><span>Window (s)</span><input id="windowInput" type="number" min="0.8" max="6" step="0.1" value="2.0"></label>
+              <label class="field"><span>Overlap (s)</span><input id="overlapInput" type="number" min="0" max="2" step="0.1" value="0.5"></label>
+            </div>
+            <label class="check"><input id="autoStopCheck" type="checkbox" checked> Stop automatically after end-of-utterance silence hint</label>
+          </details>
+        </article>
+
+        <article class="card file-card">
+          <div class="eyebrow">OPTIONAL FILE CHECK</div>
+          <h2>Test a recording</h2>
+          <p class="muted">Upload WAV, FLAC, OGG, or MP3. M4A needs an ffmpeg backend. This is offline, not the live path.</p>
+          <input id="fileInput" type="file" accept=".wav,.flac,.ogg,.oga,.mp3,audio/*">
+          <button class="secondary small" id="fileButton" type="button">Transcribe file</button>
+          <div id="fileResult" class="file-result" hidden></div>
+        </article>
+
+        <article class="card help-card">
+          <div class="eyebrow">HOW TO TEST</div>
+          <ol class="steps">
+            <li>Choose a model. Start with <strong>2-bit FFN</strong> for best accuracy or <strong>Strategy A</strong> for the sub-1 GB model.</li>
+            <li>Click <strong>Start recording</strong>, allow microphone access, and speak.</li>
+            <li>Finalized words are dark; provisional words are highlighted.</li>
+            <li>Stop to get the final full-utterance refinement; optionally compare with a reference transcript.</li>
+          </ol>
+          <p class="microcopy">This is a research prototype. It is not a production service and it does not claim real-time acceleration.</p>
+        </article>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>One-Bit Wav2Vec2-Conformer research · chunked streaming approximation</span>
+    <span id="backendInfo">Backend: checking…</span>
+  </footer>
+
+  <script src="/static/app.js" type="module"></script>
+</body>
+</html>

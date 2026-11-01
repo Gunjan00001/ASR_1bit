@@ -1,0 +1,8 @@
+# Install the package first: pip install -e .
+fastapi>=0.115
+uvicorn>=0.30
+websockets>=12,<16
+python-multipart>=0.0.9
+soundfile>=0.12
+torchaudio>=2.0
+jiwer>=3.0

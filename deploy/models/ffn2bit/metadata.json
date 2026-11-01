@@ -1,0 +1,33 @@
+{
+  "id": "ffn2bit",
+  "display_name": "2-bit FFN",
+  "kind": "packed",
+  "checkpoint_sha256": "87005f36bca859fe80bdb48f7a02a18841fed0a5e3495b2d877d2fd1a42befdb",
+  "artifact_bytes": 1131269460,
+  "historical_artifact_bytes": 1131062436,
+  "artifact_sha256": "e8e138050f2252a3b9aa327aec87cbe3340f244509ab2b6953d491bd8881c856",
+  "full_test_wer": 0.025829275715155205,
+  "dev_wer": 0.024605920799692427,
+  "dev_wer_note": "packed v2 dev-256; QAT reference 0.024413687043444827",
+  "quantization": {
+    "bits": 2,
+    "scale": "per_tensor_mean_abs",
+    "attention_quantized": 0,
+    "attention_fp32": 96,
+    "ffn_quantized": 79,
+    "ffn_fp32": 17,
+    "bitlinear_layers": 79
+  },
+  "description": "Accuracy winner. 2-bit FFN with the fixed 17 FP32 FFN exclusions and all attention FP32.",
+  "limitations": [
+    "Packed inference expands weights to FP32; not accelerated.",
+    "Greedy CTC, no language model.",
+    "Clean LibriSpeech only."
+  ],
+  "checkpoint": "checkpoints/qat_ffn_mixed_2bit_full",
+  "artifact_v2": "checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors",
+  "artifact_historical": "checkpoints/qat_ffn_mixed_2bit_full_packed/model_packed.safetensors",
+  "deploy_artifact": "deploy/models/ffn2bit/model_packed.safetensors",
+  "local_fallback_artifact": "checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors",
+  "runtime": "FP32 expansion before F.linear"
+}

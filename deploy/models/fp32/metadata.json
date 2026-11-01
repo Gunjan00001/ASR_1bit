@@ -1,0 +1,22 @@
+{
+  "id": "fp32",
+  "display_name": "FP32 reference",
+  "kind": "fp32",
+  "model_id": "facebook/wav2vec2-conformer-rope-large-960h-ft",
+  "checkpoint_sha256": "97bb9761fb71ec1225100bc81ccf7d002e0d0ba3d0604c1fd2dbda7d7d491f1d",
+  "artifact_bytes": 2373507712,
+  "full_test_wer": 0.019267346317711504,
+  "dev_wer": 0.020184544405997693,
+  "quantization": null,
+  "description": "Unquantized reference. Not uploaded; downloaded from Hugging Face at runtime if permitted.",
+  "limitations": [
+    "Requires the external Hugging Face model.",
+    "Largest artifact."
+  ],
+  "checkpoint": null,
+  "artifact_v2": null,
+  "artifact_historical": null,
+  "deploy_artifact": null,
+  "local_fallback_artifact": null,
+  "runtime": "FP32"
+}

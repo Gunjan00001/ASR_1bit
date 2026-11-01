@@ -55,3 +55,6 @@ logs/
 
 # PBS job stdout/stderr files written in the submission directory
 /*.o[0-9]*
+
+# Standalone deployment weights are Git LFS candidates (not ordinary Git blobs).
+!deploy/models/**/*.safetensors

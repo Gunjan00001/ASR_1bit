@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N eval_streaming
+#PBS -q gpu
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+set -uo pipefail
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"
+cd "$REPO" || exit 1
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false HF_HUB_DISABLE_PROGRESS_BARS=1 HF_DATASETS_DISABLE_PROGRESS_BARS=1
+LOG="logs/eval_streaming.log"; mkdir -p logs results; : > "$LOG"; exec > >(tee -a "$LOG") 2>&1
+echo "=== job $PBS_JOBID on $(hostname) $(date -Is) ==="; git rev-parse HEAD
+nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv,noheader
+if [ -e results/streaming_eval.json ]; then echo "ABORT: result exists"; exit 5; fi
+.venv/bin/python scripts/eval_streaming.py --models ffn2bit,strategy_a --n 32 --output results/streaming_eval.json
+echo "=== finished $(date -Is) ==="

@@ -1,0 +1,687 @@
+{
+  "phase": "online chunked-streaming evaluation (dev-clean)",
+  "timestamp_utc": "2026-11-01T13:53:45.905896+00:00",
+  "platform": "Linux-4.18.0-477.10.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "device": "cpu",
+  "device_name": "cpu",
+  "seed": 42,
+  "n": 4,
+  "test_used": false,
+  "configurations": {
+    "ffn2bit": {
+      "load": {
+        "model_id": "ffn2bit",
+        "cached": false,
+        "load_time_s": 7.794522485695779,
+        "device": "cpu",
+        "n_packed_layers": 79,
+        "bits": 2,
+        "scale_mode": "per_tensor_mean_abs",
+        "artifact_bytes": 1131269460,
+        "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors",
+        "manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors.manifest.json",
+        "kind": "packed"
+      },
+      "configs": {
+        "app-default-2.0s": {
+          "config": {
+            "chunk_ms": 320,
+            "window_s": 2.0,
+            "overlap_s": 0.5
+          },
+          "n": 4,
+          "final_wer": 0.03571428571428571,
+          "final_cer": 0.0136986301369863,
+          "streaming_wer": 0.25,
+          "streaming_cer": 0.19863013698630136,
+          "first_partial_latency_s": 2.0843564852451286,
+          "average_update_interval_s": 2.4279254358261824,
+          "finalization_latency_s": 5.219143589725718,
+          "rtf": 2.7651974773785133,
+          "partial_updates": 4,
+          "dropped_chunks": 0,
+          "rows": [
+            {
+              "id": "1988-24833-0026",
+              "reference": "I'VE DECIDED TO ENLIST IN THE ARMY",
+              "final": "ive decided to enlist in the army",
+              "streaming": "ive decided to enlist in the army",
+              "final_metrics": {
+                "reference": "ive decided to enlist in the army",
+                "hypothesis": "ive decided to enlist in the army",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 7
+              },
+              "streaming_metrics": {
+                "reference": "ive decided to enlist in the army",
+                "hypothesis": "ive decided to enlist in the army",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 7
+              },
+              "first_partial_latency_s": 2.130931129679084,
+              "average_update_interval_s": null,
+              "finalization_latency_s": 6.670186934061348,
+              "processing_s": 8.798710921779275,
+              "rtf": 3.3906400469284295,
+              "partial_updates": 1,
+              "chunks_received": 9,
+              "dropped_chunks": 0,
+              "audio_duration_s": 2.595
+            },
+            {
+              "id": "2428-83699-0039",
+              "reference": "I TOLLED THE BELL AGAIN",
+              "final": "i told the bell again",
+              "streaming": "i told the bell again en",
+              "final_metrics": {
+                "reference": "i tolled the bell again",
+                "hypothesis": "i told the bell again",
+                "wer": 0.2,
+                "cer": 0.08695652173913043,
+                "substitutions": 1,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 4
+              },
+              "streaming_metrics": {
+                "reference": "i tolled the bell again",
+                "hypothesis": "i told the bell again en",
+                "wer": 0.4,
+                "cer": 0.21739130434782608,
+                "substitutions": 1,
+                "deletions": 0,
+                "insertions": 1,
+                "hits": 4
+              },
+              "first_partial_latency_s": null,
+              "average_update_interval_s": null,
+              "finalization_latency_s": 6.297308886423707,
+              "processing_s": 6.294360185973346,
+              "rtf": 3.1789697908956294,
+              "partial_updates": 0,
+              "chunks_received": 7,
+              "dropped_chunks": 0,
+              "audio_duration_s": 1.98
+            },
+            {
+              "id": "6345-93302-0010",
+              "reference": "THE KEEN WIND THRUST ITSELF EVEN INSIDE THE HIGH COLLAR OF HER JACKET",
+              "final": "the keen wind thrust itself even inside the high collar of her jacket",
+              "streaming": "the keen wind thrust itse ust itself even inside the high coll high collar of her jacket",
+              "final_metrics": {
+                "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+                "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 13
+              },
+              "streaming_metrics": {
+                "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+                "hypothesis": "the keen wind thrust itse ust itself even inside the high coll high collar of her jacket",
+                "wer": 0.3076923076923077,
+                "cer": 0.2753623188405797,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 4,
+                "hits": 13
+              },
+              "first_partial_latency_s": 2.369341137818992,
+              "average_update_interval_s": 2.4279254358261824,
+              "finalization_latency_s": 4.2432261779904366,
+              "processing_s": 9.035733630880713,
+              "rtf": 2.030501939523756,
+              "partial_updates": 2,
+              "chunks_received": 14,
+              "dropped_chunks": 0,
+              "audio_duration_s": 4.45
+            },
+            {
+              "id": "2078-142845-0048",
+              "reference": "SEVENTEEN THIRTY FOUR",
+              "final": "seventeen thirty four",
+              "streaming": "seventeen thirty four sore",
+              "final_metrics": {
+                "reference": "seventeen thirty four",
+                "hypothesis": "seventeen thirty four",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 3
+              },
+              "streaming_metrics": {
+                "reference": "seventeen thirty four",
+                "hypothesis": "seventeen thirty four sore",
+                "wer": 0.3333333333333333,
+                "cer": 0.23809523809523808,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 1,
+                "hits": 3
+              },
+              "first_partial_latency_s": 1.7527971882373095,
+              "average_update_interval_s": null,
+              "finalization_latency_s": 3.6658523604273796,
+              "processing_s": 5.413491890765727,
+              "rtf": 2.460678132166239,
+              "partial_updates": 1,
+              "chunks_received": 7,
+              "dropped_chunks": 0,
+              "audio_duration_s": 2.2
+            }
+          ]
+        },
+        "320ms-window": {
+          "config": {
+            "chunk_ms": 320,
+            "window_s": 0.32,
+            "overlap_s": 0.08
+          },
+          "n": 4,
+          "final_wer": 0.03571428571428571,
+          "final_cer": 0.0136986301369863,
+          "streaming_wer": 1.1785714285714286,
+          "streaming_cer": 0.5,
+          "first_partial_latency_s": 4.914473553420976,
+          "average_update_interval_s": 2.0413511143850567,
+          "finalization_latency_s": 7.809640631545335,
+          "rtf": 11.10698865000792,
+          "partial_updates": 43,
+          "dropped_chunks": 0,
+          "rows": [
+            {
+              "id": "1988-24833-0026",
+              "reference": "I'VE DECIDED TO ENLIST IN THE ARMY",
+              "final": "ive decided to enlist in the army",
+              "streaming": "ive de cide etur mis sand te arme",
+              "final_metrics": {
+                "reference": "ive decided to enlist in the army",
+                "hypothesis": "ive decided to enlist in the army",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 7
+              },
+              "streaming_metrics": {
+                "reference": "ive decided to enlist in the army",
+                "hypothesis": "ive de cide etur mis sand te arme",
+                "wer": 1.0,
+                "cer": 0.42424242424242425,
+                "substitutions": 6,
+                "deletions": 0,
+                "insertions": 1,
+                "hits": 1
+              },
+              "first_partial_latency_s": 4.511938730254769,
+              "average_update_interval_s": 1.9939517425373197,
+              "finalization_latency_s": 11.854179020039737,
+              "processing_s": 31.347234938293695,
+              "rtf": 12.079859321115103,
+              "partial_updates": 10,
+              "chunks_received": 9,
+              "dropped_chunks": 0,
+              "audio_duration_s": 2.595
+            },
+            {
+              "id": "2428-83699-0039",
+              "reference": "I TOLLED THE BELL AGAIN",
+              "final": "i told the bell again",
+              "streaming": "i tol oth tbell agai a",
+              "final_metrics": {
+                "reference": "i tolled the bell again",
+                "hypothesis": "i told the bell again",
+                "wer": 0.2,
+                "cer": 0.08695652173913043,
+                "substitutions": 1,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 4
+              },
+              "streaming_metrics": {
+                "reference": "i tolled the bell again",
+                "hypothesis": "i tol oth tbell agai a",
+                "wer": 1.0,
+                "cer": 0.34782608695652173,
+                "substitutions": 4,
+                "deletions": 0,
+                "insertions": 1,
+                "hits": 1
+              },
+              "first_partial_latency_s": 6.916412396356463,
+              "average_update_interval_s": 1.6669516111724079,
+              "finalization_latency_s": 4.313690977171063,
+              "processing_s": 19.63734272867441,
+              "rtf": 9.917849862966875,
+              "partial_updates": 7,
+              "chunks_received": 7,
+              "dropped_chunks": 0,
+              "audio_duration_s": 1.98
+            },
+            {
+              "id": "6345-93302-0010",
+              "reference": "THE KEEN WIND THRUST ITSELF EVEN INSIDE THE HIGH COLLAR OF HER JACKET",
+              "final": "the keen wind thrust itself even inside the high collar of her jacket",
+              "streaming": "te w we nthepr rest tid su even aso ie te fi ic oter a ja et",
+              "final_metrics": {
+                "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+                "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 13
+              },
+              "streaming_metrics": {
+                "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+                "hypothesis": "te w we nthepr rest tid su even aso ie te fi ic oter a ja et",
+                "wer": 1.2307692307692308,
+                "cer": 0.5942028985507246,
+                "substitutions": 12,
+                "deletions": 0,
+                "insertions": 4,
+                "hits": 1
+              },
+              "first_partial_latency_s": 3.4906506054103374,
+              "average_update_interval_s": 2.498072484782075,
+              "finalization_latency_s": 6.091868401505053,
+              "processing_s": 50.234032961539924,
+              "rtf": 11.28854673293032,
+              "partial_updates": 18,
+              "chunks_received": 14,
+              "dropped_chunks": 0,
+              "audio_duration_s": 4.45
+            },
+            {
+              "id": "2078-142845-0048",
+              "reference": "SEVENTEEN THIRTY FOUR",
+              "final": "seventeen thirty four",
+              "streaming": "seven nt nth therty so",
+              "final_metrics": {
+                "reference": "seventeen thirty four",
+                "hypothesis": "seventeen thirty four",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 3
+              },
+              "streaming_metrics": {
+                "reference": "seventeen thirty four",
+                "hypothesis": "seven nt nth therty so",
+                "wer": 1.6666666666666667,
+                "cer": 0.47619047619047616,
+                "substitutions": 3,
+                "deletions": 0,
+                "insertions": 2,
+                "hits": 0
+              },
+              "first_partial_latency_s": 4.738892481662333,
+              "average_update_interval_s": 2.006428619048425,
+              "finalization_latency_s": 8.978824127465487,
+              "processing_s": 24.511737102642655,
+              "rtf": 11.141698683019388,
+              "partial_updates": 8,
+              "chunks_received": 7,
+              "dropped_chunks": 0,
+              "audio_duration_s": 2.2
+            }
+          ]
+        }
+      }
+    },
+    "strategy_a": {
+      "load": {
+        "model_id": "strategy_a",
+        "cached": false,
+        "load_time_s": 8.490418755449355,
+        "device": "cpu",
+        "n_packed_layers": 115,
+        "bits": 2,
+        "scale_mode": "per_tensor_mean_abs",
+        "artifact_bytes": 989716588,
+        "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors",
+        "manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors.manifest.json",
+        "kind": "packed"
+      },
+      "configs": {
+        "app-default-2.0s": {
+          "config": {
+            "chunk_ms": 320,
+            "window_s": 2.0,
+            "overlap_s": 0.5
+          },
+          "n": 4,
+          "final_wer": 0.03571428571428571,
+          "final_cer": 0.0136986301369863,
+          "streaming_wer": 0.21428571428571427,
+          "streaming_cer": 0.1643835616438356,
+          "first_partial_latency_s": 2.6721086309601865,
+          "average_update_interval_s": 2.308532693423331,
+          "finalization_latency_s": 5.183802971383557,
+          "rtf": 2.916651234515851,
+          "partial_updates": 4,
+          "dropped_chunks": 0,
+          "rows": [
+            {
+              "id": "1988-24833-0026",
+              "reference": "I'VE DECIDED TO ENLIST IN THE ARMY",
+              "final": "ive decided to enlist in the army",
+              "streaming": "ive decided to enlist in the army",
+              "final_metrics": {
+                "reference": "ive decided to enlist in the army",
+                "hypothesis": "ive decided to enlist in the army",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 7
+              },
+              "streaming_metrics": {
+                "reference": "ive decided to enlist in the army",
+                "hypothesis": "ive decided to enlist in the army",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 7
+              },
+              "first_partial_latency_s": 2.3456522868946195,
+              "average_update_interval_s": null,
+              "finalization_latency_s": 5.200703181326389,
+              "processing_s": 7.543589118868113,
+              "rtf": 2.9069707587160356,
+              "partial_updates": 1,
+              "chunks_received": 9,
+              "dropped_chunks": 0,
+              "audio_duration_s": 2.595
+            },
+            {
+              "id": "2428-83699-0039",
+              "reference": "I TOLLED THE BELL AGAIN",
+              "final": "i told the bell again",
+              "streaming": "i told the bell again en",
+              "final_metrics": {
+                "reference": "i tolled the bell again",
+                "hypothesis": "i told the bell again",
+                "wer": 0.2,
+                "cer": 0.08695652173913043,
+                "substitutions": 1,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 4
+              },
+              "streaming_metrics": {
+                "reference": "i tolled the bell again",
+                "hypothesis": "i told the bell again en",
+                "wer": 0.4,
+                "cer": 0.21739130434782608,
+                "substitutions": 1,
+                "deletions": 0,
+                "insertions": 1,
+                "hits": 4
+              },
+              "first_partial_latency_s": null,
+              "average_update_interval_s": null,
+              "finalization_latency_s": 5.879614598117769,
+              "processing_s": 5.8781375028193,
+              "rtf": 2.968756314555202,
+              "partial_updates": 0,
+              "chunks_received": 7,
+              "dropped_chunks": 0,
+              "audio_duration_s": 1.98
+            },
+            {
+              "id": "6345-93302-0010",
+              "reference": "THE KEEN WIND THRUST ITSELF EVEN INSIDE THE HIGH COLLAR OF HER JACKET",
+              "final": "the keen wind thrust itself even inside the high collar of her jacket",
+              "streaming": "the keen wind thrust itse ust itself even inside the high coll high collar of her jacket",
+              "final_metrics": {
+                "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+                "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 13
+              },
+              "streaming_metrics": {
+                "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+                "hypothesis": "the keen wind thrust itse ust itself even inside the high coll high collar of her jacket",
+                "wer": 0.3076923076923077,
+                "cer": 0.2753623188405797,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 4,
+                "hits": 13
+              },
+              "first_partial_latency_s": 2.0582750160247087,
+              "average_update_interval_s": 2.308532693423331,
+              "finalization_latency_s": 5.306023205630481,
+              "processing_s": 9.66969242785126,
+              "rtf": 2.1729645905283728,
+              "partial_updates": 2,
+              "chunks_received": 14,
+              "dropped_chunks": 0,
+              "audio_duration_s": 4.45
+            },
+            {
+              "id": "2078-142845-0048",
+              "reference": "SEVENTEEN THIRTY FOUR",
+              "final": "seventeen thirty four",
+              "streaming": "seventeen thirty four",
+              "final_metrics": {
+                "reference": "seventeen thirty four",
+                "hypothesis": "seventeen thirty four",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 3
+              },
+              "streaming_metrics": {
+                "reference": "seventeen thirty four",
+                "hypothesis": "seventeen thirty four",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 3
+              },
+              "first_partial_latency_s": 3.6123985899612308,
+              "average_update_interval_s": null,
+              "finalization_latency_s": 4.348870900459588,
+              "processing_s": 7.959409203380346,
+              "rtf": 3.6179132742637936,
+              "partial_updates": 1,
+              "chunks_received": 7,
+              "dropped_chunks": 0,
+              "audio_duration_s": 2.2
+            }
+          ]
+        },
+        "320ms-window": {
+          "config": {
+            "chunk_ms": 320,
+            "window_s": 0.32,
+            "overlap_s": 0.08
+          },
+          "n": 4,
+          "final_wer": 0.03571428571428571,
+          "final_cer": 0.0136986301369863,
+          "streaming_wer": 1.5,
+          "streaming_cer": 0.547945205479452,
+          "first_partial_latency_s": 4.047980964416638,
+          "average_update_interval_s": 2.1882165184353863,
+          "finalization_latency_s": 3.027589288074523,
+          "rtf": 9.426739949601426,
+          "partial_updates": 43,
+          "dropped_chunks": 0,
+          "rows": [
+            {
+              "id": "1988-24833-0026",
+              "reference": "I'VE DECIDED TO ENLIST IN THE ARMY",
+              "final": "ive decided to enlist in the army",
+              "streaming": "ive de ecide ed to i imless sin the e army me",
+              "final_metrics": {
+                "reference": "ive decided to enlist in the army",
+                "hypothesis": "ive decided to enlist in the army",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 7
+              },
+              "streaming_metrics": {
+                "reference": "ive decided to enlist in the army",
+                "hypothesis": "ive de ecide ed to i imless sin the e army me",
+                "wer": 1.1428571428571428,
+                "cer": 0.48484848484848486,
+                "substitutions": 3,
+                "deletions": 0,
+                "insertions": 5,
+                "hits": 4
+              },
+              "first_partial_latency_s": 5.448895663022995,
+              "average_update_interval_s": 1.7897576960838504,
+              "finalization_latency_s": 2.1634088763967156,
+              "processing_s": 20.08401859086007,
+              "rtf": 7.7395062007167885,
+              "partial_updates": 10,
+              "chunks_received": 9,
+              "dropped_chunks": 0,
+              "audio_duration_s": 2.595
+            },
+            {
+              "id": "2428-83699-0039",
+              "reference": "I TOLLED THE BELL AGAIN",
+              "final": "i told the bell again",
+              "streaming": "i to old the bell agai ain",
+              "final_metrics": {
+                "reference": "i tolled the bell again",
+                "hypothesis": "i told the bell again",
+                "wer": 0.2,
+                "cer": 0.08695652173913043,
+                "substitutions": 1,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 4
+              },
+              "streaming_metrics": {
+                "reference": "i tolled the bell again",
+                "hypothesis": "i to old the bell agai ain",
+                "wer": 0.8,
+                "cer": 0.2608695652173913,
+                "substitutions": 2,
+                "deletions": 0,
+                "insertions": 2,
+                "hits": 3
+              },
+              "first_partial_latency_s": 3.2514090379700065,
+              "average_update_interval_s": 1.875085051016261,
+              "finalization_latency_s": 3.5250070057809353,
+              "processing_s": 16.435853528790176,
+              "rtf": 8.300936125651605,
+              "partial_updates": 7,
+              "chunks_received": 7,
+              "dropped_chunks": 0,
+              "audio_duration_s": 1.98
+            },
+            {
+              "id": "6345-93302-0010",
+              "reference": "THE KEEN WIND THRUST ITSELF EVEN INSIDE THE HIGH COLLAR OF HER JACKET",
+              "final": "the keen wind thrust itself even inside the high collar of her jacket",
+              "streaming": "ba akig n we when nd thru reste itse elf e even d and su side b the high i cal ollar a of her d jack ket",
+              "final_metrics": {
+                "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+                "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 13
+              },
+              "streaming_metrics": {
+                "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+                "hypothesis": "ba akig n we when nd thru reste itse elf e even d and su side b the high i cal ollar a of her d jack ket",
+                "wer": 1.7692307692307692,
+                "cer": 0.6231884057971014,
+                "substitutions": 8,
+                "deletions": 0,
+                "insertions": 15,
+                "hits": 5
+              },
+              "first_partial_latency_s": 3.864199343137443,
+              "average_update_interval_s": 2.8411998344475733,
+              "finalization_latency_s": 2.3869965178892016,
+              "processing_s": 52.518544824793935,
+              "rtf": 11.801920185346951,
+              "partial_updates": 18,
+              "chunks_received": 14,
+              "dropped_chunks": 0,
+              "audio_duration_s": 4.45
+            },
+            {
+              "id": "2078-142845-0048",
+              "reference": "SEVENTEEN THIRTY FOUR",
+              "final": "seventeen thirty four",
+              "streaming": "s seven nti n thir thirty yfol or",
+              "final_metrics": {
+                "reference": "seventeen thirty four",
+                "hypothesis": "seventeen thirty four",
+                "wer": 0.0,
+                "cer": 0.0,
+                "substitutions": 0,
+                "deletions": 0,
+                "insertions": 0,
+                "hits": 3
+              },
+              "streaming_metrics": {
+                "reference": "seventeen thirty four",
+                "hypothesis": "s seven nti n thir thirty yfol or",
+                "wer": 2.3333333333333335,
+                "cer": 0.7142857142857143,
+                "substitutions": 2,
+                "deletions": 0,
+                "insertions": 5,
+                "hits": 1
+              },
+              "first_partial_latency_s": 3.6274198135361075,
+              "average_update_interval_s": 2.246823492193861,
+              "finalization_latency_s": 4.03494475223124,
+              "processing_s": 21.702114030718803,
+              "rtf": 9.864597286690364,
+              "partial_updates": 8,
+              "chunks_received": 7,
+              "dropped_chunks": 0,
+              "audio_duration_s": 2.2
+            }
+          ]
+        }
+      }
+    }
+  },
+  "note": "Online session code used by the browser backend. Final text is a full-utterance refinement; streaming text is the chunk-merged hypothesis. This is not true stateful encoder streaming."
+}

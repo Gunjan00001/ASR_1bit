@@ -1,0 +1,240 @@
+{
+  "ffn2bit": {
+    "wall_s": 16.04858422279358,
+    "events": [
+      {
+        "type": "status",
+        "status": "loading_model",
+        "model_id": "ffn2bit"
+      },
+      {
+        "type": "ready",
+        "model": {
+          "id": "ffn2bit",
+          "display_name": "2-bit FFN",
+          "description": "Accuracy winner. 2-bit FFN with the fixed 17 FP32 FFN exclusions and all attention FP32.",
+          "kind": "packed",
+          "artifact_bytes": 1131269460,
+          "historical_artifact_bytes": 1131062436,
+          "artifact_available": true,
+          "quantization": {
+            "bits": 2,
+            "scale": "per_tensor_mean_abs",
+            "attention_quantized": 0,
+            "attention_fp32": 96,
+            "ffn_quantized": 79,
+            "ffn_fp32": 17,
+            "bitlinear_layers": 79
+          },
+          "full_test_wer": 0.025829275715155205,
+          "dev_wer": 0.024605920799692427,
+          "dev_wer_note": "packed v2 dev-256; QAT reference 0.024413687043444827",
+          "limitations": [
+            "Packed inference expands weights to FP32; not accelerated.",
+            "Greedy CTC, no language model.",
+            "Clean LibriSpeech only."
+          ],
+          "runtime": "FP32 expansion before F.linear",
+          "checkpoint_sha256": "87005f36bca859fe80bdb48f7a02a18841fed0a5e3495b2d877d2fd1a42befdb",
+          "artifact_sha256": "e8e138050f2252a3b9aa327aec87cbe3340f244509ab2b6953d491bd8881c856"
+        },
+        "load": {
+          "model_id": "ffn2bit",
+          "cached": false,
+          "load_time_s": 9.07352763786912,
+          "device": "cpu",
+          "n_packed_layers": 79,
+          "bits": 2,
+          "scale_mode": "per_tensor_mean_abs",
+          "artifact_bytes": 1131269460,
+          "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors",
+          "manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors.manifest.json",
+          "kind": "packed"
+        },
+        "config": {
+          "chunk_ms": 320,
+          "window_s": 2.0,
+          "overlap_s": 0.5,
+          "sample_rate": 16000,
+          "mode": "chunked-overlap"
+        },
+        "note": "Chunked approximation: full encoder per window. Final text is a full-utterance refinement."
+      },
+      {
+        "type": "partial",
+        "text": "ive decided to enlist in the army",
+        "final_text": "",
+        "partial_text": "ive decided to enlist in the army",
+        "chunk": 1,
+        "window_start_s": 0.0,
+        "window_end_s": 2.0,
+        "latency_s": 2.1580559741705656,
+        "rtf": 1.0790279870852828,
+        "audio_duration_s": 2.24,
+        "mode": "chunked-overlap"
+      },
+      {
+        "type": "final",
+        "text": "ive decided to enlist in the army",
+        "final_text": "ive decided to enlist in the army",
+        "streaming_text": "ive decided to enlist in the army",
+        "refined_text": "ive decided to enlist in the army",
+        "metrics": {
+          "reference": "ive decided to enlist in the army",
+          "hypothesis": "ive decided to enlist in the army",
+          "wer": 0.0,
+          "cer": 0.0,
+          "substitutions": 0,
+          "deletions": 0,
+          "insertions": 0,
+          "hits": 7
+        },
+        "streaming_metrics": {
+          "reference": "ive decided to enlist in the army",
+          "hypothesis": "ive decided to enlist in the army",
+          "wer": 0.0,
+          "cer": 0.0,
+          "substitutions": 0,
+          "deletions": 0,
+          "insertions": 0,
+          "hits": 7
+        },
+        "mode": "chunked-overlap + full-utterance refinement",
+        "audio_duration_s": 2.595,
+        "chunks_received": 9,
+        "window_s": 2.0,
+        "overlap_s": 0.5,
+        "chunk_ms": 320,
+        "partial_updates": 1,
+        "first_partial_latency_s": 2.4728293512016535,
+        "average_update_interval_s": null,
+        "finalization_latency_s": 4.435741786845028,
+        "processing_s": 6.589743775315583,
+        "rtf": 2.539400298772864,
+        "dropped_chunks": 0,
+        "eou_silence_s": 0.8,
+        "events_before_final": [],
+        "limitation": "Not true stateful streaming: every window runs the full encoder. The final text is a full-utterance refinement; streaming_text is the chunk-merged hypothesis."
+      }
+    ]
+  },
+  "strategy_a": {
+    "wall_s": 17.444581508636475,
+    "events": [
+      {
+        "type": "status",
+        "status": "loading_model",
+        "model_id": "strategy_a"
+      },
+      {
+        "type": "ready",
+        "model": {
+          "id": "strategy_a",
+          "display_name": "Strategy A (sub-1 GB)",
+          "description": "Compression winner. 36 attention projections and 79 FFN layers 2-bit; 60 attention + 17 FFN projections FP32; below 1 GB.",
+          "kind": "packed",
+          "artifact_bytes": 989716588,
+          "historical_artifact_bytes": 989509572,
+          "artifact_available": true,
+          "quantization": {
+            "bits": 2,
+            "scale": "per_tensor_mean_abs",
+            "attention_quantized": 36,
+            "attention_fp32": 60,
+            "ffn_quantized": 79,
+            "ffn_fp32": 17,
+            "bitlinear_layers": 115
+          },
+          "full_test_wer": 0.027369902617163724,
+          "dev_wer": 0.027297193387158785,
+          "dev_wer_note": "packed v2 dev-256; matches QAT",
+          "limitations": [
+            "Packed inference expands weights to FP32; not accelerated.",
+            "Slightly higher WER than 2-bit FFN.",
+            "Clean LibriSpeech only."
+          ],
+          "runtime": "FP32 expansion before F.linear",
+          "checkpoint_sha256": "fc9fb3dd3521809fe2d90b7150167f6a403dd72f3f69429142bea80e74b64358",
+          "artifact_sha256": "182c62d18ef00af897a21506848f1ec8246070596c8611988294bc7f80293ca9"
+        },
+        "load": {
+          "model_id": "strategy_a",
+          "cached": false,
+          "load_time_s": 8.68292667903006,
+          "device": "cpu",
+          "n_packed_layers": 115,
+          "bits": 2,
+          "scale_mode": "per_tensor_mean_abs",
+          "artifact_bytes": 989716588,
+          "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors",
+          "manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors.manifest.json",
+          "kind": "packed"
+        },
+        "config": {
+          "chunk_ms": 320,
+          "window_s": 2.0,
+          "overlap_s": 0.5,
+          "sample_rate": 16000,
+          "mode": "chunked-overlap"
+        },
+        "note": "Chunked approximation: full encoder per window. Final text is a full-utterance refinement."
+      },
+      {
+        "type": "partial",
+        "text": "ive decided to enlist in the army",
+        "final_text": "",
+        "partial_text": "ive decided to enlist in the army",
+        "chunk": 1,
+        "window_start_s": 0.0,
+        "window_end_s": 2.0,
+        "latency_s": 2.535839849151671,
+        "rtf": 1.2679199245758355,
+        "audio_duration_s": 2.24,
+        "mode": "chunked-overlap"
+      },
+      {
+        "type": "final",
+        "text": "ive decided to enlist in the army",
+        "final_text": "ive decided to enlist in the army",
+        "streaming_text": "ive decided to enlist in the army",
+        "refined_text": "ive decided to enlist in the army",
+        "metrics": {
+          "reference": "ive decided to enlist in the army",
+          "hypothesis": "ive decided to enlist in the army",
+          "wer": 0.0,
+          "cer": 0.0,
+          "substitutions": 0,
+          "deletions": 0,
+          "insertions": 0,
+          "hits": 7
+        },
+        "streaming_metrics": {
+          "reference": "ive decided to enlist in the army",
+          "hypothesis": "ive decided to enlist in the army",
+          "wer": 0.0,
+          "cer": 0.0,
+          "substitutions": 0,
+          "deletions": 0,
+          "insertions": 0,
+          "hits": 7
+        },
+        "mode": "chunked-overlap + full-utterance refinement",
+        "audio_duration_s": 2.595,
+        "chunks_received": 9,
+        "window_s": 2.0,
+        "overlap_s": 0.5,
+        "chunk_ms": 320,
+        "partial_updates": 1,
+        "first_partial_latency_s": 2.850011329166591,
+        "average_update_interval_s": null,
+        "finalization_latency_s": 5.818633362650871,
+        "processing_s": 8.350884200073779,
+        "rtf": 3.218067129122843,
+        "dropped_chunks": 0,
+        "eou_silence_s": 0.8,
+        "events_before_final": [],
+        "limitation": "Not true stateful streaming: every window runs the full encoder. The final text is a full-utterance refinement; streaming_text is the chunk-merged hypothesis."
+      }
+    ]
+  }
+}

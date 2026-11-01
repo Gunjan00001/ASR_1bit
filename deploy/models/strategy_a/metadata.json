@@ -1,0 +1,33 @@
+{
+  "id": "strategy_a",
+  "display_name": "Strategy A (sub-1 GB)",
+  "kind": "packed",
+  "checkpoint_sha256": "fc9fb3dd3521809fe2d90b7150167f6a403dd72f3f69429142bea80e74b64358",
+  "artifact_bytes": 989716588,
+  "historical_artifact_bytes": 989509572,
+  "artifact_sha256": "182c62d18ef00af897a21506848f1ec8246070596c8611988294bc7f80293ca9",
+  "full_test_wer": 0.027369902617163724,
+  "dev_wer": 0.027297193387158785,
+  "dev_wer_note": "packed v2 dev-256; matches QAT",
+  "quantization": {
+    "bits": 2,
+    "scale": "per_tensor_mean_abs",
+    "attention_quantized": 36,
+    "attention_fp32": 60,
+    "ffn_quantized": 79,
+    "ffn_fp32": 17,
+    "bitlinear_layers": 115
+  },
+  "description": "Compression winner. 36 attention projections and 79 FFN layers 2-bit; 60 attention + 17 FFN projections FP32; below 1 GB.",
+  "limitations": [
+    "Packed inference expands weights to FP32; not accelerated.",
+    "Slightly higher WER than 2-bit FFN.",
+    "Clean LibriSpeech only."
+  ],
+  "checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_full",
+  "artifact_v2": "checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors",
+  "artifact_historical": "checkpoints/attn_2bit_on_2bitffn_A_full_packed/model_packed.safetensors",
+  "deploy_artifact": "deploy/models/strategy_a/model_packed.safetensors",
+  "local_fallback_artifact": "checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors",
+  "runtime": "FP32 expansion before F.linear"
+}

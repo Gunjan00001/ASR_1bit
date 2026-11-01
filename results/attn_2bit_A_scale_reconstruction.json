@@ -1,0 +1,1438 @@
+{
+  "purpose": "pre-training weight-level screen for per-output-channel 2-bit scaling on Strategy A",
+  "source": "checkpoints/attn_2bit_on_2bitffn_A_full/model.safetensors",
+  "config": "configs/attn_2bit_A_per_channel.yaml",
+  "method": {
+    "bits": 2,
+    "levels": [
+      -1.5,
+      -0.5,
+      0.5,
+      1.5
+    ],
+    "per_tensor": "alpha=mean(|W|); Wq=(clamp(floor(W/alpha)+2,0,3)-1.5)*alpha",
+    "per_channel": "alpha_i=mean_j|W_ij|; Wq_i=(clamp(floor(W_i/alpha_i)+2,0,3)-1.5)*alpha_i",
+    "metric": "relative Frobenius reconstruction error ||W-Wq||_F/||W||_F"
+  },
+  "summary": {
+    "n_layers": 115,
+    "numel": 369098752,
+    "mean_err_per_tensor": 0.49321662368981734,
+    "mean_err_per_channel": 0.46668866950532667,
+    "numel_weighted_err_per_tensor": 0.4560358849438754,
+    "numel_weighted_err_per_channel": 0.4327872097492218,
+    "mean_relative_improvement": 0.049151134989836094,
+    "median_relative_improvement": 0.03305481313679754
+  },
+  "groups": {
+    "attention_quantized": {
+      "n_layers": 36,
+      "numel": 37748736,
+      "mean_err_per_tensor": 0.6143982907136282,
+      "mean_err_per_channel": 0.5771823161178165,
+      "numel_weighted_err_per_tensor": 0.6143982907136282,
+      "numel_weighted_err_per_channel": 0.5771823161178165,
+      "mean_relative_improvement": 0.05730228218332446,
+      "median_relative_improvement": 0.05947642752222329
+    },
+    "ffn_quantized": {
+      "n_layers": 79,
+      "numel": 331350016,
+      "mean_err_per_tensor": 0.43799459821061243,
+      "mean_err_per_channel": 0.4163371343401414,
+      "numel_weighted_err_per_tensor": 0.43799459821061243,
+      "numel_weighted_err_per_channel": 0.4163371343401414,
+      "mean_relative_improvement": 0.04543668816748696,
+      "median_relative_improvement": 0.029951899134961015
+    }
+  },
+  "scale_metadata": {
+    "per_tensor_fp32_scalars": 115,
+    "per_tensor_bytes": 460,
+    "per_channel_fp32_scalars": 222208,
+    "per_channel_bytes": 888832,
+    "additional_bytes": 888372
+  },
+  "layers": [
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.5179954171180725,
+      "err_per_channel": 0.49133598804473877,
+      "relative_improvement": 0.05146653463008719,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.5171374678611755,
+      "err_per_channel": 0.4468948543071747,
+      "relative_improvement": 0.13582967377033553,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4588746130466461,
+      "err_per_channel": 0.44404342770576477,
+      "relative_improvement": 0.03232077983659059,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.5123847723007202,
+      "err_per_channel": 0.4382067918777466,
+      "relative_improvement": 0.1447700720883999,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.self_attn.linear_k",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6510927677154541,
+      "err_per_channel": 0.5968764424324036,
+      "relative_improvement": 0.08326973969206275,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.0.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6528303623199463,
+      "err_per_channel": 0.5996932983398438,
+      "relative_improvement": 0.08139490294426677,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.5470445156097412,
+      "err_per_channel": 0.4327191412448883,
+      "relative_improvement": 0.20898733302796157,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.7095842361450195,
+      "err_per_channel": 0.6815236210823059,
+      "relative_improvement": 0.03954515000947513,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.5445668697357178,
+      "err_per_channel": 0.4108085632324219,
+      "relative_improvement": 0.2456232906129779,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.7555980682373047,
+      "err_per_channel": 0.7109167575836182,
+      "relative_improvement": 0.059133701543098466,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.1.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6572839021682739,
+      "err_per_channel": 0.6181910037994385,
+      "relative_improvement": 0.05947642752222329,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.41537854075431824,
+      "err_per_channel": 0.4024277925491333,
+      "relative_improvement": 0.031178183113809068,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.425131618976593,
+      "err_per_channel": 0.4157763719558716,
+      "relative_improvement": 0.022005531000592358,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.10.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4054272770881653,
+      "err_per_channel": 0.3910504877567291,
+      "relative_improvement": 0.03546083390020584,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4194910526275635,
+      "err_per_channel": 0.41357243061065674,
+      "relative_improvement": 0.014109054245220017,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.39728009700775146,
+      "err_per_channel": 0.3894098997116089,
+      "relative_improvement": 0.019810197780909776,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.11.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40274620056152344,
+      "err_per_channel": 0.39024966955184937,
+      "relative_improvement": 0.031028302668655725,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40588971972465515,
+      "err_per_channel": 0.3877936005592346,
+      "relative_improvement": 0.04458383222343365,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4091017544269562,
+      "err_per_channel": 0.40281617641448975,
+      "relative_improvement": 0.015364338931449634,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.38708940148353577,
+      "err_per_channel": 0.38275569677352905,
+      "relative_improvement": 0.011195617067782314,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.386469304561615,
+      "err_per_channel": 0.3786129653453827,
+      "relative_improvement": 0.020328494717436894,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6056749820709229,
+      "err_per_channel": 0.6007896065711975,
+      "relative_improvement": 0.008066001806812747,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.7150943279266357,
+      "err_per_channel": 0.6626313924789429,
+      "relative_improvement": 0.07336505604764809,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.12.self_attn.linear_v",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6950905323028564,
+      "err_per_channel": 0.6203780770301819,
+      "relative_improvement": 0.10748593427844555,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3899646997451782,
+      "err_per_channel": 0.38252076506614685,
+      "relative_improvement": 0.01908873978566675,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4016227126121521,
+      "err_per_channel": 0.38834714889526367,
+      "relative_improvement": 0.03305481313679754,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3835632801055908,
+      "err_per_channel": 0.380467027425766,
+      "relative_improvement": 0.008072338621602318,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3882063627243042,
+      "err_per_channel": 0.37862706184387207,
+      "relative_improvement": 0.024675795659833483,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.13.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.46349555253982544,
+      "err_per_channel": 0.442513108253479,
+      "relative_improvement": 0.045270001343850085,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.38889288902282715,
+      "err_per_channel": 0.38202813267707825,
+      "relative_improvement": 0.017652049033341815,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4022981524467468,
+      "err_per_channel": 0.38807547092437744,
+      "relative_improvement": 0.03535358399204201,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3860734701156616,
+      "err_per_channel": 0.38142022490501404,
+      "relative_improvement": 0.012052745321385443,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.14.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.39408326148986816,
+      "err_per_channel": 0.3802417516708374,
+      "relative_improvement": 0.03512331319706819,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4066854417324066,
+      "err_per_channel": 0.3912217319011688,
+      "relative_improvement": 0.03802376049008585,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.390775203704834,
+      "err_per_channel": 0.3864312171936035,
+      "relative_improvement": 0.011116331000652825,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.15.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3957156538963318,
+      "err_per_channel": 0.3832462430000305,
+      "relative_improvement": 0.031511037719948176,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.39188066124916077,
+      "err_per_channel": 0.38749656081199646,
+      "relative_improvement": 0.011187335509717488,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40433821082115173,
+      "err_per_channel": 0.3918105363845825,
+      "relative_improvement": 0.030983157419446804,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3864946961402893,
+      "err_per_channel": 0.38420242071151733,
+      "relative_improvement": 0.005930936314686,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.16.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3913388252258301,
+      "err_per_channel": 0.3795781433582306,
+      "relative_improvement": 0.03005242799717801,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.39868026971817017,
+      "err_per_channel": 0.3895936906337738,
+      "relative_improvement": 0.022791644770431524,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.394189715385437,
+      "err_per_channel": 0.38506534695625305,
+      "relative_improvement": 0.023147149895227967,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.17.self_attn.linear_v",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.4165014922618866,
+      "err_per_channel": 0.40124261379241943,
+      "relative_improvement": 0.03663583145068957,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3909166753292084,
+      "err_per_channel": 0.3856751322746277,
+      "relative_improvement": 0.013408338363070727,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.self_attn.linear_k",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6770572066307068,
+      "err_per_channel": 0.6368345022201538,
+      "relative_improvement": 0.05940813274954475,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.18.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6475670337677002,
+      "err_per_channel": 0.6012741923332214,
+      "relative_improvement": 0.07148733493293492,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.389104425907135,
+      "err_per_channel": 0.3854779005050659,
+      "relative_improvement": 0.009320185432520911,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.19.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.39220914244651794,
+      "err_per_channel": 0.38458025455474854,
+      "relative_improvement": 0.019451071038737177,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4901033341884613,
+      "err_per_channel": 0.46286740899086,
+      "relative_improvement": 0.05557180149100594,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4853418171405792,
+      "err_per_channel": 0.44479790329933167,
+      "relative_improvement": 0.08353682375879846,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.41995298862457275,
+      "err_per_channel": 0.40082845091819763,
+      "relative_improvement": 0.045539710930529824,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.45684394240379333,
+      "err_per_channel": 0.4254544973373413,
+      "relative_improvement": 0.06870933846969488,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.2.self_attn.linear_v",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.5721407532691956,
+      "err_per_channel": 0.5228027105331421,
+      "relative_improvement": 0.08623409965840981,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40010133385658264,
+      "err_per_channel": 0.3960378170013428,
+      "relative_improvement": 0.010156219215946043,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3942830562591553,
+      "err_per_channel": 0.39054054021835327,
+      "relative_improvement": 0.00949195249806046,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.20.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3886091709136963,
+      "err_per_channel": 0.382563054561615,
+      "relative_improvement": 0.015558347060790395,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40396958589553833,
+      "err_per_channel": 0.4009036421775818,
+      "relative_improvement": 0.007589540958039744,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4001053273677826,
+      "err_per_channel": 0.391923189163208,
+      "relative_improvement": 0.02044996066011749,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3941480219364166,
+      "err_per_channel": 0.39124250411987305,
+      "relative_improvement": 0.00737164124855685,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6659904718399048,
+      "err_per_channel": 0.6485583782196045,
+      "relative_improvement": 0.026174689214608967,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.21.self_attn.linear_v",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.4067409336566925,
+      "err_per_channel": 0.3957732319831848,
+      "relative_improvement": 0.026964833794586605,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40296512842178345,
+      "err_per_channel": 0.4009537696838379,
+      "relative_improvement": 0.0049913965156812975,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4003693163394928,
+      "err_per_channel": 0.3910905122756958,
+      "relative_improvement": 0.02317561232871563,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.22.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3870733082294464,
+      "err_per_channel": 0.38434359431266785,
+      "relative_improvement": 0.0070521884582143935,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40510910749435425,
+      "err_per_channel": 0.3955373466014862,
+      "relative_improvement": 0.023627612205685693,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.540152907371521,
+      "err_per_channel": 0.4035690128803253,
+      "relative_improvement": 0.2528615372188533,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.self_attn.linear_k",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6582754850387573,
+      "err_per_channel": 0.6571977734565735,
+      "relative_improvement": 0.0016371741112619217,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.23.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.40934452414512634,
+      "err_per_channel": 0.39066413044929504,
+      "relative_improvement": 0.04563489333305085,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.45590564608573914,
+      "err_per_channel": 0.41995128989219666,
+      "relative_improvement": 0.07886359053070552,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4690379798412323,
+      "err_per_channel": 0.45636093616485596,
+      "relative_improvement": 0.027027755152509138,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.44993364810943604,
+      "err_per_channel": 0.39614057540893555,
+      "relative_improvement": 0.11955779019091402,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4859640896320343,
+      "err_per_channel": 0.47090283036231995,
+      "relative_improvement": 0.030992535438407694,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.self_attn.linear_k",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6283987760543823,
+      "err_per_channel": 0.6066445112228394,
+      "relative_improvement": 0.034618566522574404,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.3.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6063896417617798,
+      "err_per_channel": 0.5804835557937622,
+      "relative_improvement": 0.04272184777555087,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.42910704016685486,
+      "err_per_channel": 0.4173561930656433,
+      "relative_improvement": 0.027384419273667297,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4265739321708679,
+      "err_per_channel": 0.40673768520355225,
+      "relative_improvement": 0.04650131072559326,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4268249273300171,
+      "err_per_channel": 0.4026767313480377,
+      "relative_improvement": 0.05657634883941117,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.45274975895881653,
+      "err_per_channel": 0.4245644509792328,
+      "relative_improvement": 0.06225361233631835,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.self_attn.linear_k",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.65630704164505,
+      "err_per_channel": 0.6316801309585571,
+      "relative_improvement": 0.037523459484397656,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.4840793013572693,
+      "err_per_channel": 0.47654834389686584,
+      "relative_improvement": 0.015557280468898428,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6199293732643127,
+      "err_per_channel": 0.5880035161972046,
+      "relative_improvement": 0.0514991843328841,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.4.self_attn.linear_v",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6103067398071289,
+      "err_per_channel": 0.5678985118865967,
+      "relative_improvement": 0.06948674355773002,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4314398765563965,
+      "err_per_channel": 0.42147424817085266,
+      "relative_improvement": 0.023098533369437277,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4252687990665436,
+      "err_per_channel": 0.40310853719711304,
+      "relative_improvement": 0.05210883544259976,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4375460743904114,
+      "err_per_channel": 0.40362533926963806,
+      "relative_improvement": 0.07752494447134885,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.47383686900138855,
+      "err_per_channel": 0.4424046576023102,
+      "relative_improvement": 0.06633551218866056,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.self_attn.linear_k",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6731268763542175,
+      "err_per_channel": 0.6172115206718445,
+      "relative_improvement": 0.0830680777229119,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.49523046612739563,
+      "err_per_channel": 0.48889535665512085,
+      "relative_improvement": 0.012792245036566681,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6630738973617554,
+      "err_per_channel": 0.5976626873016357,
+      "relative_improvement": 0.09864844675741025,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.5.self_attn.linear_v",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6603168845176697,
+      "err_per_channel": 0.6208457350730896,
+      "relative_improvement": 0.05977607171655453,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.5324191451072693,
+      "err_per_channel": 0.4105248749256134,
+      "relative_improvement": 0.22894419049693865,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.6018762588500977,
+      "err_per_channel": 0.5893357992172241,
+      "relative_improvement": 0.020835611055389447,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.5241517424583435,
+      "err_per_channel": 0.5181124806404114,
+      "relative_improvement": 0.0115219722243165,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.5104598999023438,
+      "err_per_channel": 0.5019420385360718,
+      "relative_improvement": 0.016686641532276145,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.6.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6974828839302063,
+      "err_per_channel": 0.6213442087173462,
+      "relative_improvement": 0.10916206973256555,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.41046157479286194,
+      "err_per_channel": 0.40242648124694824,
+      "relative_improvement": 0.019575750909128532,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.41471534967422485,
+      "err_per_channel": 0.39562150835990906,
+      "relative_improvement": 0.04604083579089792,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.4169068932533264,
+      "err_per_channel": 0.39697933197021484,
+      "relative_improvement": 0.047798589098892466,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.42990511655807495,
+      "err_per_channel": 0.41139206290245056,
+      "relative_improvement": 0.04306311542380422,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.self_attn.linear_k",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.7456453442573547,
+      "err_per_channel": 0.6653316617012024,
+      "relative_improvement": 0.1077102984343621,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.5624960064888,
+      "err_per_channel": 0.553122878074646,
+      "relative_improvement": 0.01666345770641606,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.7463218569755554,
+      "err_per_channel": 0.6462831497192383,
+      "relative_improvement": 0.1340423120685768,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.7.self_attn.linear_v",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6862432360649109,
+      "err_per_channel": 0.6142579913139343,
+      "relative_improvement": 0.1048975654226595,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.46757468581199646,
+      "err_per_channel": 0.40615177154541016,
+      "relative_improvement": 0.13136492656765292,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.5236290693283081,
+      "err_per_channel": 0.5128286480903625,
+      "relative_improvement": 0.02062609177103161,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40774741768836975,
+      "err_per_channel": 0.39697518944740295,
+      "relative_improvement": 0.026418875445091642,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.5557278990745544,
+      "err_per_channel": 0.5495667457580566,
+      "relative_improvement": 0.011086636691729677,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.8.self_attn.linear_q",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.6941209435462952,
+      "err_per_channel": 0.6468905806541443,
+      "relative_improvement": 0.06804341999947275,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn1.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.42342835664749146,
+      "err_per_channel": 0.4078275263309479,
+      "relative_improvement": 0.03684408488855987,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn1.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.42560142278671265,
+      "err_per_channel": 0.41906389594078064,
+      "relative_improvement": 0.015360679020117481,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn2.intermediate_dense",
+      "shape": [
+        4096,
+        1024
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.3972929120063782,
+      "err_per_channel": 0.39232468605041504,
+      "relative_improvement": 0.012505196558561745,
+      "out_features": 4096
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.ffn2.output_dense",
+      "shape": [
+        1024,
+        4096
+      ],
+      "numel": 4194304,
+      "err_per_tensor": 0.40832164883613586,
+      "err_per_channel": 0.39609163999557495,
+      "relative_improvement": 0.029951899134961015,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.self_attn.linear_k",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.7158470153808594,
+      "err_per_channel": 0.669629693031311,
+      "relative_improvement": 0.06456312781434015,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.self_attn.linear_out",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.5339277386665344,
+      "err_per_channel": 0.5260080695152283,
+      "relative_improvement": 0.01483284830094283,
+      "out_features": 1024
+    },
+    {
+      "name": "wav2vec2_conformer.encoder.layers.9.self_attn.linear_v",
+      "shape": [
+        1024,
+        1024
+      ],
+      "numel": 1048576,
+      "err_per_tensor": 0.678726315498352,
+      "err_per_channel": 0.6128920316696167,
+      "relative_improvement": 0.09699680464046365,
+      "out_features": 1024
+    }
+  ]
+}

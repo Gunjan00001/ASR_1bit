@@ -267,7 +267,212 @@ baseline remains the measured overall winner; no full run or test evaluation was
 launched. A full A run requires explicit approval. GPU: A100-SXM4-80GB; A peak
 30.94 GB / 863.7 s; B peak 31.09 GB / 846.7 s; A/B packed reload exact.
 
-## 12. Honest reading
+## 12. Strategy A full run (A100, 10k/1,875)
+
+Initialized from the selected 2-bit FFN full checkpoint; **36 attention projections 2-bit, 60 attention FP32, 79 FFN 2-bit, 17 fixed FFN FP32 exclusions**. 10,000 train.100 utterances, 1,875 steps, seed 42, 256-dev selection. Best step **1,000**; test evaluated once after selection.
+
+| Split | WER | CER | Artifact | Reload | RTF / p50 |
+|---|---:|---:|---:|---|---:|
+| Dev-256 | 2.73% | 0.77% | 989,509,572 B | pass | — |
+| Test-256 | **2.69%** | **0.74%** | 989,509,572 B | pass | 0.00808 / 0.054 s |
+| Full test-clean | **2.74%** | **0.76%** | 989,509,572 B | pass 0.0/1.0 | — |
+
+Comparison: **+0.16 pp** full-test WER and **−12.52%** size versus the 2-bit FFN baseline (2.58%, 1,131,062,436 B). Training 3,909.3 s; peak GPU 32.59 GB; 115 BitLinear layers, 77 FP32 exclusions. This is a valid sub-1.0 GB trade-off, not an accuracy win over the 2-bit FFN.
+
+## 13. Policy C pilot (A100, dev-128)
+
+Category-balanced follow-up to Strategy A, derived only from the existing 2-bit
+attention screen. Quantized **24 `attention_k` + the 10 least-sensitive
+`attention_output` projections (34 total)**; **62 attention projections FP32**;
+all **79 FFN layers 2-bit** with the fixed **17 FFN FP32 exclusions**. Initialized
+from `checkpoints/qat_ffn_mixed_2bit_full`; 2,000 train.100 utterances, 500
+steps, seed 42, batch 4 × accum 4, lr 2e-5, dev-128, best-dev selection.
+**Dev-only; no test evaluation and no full run.**
+
+| Arm | Attention quantized | Attention FP32 | Dev-128 WER | CER | Artifact bytes | ΔWER vs baseline | Size vs A |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2-bit FFN baseline | 0 | 96 | 0.0243 | 0.0071 | 1,131,062,436 | — | — |
+| A: 36 least-sensitive | 36 | 60 | **0.0299** | **0.0088** | **989,509,572** | +0.56 pp | — |
+| C: 24 K + 10 output | 34 | 62 | 0.0377 | 0.0109 | 997,373,612 | +1.34 pp | +0.79% |
+
+C is **dominated by A**: 0.78 pp worse dev WER and 7.9 MB larger. It remains
+below 1.0 GB and its packed reload is exact (max |Δlogit| 0.0, argmax 1.0), but
+it does not justify a full run. Best step 500 (final step); peak GPU 30.95 GB;
+training 843.3 s; RTF 0.00502. 113 BitLinear layers (79 FFN + 34 attention), 79
+FP32 exclusions.
+
+## 14. Strategy A checkpoint audit (dev only)
+
+All three states are real, loadable FP32-master checkpoints. The selected A
+artifact and its historical results were not modified. Dev subsets differ by
+run; all use the same greedy CTC + normalized-text protocol.
+
+| A checkpoint | Step | Dev n | WER | CER | Artifact | Packed reload | Selected |
+|---|---:|---:|---:|---:|---:|---|---|
+| Pilot best | 500 | 128 | 2.986% | 0.877% | 989,509,572 B | pass, 0.0 / 1.0 | yes |
+| Full best | 1000 | 256 | 2.730% | 0.767% | 989,509,572 B | pass, 0.0 / 1.0 | yes |
+| Full final state | 1875 | 256 | 2.807% | 0.760% | 989,509,572 B | pass, 0.0 / 1.0 | no |
+
+The final-1875 state was packed to a new path and verified for this audit; it
+was not selected for test. The A pilot dev-128 result was reproduced exactly on
+CPU before the redundant sweep was stopped. Source:
+`results/checkpoint_analysis_A.json`.
+
+## 15. Per-output-channel scaling pilot (A100, dev-128)
+
+Single-variable change to Strategy A: `quantization.scale` changed from
+`per_tensor_mean_abs` to `per_output_channel_mean_abs`. Everything else is
+inherited unchanged: 36 attention projections 2-bit, 60 attention FP32, 79 FFN
+2-bit, fixed 17 FFN exclusions, init `checkpoints/qat_ffn_mixed_2bit_full`,
+2,000 train.100 utterances, 500 steps, seed 42, batch 4 × accum 4, lr 2e-5,
+dev-128, best-dev selection. Dev-only; no test evaluation.
+
+| Arm | Scale | Dev-128 WER | CER | Artifact | ΔWER vs A | Δbytes |
+|---|---|---:|---:|---:|---:|---:|
+| A | per-tensor | 2.986% | 0.877% | 989,509,572 B | — | — |
+| A + per-channel | per-output-channel | **2.912%** | **0.863%** | 990,398,520 B | **−0.075 pp** | +888,948 B |
+
+The weight-level screen predicted a 4.92% mean reduction in relative
+reconstruction error (median 3.30%); the dev-128 WER gain is 0.075 pp (2.5%
+relative), and the dev-256 confirmation is consistent but still small. The
+artifact remains **9.60 MB below 1.0 GB**, and packed reload is exact (max
+|Δlogit| 0.0, argmax 1.0, 2/2 decoded matches). Best step 500; peak allocated
+30.94 GB; training 1,063.6 s; RTF 0.00500. 115 BitLinear layers; 222,208
+per-channel FP32 scales (888,832 B).
+
+**Dev-256 confirmation:** the same two checkpoints were evaluated on the full
+seed-42 dev-256 slice (the first 128 are the selection slice; the last 128 are
+fresh dev data). A measured **2.8835%** (150/5,202 word errors), per-channel
+**2.8066%** (146/5,202), Δ **0.0769 pp**; CER 0.7923% vs 0.7778%. The gain is
+almost identical on the fresh half (0.0793 pp). A paired utterance bootstrap
+gives a 95% interval of **−0.113 to +0.260 pp**, p(Δ≤0)=0.235, so the difference
+is not distinguishable from zero. Both artifacts remain unchanged:
+989,509,572 vs 990,398,520 B.
+
+**Decision:** not promoted. The 4-word difference on 5,202 dev words is too
+small to call a reliable improvement; A remains the selected sub-1.0 GB model.
+No full run and no test evaluation were launched.
+
+## 16. Error analysis and decoding audit (A full, dev-256)
+
+Using the selected Strategy A checkpoint and the pinned dev-256 predictions:
+
+| Error type | Count | Share of word errors |
+|---|---:|---:|
+| Substitutions | 114 | 80.3% |
+| Deletions | 17 | 12.0% |
+| Insertions | 11 | 7.7% |
+| **Total** | **142** | **100%** |
+
+- 169/256 utterances were perfect; 87 had at least one word error.
+- The top 10 utterances contain 24.6% of errors, top 20 38.7%, top 50 74.0%.
+- Reference length <10 words: **8.68% WER** (29/334 words; 29 of 142 errors).
+  Longer length bins are 2.64%, 2.05%, and 2.34%.
+- Duration <3.65 s: **6.51% WER**; the longer duration bins are 2.25–2.60%.
+- Mean CTC blank fraction: 57.8% (range 38.7–88.6%); blank fraction correlates
+  with per-utterance WER at r=+0.24. Forced-alignment blank fraction correlates
+  at r=+0.26; mean target-token duration 3.66 frames, with at least one
+  zero-frame target. This is association, not proof of causation.
+- Common confusions are function words/homophones (`this`→`the` 3×,
+  `in`→`and` 2×, `o`→`oh` 2×), rare proper names (`jean`→`jeahn`,
+  `moira`→`moyra`, `shimerda`→`shmerda`, `sauterne`→`salterne`,
+  `bordeaux`→`bordeau`), and spelling variants (`coloured`, `centre`,
+  `unfavourable`, `whisky`).
+
+**Decoding comparison (same logits, same 256 utterances):**
+
+| Decoder | WER | CER | Word errors | Decode latency mean | p95 |
+|---|---:|---:|---:|---:|---:|
+| Greedy (pinned) | **2.7297%** | **0.7706%** | 142 | 1.04 ms | 2.46 ms |
+| Greedy, blank penalty 0.5 | 2.7105% | 0.7634% | 141 | 0.94 ms | 2.34 ms |
+| CTC beam 10 | 2.8066% | 0.7742% | 146 | 234.5 ms | 575 ms |
+| CTC beam 50 | 2.8066% | 0.7742% | 146 | 1,330 ms | 3,422 ms |
+
+Blank penalty 0.5 improves by one word error (0.019 pp); paired bootstrap 95%
+CI **−0.117 to +0.161 pp**, p=0.46. Beam search is 4 errors worse, with a 95%
+CI of **−0.185 to 0.000 pp**. The artifact is unchanged at **989,509,572 B**.
+Forward pass: 20.04 s for 256 utterances (RTF 0.01065); peak GPU 3.14 GB.
+No LM was available in the environment; no LM was tested or installed.
+
+**Decision:** keep greedy decoding. Neither blank penalty nor beam search is a
+reliable improvement, and beam search is too slow for the small/no gain.
+
+**Recommended next experiment:** a controlled short-utterance oversampling
+fine-tune of A, because reference length <10 words carries 20.4% of errors at
+8.68% WER. It would change training-subset composition only; the quantization
+policy, checkpoint initialization (A full), seed, optimizer/LR, evaluation, and
+greedy decoder stay fixed. Target: dev-256 WER improvement ≥0.10 pp without a
+long-utterance regression; artifact must remain <1 GB. **Not launched; requires
+approval.**
+
+## 17. Short-utterance oversampling pilot (A, dev-256)
+
+The approved 500-step pilot initialized from the selected A full checkpoint
+(SHA-256 `fc9fb3dd3521809fe2d90b7150167f6a403dd72f3f69429142bea80e74b64358`,
+step 1000, restored best). The only training-data change was a deterministic
+2,000-row subset from the original 10k train.100 pool: **500 short / 1,500
+long**, with short defined as ≤9 normalized reference words. The quantization
+policy was unchanged: 36 attention projections 2-bit, 60 attention FP32, 79 FFN
+2-bit, 17 fixed FFN exclusions, per-tensor 2-bit scales.
+
+**Length audit:** train.100 has 3.55% short utterances and 0.719% short words;
+the original 10k subset has 3.65% short utterances and 0.749% short words. Dev-256
+has 22.66% short utterances, 6.42% short words, and 20.42% of word errors there.
+Thus short utterances are **not underrepresented by utterance count** relative
+to train.100; they are underrepresented in **word/token exposure** relative to
+dev. The pilot target was 25% short utterances, yielding 6.14% short words
+(close to dev), effective weights **6.85× short / 0.778× long**, 365 unique
+short rows and 135 repeats. There is no dev/test overlap; test was never read.
+
+| Metric | Strategy A | Short-oversample pilot | Δ pilot vs A |
+|---|---:|---:|---:|
+| Dev-256 WER | **2.7297%** | 2.7682% | +0.0384 pp |
+| Dev-256 CER | 0.7706% | 0.7598% | −0.0108 pp |
+| Substitutions | 114 | 113 | −1 |
+| Deletions | 17 | 16 | −1 |
+| Insertions | 11 | 15 | +4 |
+| Word errors | 142 | 144 | +2 |
+| Artifact | 989,509,572 B | 989,509,572 B | 0 |
+| Packed reload | pass | pass, 0.0 / 1.0 | — |
+
+Short slice: **8.68% → 8.98% WER** (worse by 0.30 pp). Long slice: **2.321% →
+2.342%** (worse by 0.0205 pp, inside the pre-declared 0.10 pp regression limit).
+Overall paired bootstrap improvement: **−0.0369 pp**, 95% CI **−0.273 to +0.191
+pp**, p=0.647. Slice bootstrap: short **−0.292 pp** (95% CI −1.796 to +0.857),
+long **−0.021 pp** (95% CI −0.253 to +0.209); negative means the pilot is worse.
+Best checkpoint was step **500**; peak GPU 30.72 GB; training 849.9 s; eval RTF
+0.00512; mean latency 37.6 ms.
+
+**Decision:** rejected. The pilot does not improve overall WER, does not improve
+the short slice, and increases word errors by two. The original Strategy A
+checkpoint and artifact remain selected. No full run or test evaluation was
+launched.
+
+## 18. Final controlled deployment benchmark (dev-256) and artifact v2
+
+Same A100-SXM4-80GB, 256 dev-clean utterances, seed 42, greedy CTC, one process
+per arm. Full test WER is historical; this benchmark does not use test data.
+The packed arms use standalone **v2** artifacts (buffers included).
+
+| Model | Dev WER | Dev CER | Full test WER | v2 artifact | Historical artifact | Load | Peak host | Peak GPU | Forward | End-to-end |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| FP32 | 2.0185% | 0.4934% | 1.93% | 2,373,507,712 B | 2,373,507,712 B | 2.31 s | 1,590 MB | 3.14 GB | 51.25 ms | 52.77 ms |
+| 2-bit FFN | 2.4606% | 0.6770% | 2.58% | 1,131,269,460 B | 1,131,062,436 B | 7.87 s | 1,659 MB | 1.89 GB | 1,005.12 ms | 1,006.68 ms |
+| Strategy A | 2.7297% | 0.7706% | 2.74% | 989,716,588 B | 989,509,572 B | 7.61 s | 1,643 MB | 1.75 GB | 1,126.61 ms | 1,128.18 ms |
+
+The packer previously omitted BatchNorm/positional buffers. Historical artifacts
+still match their recorded sizes and verify against their QAT checkpoints, but
+they are not standalone. The v2 packer includes `named_buffers()`; v2 artifacts
+are standalone. FFN v2 dev WER differs from its QAT dev reference (2.4414%) by
+**+0.0192 pp**, one word; Strategy A matches exactly. Full test WER was not
+re-run.
+
+**Inference:** storage compression is real; acceleration is not claimed. Packed
+forward is **19.6×** slower for FFN and **22.0×** slower for Strategy A than FP32
+because codes are expanded to FP32 before `F.linear`. See
+`results/final_benchmark.json` and `results/final_audit.json`.
+
+## 19. Honest reading
 
 - Accuracy numbers are greedy CTC on fixed LibriSpeech subsets; they are not
   comparable to LM-assisted leaderboard numbers.

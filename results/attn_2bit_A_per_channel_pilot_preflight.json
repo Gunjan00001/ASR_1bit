@@ -1,0 +1,84 @@
+{
+  "purpose": "read-only preflight for the full FFN control vs mixed-precision run",
+  "timestamp_utc": "2026-10-30T18:05:54.701902+00:00",
+  "git_commit": "0fae4eeb81c63995b4594edb5e8eee302e71e24e",
+  "node": "jiit-gpu01",
+  "queue": "gpu",
+  "job_name": "attn_2bit_A_per_channel_pilot",
+  "pbs": {
+    "state": "job-busy",
+    "available_cpus": 96,
+    "assigned_cpus": 96,
+    "free_cpus": 0,
+    "available_host_mem_bytes": 2162400690176,
+    "assigned_host_mem_bytes": 343597383680,
+    "free_host_mem_bytes": 1818803306496,
+    "resources_available_ngpus": "8"
+  },
+  "gpus": [
+    {
+      "index": 0,
+      "free_mb": 66095,
+      "utilization_pct": 100
+    },
+    {
+      "index": 1,
+      "free_mb": 80134,
+      "utilization_pct": 11
+    },
+    {
+      "index": 2,
+      "free_mb": 80577,
+      "utilization_pct": 74
+    },
+    {
+      "index": 3,
+      "free_mb": 80521,
+      "utilization_pct": 0
+    },
+    {
+      "index": 4,
+      "free_mb": 81027,
+      "utilization_pct": 0
+    },
+    {
+      "index": 5,
+      "free_mb": 67781,
+      "utilization_pct": 33
+    },
+    {
+      "index": 6,
+      "free_mb": 46423,
+      "utilization_pct": 85
+    },
+    {
+      "index": 7,
+      "free_mb": 49255,
+      "utilization_pct": 99
+    }
+  ],
+  "gpu_free_count_above_threshold": 8,
+  "gpu_query_error": null,
+  "disk_free_bytes": 346166135881728,
+  "existing_jobs": [],
+  "duplicate_jobs": [],
+  "existing_outputs": [
+    "results/qat_ffn_control_full.json",
+    "results/qat_ffn_mixed_full.json"
+  ],
+  "partial_checkpoints": [
+    "checkpoints/qat_ffn_control_full",
+    "checkpoints/qat_ffn_mixed_full"
+  ],
+  "requirements": {
+    "cpus": 1,
+    "gpus": 1,
+    "gpu_free_gb": 25.0,
+    "host_free_gb": 64.0,
+    "disk_free_gb": 40.0
+  },
+  "ready": false,
+  "blocked_reasons": [
+    "free CPUs 0 < required 1"
+  ]
+}

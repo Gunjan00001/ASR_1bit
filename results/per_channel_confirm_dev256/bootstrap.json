@@ -1,0 +1,39 @@
+{
+  "protocol": "paired utterances from dev-256; word-level Levenshtein; bootstrap over utterances, seed 42",
+  "all": {
+    "n": 256,
+    "words": 5202,
+    "wer_A": 0.02883506343713956,
+    "wer_C": 0.028066128412149175,
+    "delta_A_minus_C_pp": 0.07689350249903866,
+    "errors_A": 150,
+    "errors_C": 146
+  },
+  "selection_half_128": {
+    "n": 128,
+    "words": 2679,
+    "wer_A": 0.029861888764464353,
+    "wer_C": 0.029115341545352745,
+    "delta_A_minus_C_pp": 0.07465472191116075,
+    "errors_A": 80,
+    "errors_C": 78
+  },
+  "fresh_half_128": {
+    "n": 128,
+    "words": 2523,
+    "wer_A": 0.027744748315497423,
+    "wer_C": 0.026952041220768927,
+    "delta_A_minus_C_pp": 0.0792707094728496,
+    "errors_A": 70,
+    "errors_C": 68
+  },
+  "bootstrap_delta_pp": {
+    "mean": 0.07678370765274393,
+    "ci95": [
+      -0.1127824849772484,
+      0.25988518644890324
+    ],
+    "p_delta_le_0": 0.2352
+  },
+  "note": "Positive delta = per-channel lower WER than A. The first 128 utterances are the pilot selection slice; the second 128 are fresh dev data."
+}

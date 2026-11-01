@@ -123,6 +123,7 @@ def main() -> int:
         "fp_scale_bytes": report["fp_scale_bytes"],
         "fp_scale_element_count": report.get("fp_scale_element_count"),
         "non_quantized_fp_param_bytes": report["non_quantized_fp_param_bytes"],
+        "non_quantized_buffer_bytes": report.get("non_quantized_buffer_bytes", 0),
         "effective_bits_per_quantized_param": report.get(
             "effective_bits_per_quantized_param"
         ),

@@ -1,0 +1,5 @@
+# Strategy A with exactly one change: per-output-channel weight scales.
+extends: attn_2bit_on_2bitffn_A.yaml
+
+quantization:
+  scale: per_output_channel_mean_abs

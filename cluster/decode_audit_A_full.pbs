@@ -1,0 +1,41 @@
+#!/bin/bash
+#PBS -N decode_audit_A_full
+#PBS -q gpu
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+
+set -uo pipefail
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"
+cd "$REPO" || exit 1
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export HF_HUB_DISABLE_PROGRESS_BARS=1
+export HF_DATASETS_DISABLE_PROGRESS_BARS=1
+
+LOG="logs/decode_audit_A_full.log"
+mkdir -p logs results
+: > "$LOG"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== job $PBS_JOBID on $(hostname) at $(date -Is) ==="
+git rev-parse HEAD
+nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv,noheader
+
+if [ -e "results/ctc_decoding_A_full_dev256.json" ]; then
+  echo "ABORT: output already exists"
+  exit 5
+fi
+
+.venv/bin/python scripts/analyze_ctc_decoding.py \
+  --config configs/cluster_effective_attn_2bit_on_2bitffn_A_full.yaml \
+  --checkpoint checkpoints/attn_2bit_on_2bitffn_A_full \
+  --n 256 --seed 42 \
+  --beam-widths 10,50 \
+  --blank-penalties=-1,0.5,1,2 \
+  --expected-greedy-wer 0.027297193387158785 \
+  --output results/ctc_decoding_A_full_dev256.json
+echo "decode audit exit: $?"
+echo "=== finished at $(date -Is) ==="

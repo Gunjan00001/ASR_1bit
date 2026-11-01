@@ -1,0 +1,15 @@
+# 500-step development-only fine-tune of selected Strategy A.
+# One change: short-utterance oversampling from train.100, with the plan
+# and exact sampling weights recorded in results/short_oversample_plan.json.
+extends: attn_2bit_on_2bitffn_A.yaml
+
+qat:
+  init_checkpoint: checkpoints/attn_2bit_on_2bitffn_A_full
+  short_oversample:
+    enabled: true
+    plan_path: results/short_oversample_plan.json
+  pilot:
+    subset_size: 2000
+    max_steps: 500
+    eval_every_steps: 250
+    eval_utterances: 256

@@ -1,0 +1,69 @@
+{
+  "purpose": "preflight for approved 500-step short-utterance pilot",
+  "checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_full",
+  "checkpoint_sha256": "fc9fb3dd3521809fe2d90b7150167f6a403dd72f3f69429142bea80e74b64358",
+  "selection": {
+    "best_dev_wer": 0.027297193387158785,
+    "best_step": 1000,
+    "final_state_dev_wer": 0.028066128412149175,
+    "final_state_step": 1875,
+    "final_scheduled_dev_wer": 0.02768166089965398,
+    "steps_completed": 1875,
+    "restored_best": true,
+    "resumed": false
+  },
+  "config": "configs/attn_2bit_A_short_oversample.yaml",
+  "plan": "results/short_oversample_plan.json",
+  "checks": {
+    "checkpoint_hash_matches_manifest": true,
+    "plan_checkpoint_hash_matches": true,
+    "init_checkpoint_is_A_full": true,
+    "bits_2": true,
+    "scale_per_tensor": true,
+    "attention_excluded_60": true,
+    "attention_quantized_36": true,
+    "ffn_excluded_17": true,
+    "ffn_quantized_79": true,
+    "plan_rows_2000": true,
+    "plan_short_500": true,
+    "plan_long_1500": true,
+    "plan_short_frequency_025": true,
+    "no_dev_overlap": true,
+    "test_not_used": true,
+    "train_split_only": true,
+    "short_rows_are_repeated": true,
+    "settings_fixed": true
+  },
+  "settings": {
+    "subset_size": 2000,
+    "max_steps": 500,
+    "eval_every_steps": 250,
+    "eval_utterances": 256,
+    "batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 2e-05,
+    "seed": 42,
+    "optimizer": "adamw_torch",
+    "lr_scheduler": "linear"
+  },
+  "policy": {
+    "attention_quantized": 36,
+    "attention_fp32": 60,
+    "ffn_quantized": 79,
+    "ffn_fp32": 17,
+    "bits": 2,
+    "scale": "per_tensor_mean_abs"
+  },
+  "sampling": {
+    "short_definition": "normalized reference word count <= 9",
+    "short_frequency": 0.25,
+    "short_word_share": 0.06135779306511014,
+    "weights": {
+      "short": 6.849315068493151,
+      "long": 0.7784120394395433,
+      "short_to_long_ratio": 8.79908675799087
+    },
+    "short_repeat_count": 135
+  },
+  "all_passed": true
+}

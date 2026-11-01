@@ -1,0 +1,47 @@
+{
+  "protocol": "paired utterances, word-level Levenshtein, 10k bootstrap, seed 42",
+  "comparisons": {
+    "greedy_blank_0.5": {
+      "greedy_wer": 0.027297193387158785,
+      "variant_wer": 0.02710495963091119,
+      "delta_greedy_minus_variant_pp": 0.01922337562475958,
+      "errors_greedy": 142,
+      "errors_variant": 141,
+      "words": 5202,
+      "bootstrap_mean_pp": 0.019544341855185006,
+      "bootstrap_ci95_pp": [
+        -0.11686907784850042,
+        0.1606122010291491
+      ],
+      "p_variant_not_better": 0.4565
+    },
+    "beam_10": {
+      "greedy_wer": 0.027297193387158785,
+      "variant_wer": 0.028066128412149175,
+      "delta_greedy_minus_variant_pp": -0.07689350249903901,
+      "errors_greedy": 142,
+      "errors_variant": 146,
+      "words": 5202,
+      "bootstrap_mean_pp": -0.07744541912315674,
+      "bootstrap_ci95_pp": [
+        -0.1850926611702252,
+        0.0
+      ],
+      "p_variant_not_better": 1.0
+    },
+    "beam_50": {
+      "greedy_wer": 0.027297193387158785,
+      "variant_wer": 0.028066128412149175,
+      "delta_greedy_minus_variant_pp": -0.07689350249903901,
+      "errors_greedy": 142,
+      "errors_variant": 146,
+      "words": 5202,
+      "bootstrap_mean_pp": -0.07687079648564668,
+      "bootstrap_ci95_pp": [
+        -0.18446866123337494,
+        0.0
+      ],
+      "p_variant_not_better": 1.0
+    }
+  }
+}

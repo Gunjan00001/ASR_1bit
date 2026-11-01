@@ -1,0 +1,209 @@
+{
+  "purpose": "paired dev-256 comparison of short-oversample pilot vs Strategy A",
+  "protocol": {
+    "split": "dev-clean",
+    "n": 256,
+    "seed": 42,
+    "decoding": "greedy",
+    "short_definition": "reference word count <= 9",
+    "test_used": false
+  },
+  "baseline": {
+    "n_utterances": 256,
+    "words": 5202,
+    "hits": 5071,
+    "substitutions": 114,
+    "deletions": 17,
+    "insertions": 11,
+    "word_errors": 142,
+    "wer": 0.027297193387158785,
+    "cer": 0.007706435233533797,
+    "characters": 27769
+  },
+  "pilot": {
+    "n_utterances": 256,
+    "words": 5202,
+    "hits": 5073,
+    "substitutions": 113,
+    "deletions": 16,
+    "insertions": 15,
+    "word_errors": 144,
+    "wer": 0.02768166089965398,
+    "cer": 0.00759840109474594,
+    "characters": 27769
+  },
+  "delta_pilot_minus_baseline": {
+    "wer_pp": 0.038446751249519504,
+    "cer_pp": -0.010803413878785698,
+    "substitutions": -1,
+    "deletions": -1,
+    "insertions": 4,
+    "word_errors": 2
+  },
+  "slices": {
+    "short": {
+      "baseline": {
+        "n_utterances": 58,
+        "words": 334,
+        "hits": 308,
+        "substitutions": 24,
+        "deletions": 2,
+        "insertions": 3,
+        "word_errors": 29,
+        "wer": 0.08682634730538923,
+        "cer": 0.02947845804988662,
+        "characters": 1764,
+        "short": true
+      },
+      "pilot": {
+        "n_utterances": 58,
+        "words": 334,
+        "hits": 307,
+        "substitutions": 24,
+        "deletions": 3,
+        "insertions": 3,
+        "word_errors": 30,
+        "wer": 0.08982035928143713,
+        "cer": 0.030045351473922902,
+        "characters": 1764,
+        "short": true
+      },
+      "delta_improvement_pp": -0.29940119760479
+    },
+    "long": {
+      "baseline": {
+        "n_utterances": 198,
+        "words": 4868,
+        "hits": 4763,
+        "substitutions": 90,
+        "deletions": 15,
+        "insertions": 8,
+        "word_errors": 113,
+        "wer": 0.023212818405916186,
+        "cer": 0.006229571236300711,
+        "characters": 26005,
+        "short": false
+      },
+      "pilot": {
+        "n_utterances": 198,
+        "words": 4868,
+        "hits": 4766,
+        "substitutions": 89,
+        "deletions": 13,
+        "insertions": 12,
+        "word_errors": 114,
+        "wer": 0.02341824157764996,
+        "cer": 0.006075754662564891,
+        "characters": 26005,
+        "short": false
+      },
+      "delta_pilot_minus_baseline_pp": 0.020542317173377275
+    }
+  },
+  "bootstrap": {
+    "resamples": 10000,
+    "seed": 42,
+    "delta_improvement_pp_mean": -0.036938738425816735,
+    "ci95_pp": [
+      -0.2728021184385945,
+      0.19073322772784648
+    ],
+    "p_pilot_not_better": 0.6465,
+    "by_slice": {
+      "short": {
+        "n_utterances": 58,
+        "delta_improvement_pp_mean": -0.2924594536717063,
+        "ci95_pp": [
+          -1.7964071856287425,
+          0.8571428571428572
+        ],
+        "p_pilot_not_better": 0.7348
+      },
+      "long": {
+        "n_utterances": 198,
+        "delta_improvement_pp_mean": -0.020865194693153337,
+        "ci95_pp": [
+          -0.2532848146426023,
+          0.20905325045489484
+        ],
+        "p_pilot_not_better": 0.6065
+      }
+    }
+  },
+  "artifact": {
+    "bytes": 989509572,
+    "scale_mode": "per_tensor_mean_abs",
+    "n_bitlinear_layers": 115,
+    "packed_reload_passed": true,
+    "packed_reload_max_abs_logit_diff": 0.0,
+    "packed_reload_argmax_agreement": 1.0
+  },
+  "checkpoint": {
+    "best_step": 500,
+    "selection": {
+      "eval_every_steps": 250,
+      "history": [
+        {
+          "step": 250,
+          "wer": 0.028450595924644367,
+          "cer": 0.007742446613129749,
+          "duration_s": 47.51100471056998,
+          "phase": "scheduled"
+        },
+        {
+          "step": 500,
+          "wer": 0.02768166089965398,
+          "cer": 0.00759840109474594,
+          "duration_s": 9.913836548104882,
+          "phase": "scheduled"
+        }
+      ],
+      "best_dev_wer": 0.02768166089965398,
+      "best_step": 500,
+      "final_dev_wer": 0.02768166089965398,
+      "final_scheduled_dev_wer": 0.02768166089965398,
+      "final_state_dev_wer": 0.02768166089965398,
+      "final_state_cer": 0.00759840109474594,
+      "final_state_step": 500,
+      "restored_best": true,
+      "resumed": false,
+      "state_path": "checkpoints/attn_2bit_A_short_oversample_pilot/dev_best.pt"
+    },
+    "init_checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_full",
+    "sampling": {
+      "plan_path": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/results/short_oversample_plan.json",
+      "checkpoint_sha256": "fc9fb3dd3521809fe2d90b7150167f6a403dd72f3f69429142bea80e74b64358",
+      "short_definition": "normalized reference word count <= 9",
+      "target_short_fraction": 0.25,
+      "n_short": 500,
+      "n_long": 1500,
+      "unique_short_rows": 365,
+      "short_repeat_count": 135,
+      "short_repeat_factor": 1.36986301369863,
+      "natural_short_fraction": 0.0365,
+      "natural_short_word_share": 0.007485771561556718,
+      "target_short_word_share": 0.06135779306511014,
+      "effective_sampling_weights": {
+        "short": 6.849315068493151,
+        "long": 0.7784120394395433,
+        "short_to_long_ratio": 8.79908675799087
+      },
+      "sampling_frequency": {
+        "short": 0.25,
+        "long": 0.75
+      },
+      "leakage_check": {
+        "dev_256_overlap": [],
+        "test_used": false,
+        "split": "train.100"
+      }
+    }
+  },
+  "criteria": {
+    "dev256_wer_improvement_ge_0.10pp": false,
+    "long_utterance_regression_le_0.10pp": true,
+    "artifact_below_1GB": true,
+    "packed_reload_passed": true
+  },
+  "success": false
+}

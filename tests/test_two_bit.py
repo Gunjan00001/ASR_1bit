@@ -167,6 +167,70 @@ def test_2bit_artifact_tensors_and_serialization(tmp_path):
     assert torch.allclose(expected, got, atol=1e-6)
 
 
+def test_packed_artifact_includes_inference_buffers():
+    class _Model(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = BitLinear(4, 3, bits=2)
+            self.bn = nn.BatchNorm1d(3)
+
+        def forward(self, x):
+            return self.bn(self.a(x))
+
+    model = _Model()
+    with torch.no_grad():
+        model.bn.running_mean.fill_(0.25)
+        model.bn.running_var.fill_(1.5)
+    tensors, stats = build_packed_tensors(model, bits=2)
+    assert "bn.running_mean" in tensors
+    assert "bn.running_var" in tensors
+    assert stats["non_quantized_buffer_count"] == 7
+    assert stats["non_quantized_buffer_bytes"] == 3 * 4 + 3 * 4 + 8
+
+
+def test_2bit_per_channel_artifact_roundtrip(tmp_path):
+    PER_CHANNEL = "per_output_channel_mean_abs"
+
+    class _Model(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = BitLinear(4, 3, bits=2, scale_mode=PER_CHANNEL)
+            self.b = nn.Linear(3, 2)
+
+        def forward(self, x):
+            return self.b(torch.relu(self.a(x)))
+
+    torch.manual_seed(3)
+    model = _Model()
+    x = torch.randn(6, 4)
+    with torch.no_grad():
+        expected = model(x)
+
+    tensors, stats = build_packed_tensors(
+        model, scale_mode=PER_CHANNEL, bits=2
+    )
+    assert stats["scale_mode"] == PER_CHANNEL
+    assert stats["fp_scale_element_count"] == 3
+    assert tensors["a.weight_scale"].shape == (3, 1)
+
+    out = tmp_path / "packed_per_channel.safetensors"
+    report = write_packed_artifact(
+        model, out, scale_mode=PER_CHANNEL, bits=2
+    )
+    assert report["packed_artifact_bytes_measured"] == out.stat().st_size
+
+    from safetensors.torch import load_file
+
+    artifact = load_file(str(out), device="cpu")
+    rebuilt = PackedBitLinear.from_artifact(
+        artifact["a.weight_packed"], (3, 4),
+        artifact["a.weight_scale"], artifact["a.bias"], bits=2,
+    )
+    with torch.no_grad():
+        got = model.b(torch.relu(rebuilt(x)))
+    assert torch.allclose(expected, got, atol=1e-6)
+
+
 def test_2bit_state_dict_roundtrip_preserves_forward():
     torch.manual_seed(0)
     bit = BitLinear(4, 3, bias=True, bits=2)

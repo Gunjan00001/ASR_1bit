@@ -1,0 +1,164 @@
+{
+  "phase": "final controlled deployment benchmark (dev-256)",
+  "protocol": {
+    "split": "dev-clean",
+    "n": 256,
+    "seed": 42,
+    "decoding": "greedy",
+    "text_normalization": "lowercase + strip punctuation",
+    "device": "NVIDIA A100-SXM4-80GB",
+    "test_used": false
+  },
+  "artifact_note": "v2 artifacts add BatchNorm/positional buffers so they are standalone. Historical artifact bytes remain recorded separately. Packed runtime expands codes to FP weights before F.linear; this is storage compression, not inference acceleration.",
+  "arms": [
+    {
+      "model": "FP32 reference",
+      "dev_wer": 0.020184544405997693,
+      "dev_cer": 0.004933559004645468,
+      "expected_wer_delta": 0.0,
+      "full_test_wer": 0.019267346317711504,
+      "artifact_bytes": 2373507712,
+      "historical_artifact_bytes": 2373507712,
+      "storage_vs_fp32": 1.0,
+      "model_load_s": 2.3073312006890774,
+      "peak_host_rss_mb": 1590.009856,
+      "peak_gpu_allocated_bytes": 3135961088,
+      "forward_mean_s": 0.05124714739213232,
+      "forward_p95_s": 0.09852982871234417,
+      "e2e_mean_s": 0.05277025458053686,
+      "e2e_p95_s": 0.10287893190979958,
+      "acoustic_rtf": 0.006969401479565372,
+      "e2e_rtf": 0.007176537799001425,
+      "forward_slowdown_vs_fp32": 1.0,
+      "e2e_slowdown_vs_fp32": 1.0,
+      "load_info": {
+        "kind": "fp32",
+        "checkpoint": null,
+        "artifact": null
+      },
+      "transcripts": [
+        {
+          "id": "1988-24833-0026",
+          "reference": "ive decided to enlist in the army",
+          "hypothesis": "ive decided to enlist in the army"
+        },
+        {
+          "id": "2428-83699-0039",
+          "reference": "i tolled the bell again",
+          "hypothesis": "i told the bell again"
+        },
+        {
+          "id": "6345-93302-0010",
+          "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+          "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket"
+        }
+      ]
+    },
+    {
+      "model": "2-bit FFN",
+      "dev_wer": 0.024605920799692427,
+      "dev_cer": 0.0067701393640390364,
+      "expected_wer_delta": 0.00019223375624759925,
+      "full_test_wer": 0.025829275715155205,
+      "artifact_bytes": 1131269460,
+      "historical_artifact_bytes": 1131062436,
+      "storage_vs_fp32": 0.47662346082994317,
+      "model_load_s": 7.86937316134572,
+      "peak_host_rss_mb": 1658.65472,
+      "peak_gpu_allocated_bytes": 1893438976,
+      "forward_mean_s": 1.0051194870757172,
+      "forward_p95_s": 1.0620759697631001,
+      "e2e_mean_s": 1.0066805308306357,
+      "e2e_p95_s": 1.0646610404364765,
+      "acoustic_rtf": 0.13669212037821524,
+      "e2e_rtf": 0.13690441591482233,
+      "forward_slowdown_vs_fp32": 19.613179234831467,
+      "e2e_slowdown_vs_fp32": 19.076666179320036,
+      "load_info": {
+        "artifact_manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors.manifest.json",
+        "n_packed_layers": 79,
+        "bits": 2,
+        "scale_mode": "per_tensor_mean_abs",
+        "kind": "packed",
+        "checkpoint": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full",
+        "checkpoint_sha256": "87005f36bca859fe80bdb48f7a02a18841fed0a5e3495b2d877d2fd1a42befdb",
+        "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors",
+        "artifact_sha256": "e8e138050f2252a3b9aa327aec87cbe3340f244509ab2b6953d491bd8881c856",
+        "artifact_bytes": 1131269460
+      },
+      "transcripts": [
+        {
+          "id": "1988-24833-0026",
+          "reference": "ive decided to enlist in the army",
+          "hypothesis": "ive decided to enlist in the army"
+        },
+        {
+          "id": "2428-83699-0039",
+          "reference": "i tolled the bell again",
+          "hypothesis": "i told the bell again"
+        },
+        {
+          "id": "6345-93302-0010",
+          "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+          "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket"
+        }
+      ]
+    },
+    {
+      "model": "Strategy A",
+      "dev_wer": 0.027297193387158785,
+      "dev_cer": 0.007706435233533797,
+      "expected_wer_delta": 0.0,
+      "full_test_wer": 0.027369902617163724,
+      "artifact_bytes": 989716588,
+      "historical_artifact_bytes": 989509572,
+      "storage_vs_fp32": 0.41698477868691247,
+      "model_load_s": 7.607174476608634,
+      "peak_host_rss_mb": 1643.012096,
+      "peak_gpu_allocated_bytes": 1751899648,
+      "forward_mean_s": 1.1266115686667035,
+      "forward_p95_s": 1.1898349802941084,
+      "e2e_mean_s": 1.128183177585015,
+      "e2e_p95_s": 1.1927244095131755,
+      "acoustic_rtf": 0.15321454428440306,
+      "e2e_rtf": 0.15342827663982114,
+      "forward_slowdown_vs_fp32": 21.98388839179887,
+      "e2e_slowdown_vs_fp32": 21.379149798551865,
+      "load_info": {
+        "artifact_manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors.manifest.json",
+        "n_packed_layers": 115,
+        "bits": 2,
+        "scale_mode": "per_tensor_mean_abs",
+        "kind": "packed",
+        "checkpoint": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full",
+        "checkpoint_sha256": "fc9fb3dd3521809fe2d90b7150167f6a403dd72f3f69429142bea80e74b64358",
+        "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors",
+        "artifact_sha256": "182c62d18ef00af897a21506848f1ec8246070596c8611988294bc7f80293ca9",
+        "artifact_bytes": 989716588
+      },
+      "transcripts": [
+        {
+          "id": "1988-24833-0026",
+          "reference": "ive decided to enlist in the army",
+          "hypothesis": "ive decided to enlist in the army"
+        },
+        {
+          "id": "2428-83699-0039",
+          "reference": "i tolled the bell again",
+          "hypothesis": "i told the bell again"
+        },
+        {
+          "id": "6345-93302-0010",
+          "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+          "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket"
+        }
+      ]
+    }
+  ],
+  "conclusion": {
+    "accuracy_order": "FP32 > 2-bit FFN > Strategy A",
+    "storage_order": "Strategy A < 2-bit FFN < FP32",
+    "inference_acceleration_claim": false,
+    "reason": "PackedBitLinear unpacks 2-bit codes and expands FP weights on every forward; the measured forward/e2e latency is compared, not claimed as a speedup."
+  }
+}

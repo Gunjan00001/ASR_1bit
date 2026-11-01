@@ -1,0 +1,38 @@
+#!/bin/bash
+#PBS -N final_benchmark
+#PBS -q gpu
+#PBS -l select=1:ncpus=4:ngpus=1:mem=64gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+
+set -uo pipefail
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"
+cd "$REPO" || exit 1
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export HF_HUB_DISABLE_PROGRESS_BARS=1
+export HF_DATASETS_DISABLE_PROGRESS_BARS=1
+
+OUT="results/final_benchmark"
+LOG="logs/final_benchmark.log"
+mkdir -p logs "$OUT"
+: > "$LOG"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== job $PBS_JOBID on $(hostname) at $(date -Is) ==="
+git rev-parse HEAD
+nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv,noheader
+
+if [ -e "$OUT/strategy_a.json" ]; then
+  echo "ABORT: benchmark output already exists"
+  exit 5
+fi
+
+PY=".venv/bin/python"
+$PY scripts/final_benchmark.py --arm fp32 --expected-wer-tolerance 1e-3 --output "$OUT/fp32.json" || exit 10
+$PY scripts/final_benchmark.py --arm ffn2bit --expected-wer-tolerance 1e-3 --output "$OUT/ffn2bit.json" || exit 11
+$PY scripts/final_benchmark.py --arm strategy_a --expected-wer-tolerance 1e-3 --output "$OUT/strategy_a.json" || exit 12
+$PY scripts/aggregate_final_benchmark.py || exit 13
+echo "=== finished at $(date -Is) ==="

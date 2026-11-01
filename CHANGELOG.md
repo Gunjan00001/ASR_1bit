@@ -13,8 +13,39 @@ an exact, reproducible repository state.
 - Added checkpoint-aware 2-bit attention screen on the 2-bit FFN base; dev-16
   ranking only. A = 36 projections -> 989,509,572 B, 2.99% dev-128 (+0.56 pp);
   B = 72 -> 847,956,932 B, 4.48% (+2.05 pp). Both reload exact.
-  A is the only viable candidate; B rejected. No full/test run launched.
-- **146 tests** pass.
+  A is the only viable candidate; B rejected. A's full run then completed at
+  **2.69% test-256 / 2.74% full test-clean**, **989,509,572 B**, reload exact;
+  +0.16 pp vs the 2.58% 2-bit FFN for 12.52% smaller size. The 2-bit FFN
+  remains the accuracy winner. No B run; test used once.
+- Added Policy C pilot (24 attention-K + 10 least-sensitive attention-output,
+  62 attention FP32): **3.77% dev-128**, **997,373,612 B**, reload exact. It is
+  dominated by A (+0.78 pp WER, +7.9 MB), so no C full run; test unused.
+- Audited all available A checkpoints without retraining: pilot step 500 2.986%,
+  full best step 1000 2.730%, final step 1875 2.807% on dev; all pack to
+  989,509,572 B; the final state packs and reloads exactly. A's quantizer is
+  per-tensor 2-bit (`alpha=mean(|W|)`, 460 B of scales).
+- Added per-output-channel A pilot: **2.9115% dev-128 / 0.8629% CER**,
+  **990,398,520 B**, exact packed reload. Dev-256 confirmation: A 2.8835% vs
+  per-channel 2.8066% (Δ 0.0769 pp; bootstrap 95% CI −0.113..+0.260 pp), so it
+  is not promoted; no full run or test.
+- Added CTC error analysis and decoder audit on A dev-256: 80.3% of word errors
+  are substitutions; <10-word references have 8.68% WER. Greedy 2.7297%, blank
+  penalty 0.5 2.7105% (one error, p=0.46), beam 10/50 2.8066% at 234/1,330 ms
+  per utterance. No decoder promoted; artifact unchanged. Recommended, not
+  launched: short-utterance oversampling fine-tune.
+- Ran the approved 500-step short-utterance oversampling pilot from the
+  hash-verified A full checkpoint (500 short / 1,500 long; 25% short, 135
+  repeats; zero dev overlap). Dev-256 **2.7682% WER / 0.7598% CER**, vs A
+  **2.7297% / 0.7706%**; artifact **989,509,572 B**, packed reload exact.
+  Rejected (WER worse by 0.0384 pp; short slice worse; bootstrap includes zero).
+  No full run or test.
+- **Final freeze:** FP32 1.93% / 2.374 GB; 2-bit FFN 2.58% / 1.131 GB;
+  Strategy A 2.74% / 0.990 GB. Fixed the packer to include BatchNorm/positional
+  buffers, creating standalone v2 artifacts (FFN 1,131,269,460 B; A
+  989,716,588 B) without altering historical artifacts or checkpoints. Added
+  controlled A100 dev-256 benchmark, final audit, research report, and model
+  card. Packed inference is ~20× slower; no speedup claimed.
+- **158 tests** pass.
 
 ## Unreleased — genuine 2-bit FFN: pilot passes gate
 

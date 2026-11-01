@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -N final_eval_attn_2bit_A
+#PBS -q gpu
+#PBS -l select=1:ncpus=1:ngpus=1:mem=64gb
+#PBS -l walltime=01:30:00
+#PBS -j oe
+set -uo pipefail
+REPO="/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit"; cd "$REPO" || exit 1
+source cluster/pick_gpu.sh
+export ONEBIT_AUDIO_DECODER=soundfile PYTHONUNBUFFERED=1 TOKENIZERS_PARALLELISM=false
+export HF_HUB_DISABLE_PROGRESS_BARS=1 HF_DATASETS_DISABLE_PROGRESS_BARS=1
+LOG="logs/final_eval_attn_2bit_A_full.log"; mkdir -p logs results/attn_2bit_A_final_n256 results/attn_2bit_A_final_n2620; : > "$LOG"
+exec > >(tee -a "$LOG") 2>&1
+echo "=== job $PBS_JOBID $(hostname) $(date -Is) ==="; git rev-parse HEAD
+PY=".venv/bin/python"; ARMS="attn_2bit_on_2bitffn_A_full"
+$PY scripts/run_final_eval.py --split test --n 256 --arms "$ARMS" --output-dir results/attn_2bit_A_final_n256 --no-progress
+echo "test256 exit: $?"
+$PY scripts/run_final_eval.py --split test --n 2620 --arms "$ARMS" --output-dir results/attn_2bit_A_final_n2620 --no-progress --no-benchmark
+echo "fulltest exit: $?"
+echo "=== finished $(date -Is) ==="

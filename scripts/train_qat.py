@@ -51,7 +51,11 @@ from transformers import Wav2Vec2ConformerForCTC, Wav2Vec2Processor
 
 from onebit_asr.config import load_config
 from onebit_asr.data.collator import DataCollatorCTCWithPadding
-from onebit_asr.data.dataset import build_ctc_train_dataset, load_dev_subset
+from onebit_asr.data.dataset import (
+    build_ctc_train_dataset,
+    build_ctc_train_dataset_from_plan,
+    load_dev_subset,
+)
 from onebit_asr.evaluation.evaluate import evaluate_model, print_summary
 from onebit_asr.models.replace_layers import report_replacement
 from onebit_asr.training.callbacks import DevWERCallback
@@ -213,10 +217,29 @@ def main() -> int:
     # Streamed, bounded-memory construction (see build_ctc_train_dataset): a
     # 10k-utterance subset materialized as Python lists OOM-kills the Kaggle
     # worker. Same selection/order as before.
-    train_dataset, provenance = build_ctc_train_dataset(
-        split=training["split"], subset_size=training["subset_size"],
-        seed=training["seed"], processor=processor,
-    )
+    short_cfg = cfg["qat"].get("short_oversample") or {}
+    if short_cfg.get("enabled"):
+        plan_path = ROOT / short_cfg["plan_path"]
+        train_dataset, provenance, sampling = build_ctc_train_dataset_from_plan(
+            plan_path, processor
+        )
+        if len(train_dataset) != int(training["subset_size"]):
+            raise SystemExit(
+                "oversampling plan size does not match the pilot subset_size: "
+                f"{len(train_dataset)} != {training['subset_size']}"
+            )
+        print(
+            "Short-utterance oversampling: "
+            f"{sampling['n_short']} short / {sampling['n_long']} long, "
+            f"frequency={sampling['target_short_fraction']:.3f}, "
+            f"weights={sampling['effective_sampling_weights']}"
+        )
+    else:
+        train_dataset, provenance = build_ctc_train_dataset(
+            split=training["split"], subset_size=training["subset_size"],
+            seed=training["seed"], processor=processor,
+        )
+        sampling = {}
 
     # Fixed dev subset for validation-based checkpoint selection. This is the
     # *same* pinned protocol as the final evaluation; test-clean is never used
@@ -503,6 +526,7 @@ def main() -> int:
             "retained_categories": sorted({e["category"] for e in replacement["retained"]}),
         },
         "freeze": freeze,
+        "sampling": sampling,
         "training": {
             "dataset": training["dataset"],
             "config": training.get("config"),

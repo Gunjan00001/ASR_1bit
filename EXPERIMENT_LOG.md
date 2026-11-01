@@ -1274,6 +1274,257 @@ never used for selection.
 
 ---
 
+## E36 — Strategy A full run and final test evaluation
+
+**Question:** does the 36-projection conservative attention policy retain
+near-baseline accuracy at a <1.0 GB artifact when run at full budget?
+
+**What:** initialized from `checkpoints/qat_ffn_mixed_2bit_full`; config
+`configs/cluster_effective_attn_2bit_on_2bitffn_A_full.yaml`; 36 attention
+projections 2-bit, 60 attention FP32, all 79 FFN 2-bit, fixed 17 FP32 FFN
+exclusions. 10,000 train.100, 1,875 steps, seed 42, 256-dev selection, A100.
+Best-dev step **1,000**, restored before test. Test-256 and full test-clean were
+each run once after selection.
+
+| Split | WER | CER | Artifact |
+|---|---:|---:|---:|
+| Dev-256 | 0.0273 | 0.0077 | 989,509,572 B |
+| Test-256 | **0.0269** | **0.0074** | 989,509,572 B |
+| Full test-clean (2620) | **0.0274** | **0.0076** | 989,509,572 B |
+
+**Integrity:** 115 BitLinear layers (79 FFN + 36 attention); 77 FP32 exclusions
+(17 FFN + 60 attention); packed reload max |Δlogit| 0.0, argmax 1.0. Training
+3,909.3 s; peak allocated 32.59 GB; test-256 RTF 0.00808, p50 0.054 s.
+
+**Gate:** A is **0.16 pp worse** than the 2-bit FFN full baseline on full
+test-clean (2.74% vs 2.58%) while being **12.52% smaller** (989.5 MB vs
+1,131.1 MB). It is a valid sub-1.0 GB trade-off. The 2-bit FFN remains the
+absolute-accuracy winner. No test tuning; no B run.
+
+---
+
+## E37 — Policy C (category-balanced 34-layer attention) pilot
+
+**Question:** does a category-balanced policy derived from the existing screen
+(24 `attention_k` + the 10 least-sensitive `attention_output`, keeping 62
+attention projections FP32) improve on Strategy A's 36-projection policy at a
+similar artifact size?
+
+**What:** config `configs/attn_2bit_C.yaml`, layer selection recorded in
+`results/attn_2bit_C_policy.json`; initialized from
+`checkpoints/qat_ffn_mixed_2bit_full`; all 79 FFN layers 2-bit with the fixed 17
+FFN FP32 exclusions; 2,000 train.100 utterances, 500 steps, seed 42, batch 4 ×
+accum 4, lr 2e-5, dev-128, A100-SXM4-80GB. Dev-only.
+
+**Did it work?** No. Dev-128 **3.77% WER / 1.09% CER**, packed artifact
+**997,373,612 B**, best step 500. A's pilot measured **2.99% / 0.88%** at
+**989,509,572 B**, so C is **0.78 pp worse and 7.9 MB larger** — strictly
+dominated. C is still 1.34 pp worse than the 2-bit FFN baseline (2.43%) for
+11.8% smaller size.
+
+**If not, why:** the category-level screen mean did not transfer to this
+specific 34-layer set; replacing A's layer-wise selection with 10 low-sensitivity
+output projections plus all K projections lost more accuracy than the four-module
+saving recovered. This is a measured outcome; the mechanism is not isolated by
+this pilot.
+
+**What we did instead:** retained A (989,509,572 B, 2.74% full test-clean) as
+the sub-1.0 GB model. No C full run and no test evaluation were launched.
+
+**Integrity:** 113 BitLinear layers (79 FFN + 34 attention), 79 FP32 exclusions
+(17 FFN + 62 attention); packed reload max |Δlogit| 0.0, argmax 1.0; peak
+allocated 30.95 GB; training 843.3 s; eval RTF 0.00502.
+
+---
+
+## E38 — Per-output-channel scaling on Strategy A
+
+**Question:** can per-output-channel scales improve Strategy A's dev accuracy
+while keeping the packed artifact below 1.0 GB, with no other variable changed?
+
+**Audit first:** A uses one FP32 `alpha = mean(|W|)` per 2-bit matrix (115
+scalars, 460 B). The 2-bit codebook is mid-rise `{-1.5,-0.5,+0.5,+1.5}*alpha`,
+with `code=clamp(floor(W/alpha)+2,0,3)` and saturation beyond ±2a. Four codes
+occupy one byte; scales and all non-quantized FP parameters are included in the
+measured artifact. Per-channel scales were already implemented and tested; A
+had never used them. The A checkpoint audit showed pilot step 500 = 2.986%/0.877%
+(dev-128), full step 1000 = 2.730%/0.767% (dev-256), and final step 1875 =
+2.807%/0.760% (dev-256); all three pack to 989,509,572 B and reload exactly. The
+final state was packed to a new artifact for this audit.
+
+**Weight screen:** across all 115 quantized A matrices, per-channel reduced the
+mean relative 2-bit reconstruction error by **4.92%** (median 3.30%); by group,
+5.73% attention and 4.54% FFN. This is below the historical 10% reconstruction
+gate, so the pilot was a test of WER, not an assumed win.
+
+**What:** `configs/attn_2bit_A_per_channel.yaml` changes only
+`quantization.scale` from `per_tensor_mean_abs` to
+`per_output_channel_mean_abs`; all A layer selections, exclusions, initialization,
+2,000-utterance train.100 subset, 500 steps, seed 42, batch 4 × accum 4, lr 2e-5,
+dev-128, and best-dev selection were unchanged. A100-SXM4-80GB, job 13471.
+
+**Did it work?** Marginally. Dev-128 **2.9115% WER / 0.8629% CER** versus A's
+**2.9862% / 0.8769%** — **0.0747 pp** better WER and 0.0140 pp better CER.
+Packed artifact **990,398,520 B** (+888,948 B, still 9.60 MB below 1.0 GB);
+best step 500; peak allocated 30.94 GB; training 1,063.6 s; RTF 0.00500. Packed
+reload exact (max |Δlogit| 0.0, argmax 1.0, 2/2 decoded); 222,208 FP32 scales
+(888,832 B).
+
+**Dev-256 confirmation:** re-evaluated the same two checkpoints on the full
+seed-42 dev-256 slice (first 128 = selection slice, last 128 = fresh). A =
+**2.8835% WER / 0.7923% CER** (150/5,202 errors); per-channel = **2.8066% /
+0.7778%** (146/5,202), Δ **0.0769 pp**. The fresh-half delta was 0.0793 pp.
+A paired utterance bootstrap (10,000 resamples, seed 42) gave a 95% interval of
+**−0.113 to +0.260 pp**, p(Δ≤0)=0.235. This is not a statistically reliable
+improvement. Source: `results/per_channel_confirm_dev256/`.
+
+**Decision:** not promoted. The 4-word difference on 5,202 dev words is too
+small to displace A, despite the positive direction and sub-1 GB artifact. A
+remains selected; no full run and no test evaluation were launched.
+
+**Tests:** **150 pass**, including a single-variable config regression and a
+2-bit per-channel packed-artifact round trip.
+
+---
+
+## E39 — Error analysis and CTC decoding audit (A, dev-256)
+
+**Question:** where does Strategy A's remaining WER come from, and can a
+different CTC decoder improve it without changing the model artifact?
+
+**What:** evaluated the selected A full checkpoint on the pinned dev-256
+subset (seed 42) with one forward pass per utterance, then compared greedy,
+blank-penalized greedy, and prefix beam search on the same logits. Added
+`prefix_beam_search`/`greedy_decode` in `src/onebit_asr/decoding/decode.py`,
+unit tests, and `scripts/analyze_ctc_decoding.py`. No test data, no training.
+
+**Error findings:** 142 word errors: 114 substitutions (80.3%), 17 deletions
+(12.0%), 11 insertions (7.7%). 169/256 utterances were perfect; the top 20
+utterances contain 38.7% of errors. Reference length <10 words has 8.68% WER
+(29/334 words; 29/142 errors), versus 2.05–2.64% for longer length bins.
+Duration <3.65 s has 6.51% WER. Mean blank fraction is 57.8% and correlates
+with per-utterance WER at r=+0.24 (forced-alignment r=+0.26); this is
+association, not causation. Confusions are dominated by rare names, function
+words, and spelling variants (`this`→`the`, `in`→`and`, `jean`→`jeahn`,
+`bordeaux`→`bordeau`, `coloured`, `centre`).
+
+**Decoder results:**
+
+| Decoder | WER | CER | Errors | Mean decode latency |
+|---|---:|---:|---:|---:|
+| Greedy | **2.7297%** | **0.7706%** | 142 | 1.04 ms |
+| Greedy blank 0.5 | 2.7105% | 0.7634% | 141 | 0.94 ms |
+| Beam 10 | 2.8066% | 0.7742% | 146 | 234.5 ms |
+| Beam 50 | 2.8066% | 0.7742% | 146 | 1,330 ms |
+
+**Did it work?** No. The blank penalty saves one word error (0.019 pp; paired
+bootstrap 95% CI −0.117..+0.161 pp, p=0.46). Beam search is four errors worse
+(CI −0.185..0.000 pp) and is about 225–1,280× slower per utterance. Artifact remains
+989,509,572 B. Forward RTF 0.01065; peak GPU 3.14 GB.
+
+**Integrity:** an initial audit run double-applied CTC collapsing in the
+tokenizer (`group_tokens=True`), deleting doubled letters. That result was
+discarded. The final run uses `group_tokens=False` and aborts unless greedy
+reproduces the pinned 0.027297193387158785 WER.
+
+**Decision:** keep greedy decoding; no decoder is promoted. No compatible LM
+was installed or tested.
+
+**Recommended next:** short-utterance oversampling fine-tune of A, based on
+the 8.68% WER on <10-word references. Training composition would be the only
+changed variable; quantization, initialization, seed, optimizer/LR, dev
+protocol, and greedy decoding stay fixed. **Not launched; requires approval.**
+
+**Tests:** **155 pass**, including beam-search/blank-penalty unit tests and an
+exhaustive small-vocabulary beam check.
+
+---
+
+## E40 — Short-utterance oversampling pilot (rejected)
+
+**Approval scope:** one 500-step dev-only fine-tune; no full run; no test.
+
+**Preflight:** A full checkpoint SHA-256
+`fc9fb3dd3521809fe2d90b7150167f6a403dd72f3f69429142bea80e74b64358`
+matches the manifest; selected state step 1000. Policy unchanged: 36 attention
+2-bit, 60 attention FP32, 79 FFN 2-bit, 17 FFN FP32 exclusions, per-tensor 2-bit
+scales. Init checkpoint is A full, not the FP32 base.
+
+**Length audit:** train.100 = 3.55% short (<10 words) / 0.719% short words;
+original 10k = 3.65% / 0.749%; dev-256 = 22.66% / 6.42% words and 20.42% of
+errors. Short utterances are therefore not underrepresented by utterance count
+versus train.100, but are underrepresented in word exposure versus dev. The
+pilot plan uses 500 short + 1,500 long from the original 10k (25% short,
+6.14% short words), weights 6.85× short / 0.778× long, 365 unique short rows
+and 135 repeats. No dev overlap; test not read.
+
+**Run:** job 13558, A100-SXM4-80GB, 500 steps, seed 42, batch 4 × accum 4,
+lr 2e-5, dev-256 selection. Best step 500. Artifact 989,509,572 B; packed
+reload exact (0.0 / 1.0); train 849.9 s; peak allocated 30.72 GB; eval RTF
+0.00512.
+
+| Metric | A | Pilot | Δ |
+|---|---:|---:|---:|
+| Dev WER | **2.7297%** | 2.7682% | +0.0384 pp |
+| Dev CER | 0.7706% | 0.7598% | −0.0108 pp |
+| Substitutions | 114 | 113 | −1 |
+| Deletions | 17 | 16 | −1 |
+| Insertions | 11 | 15 | +4 |
+| Word errors | 142 | 144 | +2 |
+
+Short slice worsened from 8.68% to 8.98% WER; long slice changed from 2.321% to
+2.342% (+0.0205 pp, inside the 0.10 pp regression limit). Overall paired
+bootstrap improvement −0.0369 pp, 95% CI −0.273..+0.191 pp, p=0.647. Slice
+bootstrap: short −0.292 pp (CI −1.796..+0.857), long −0.021 pp (CI
+−0.253..+0.209); negative means pilot worse.
+
+**Decision:** rejected. Primary criterion (≥0.10 pp improvement) fails; short
+slice also worsens. A remains selected. No full run or test evaluation.
+
+**Tests:** **157 pass**, including plan composition, policy preservation, and
+the 135-repeat sampler check.
+
+---
+
+## E41 — Research freeze, artifact correction, and final benchmark
+
+**Scope:** finalization only; no training, no test evaluation, no quantization
+changes.
+
+**Artifact audit finding:** historical packed artifacts omitted `named_buffers()`
+(BatchNorm running statistics and positional buffers). They verify only when the
+QAT checkpoint supplies those buffers. The historical artifacts and sizes remain
+unchanged. A corrected v2 packer includes buffers; v2 artifacts are standalone.
+
+| Model | Historical artifact | Standalone v2 | Checkpoint |
+|---|---:|---:|---|
+| 2-bit FFN | 1,131,062,436 B | 1,131,269,460 B | `87005f36…42befdb` |
+| Strategy A | 989,509,572 B | 989,716,588 B | `fc9fb3dd…b64358` |
+
+**Controlled dev-256 benchmark** (A100-SXM4-80GB, seed 42, greedy, one process per
+arm; full test WER historical only):
+
+| Model | Dev WER | Dev CER | Full test WER | Load | Peak host | Peak GPU | Forward | E2E |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| FP32 | 2.0185% | 0.4934% | 1.93% | 2.31 s | 1,590 MB | 3.14 GB | 51.25 ms | 52.77 ms |
+| 2-bit FFN | 2.4606% | 0.6770% | 2.58% | 7.87 s | 1,659 MB | 1.89 GB | 1,005.12 ms | 1,006.68 ms |
+| Strategy A | 2.7297% | 0.7706% | 2.74% | 7.61 s | 1,643 MB | 1.75 GB | 1,126.61 ms | 1,128.18 ms |
+
+Packed runtime expands weights to FP32: **no inference acceleration**. FFN v2
+dev WER is one word above its QAT reference (+0.0192 pp); Strategy A matches.
+
+**Audit:** selected checkpoint hashes, config/manifest bits/layers/exclusions,
+historical packed reloads, v2 standalone WER guards, and rejected-result
+presence all pass (`results/final_audit.json`). No test data used.
+
+**Final selection:** FP32 reference 1.93%; 2-bit FFN accuracy winner 2.58%;
+Strategy A compression winner 2.74% and sub-1 GB. Short oversampling, C,
+per-channel, and beam decoding remain rejected.
+
+**Tests:** **158 pass** (buffer-inclusive packing test added).
+
+---
+
 ## How to add a new log entry
 
 When you run a new experiment, append:

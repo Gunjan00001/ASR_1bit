@@ -1,0 +1,63 @@
+{
+  "phase": "final controlled deployment benchmark",
+  "timestamp_utc": "2026-11-01T11:30:37.544909+00:00",
+  "platform": "Linux-4.18.0-477.27.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "arm": "fp32",
+  "kind": "fp32",
+  "device": "cuda",
+  "device_name": "NVIDIA A100-SXM4-80GB",
+  "n_utterances": 256,
+  "warmup_utterances": 3,
+  "seed": 42,
+  "decoding": "greedy",
+  "text_normalization": "lowercase + strip punctuation",
+  "model_load_s": 2.3073312006890774,
+  "load_peak_gpu_allocated_bytes": 2373717504,
+  "load_peak_gpu_reserved_bytes": 2376073216,
+  "loaded_host_rss_mb": 1107.652608,
+  "peak_host_rss_mb": 1590.009856,
+  "inference_peak_gpu_allocated_bytes": 3135961088,
+  "inference_peak_gpu_reserved_bytes": 4427087872,
+  "wer": 0.020184544405997693,
+  "cer": 0.004933559004645468,
+  "expected_wer": 0.020184544405997693,
+  "expected_wer_delta": 0.0,
+  "total_audio_s": 1882.4098125,
+  "forward_latency_s": {
+    "mean": 0.05124714739213232,
+    "p50": 0.043022213503718376,
+    "p95": 0.09852982871234417,
+    "max": 0.18774107098579407
+  },
+  "e2e_latency_s": {
+    "mean": 0.05277025458053686,
+    "p50": 0.044334836304187775,
+    "p95": 0.10287893190979958,
+    "max": 0.19579171016812325
+  },
+  "acoustic_rtf": 0.006969401479565372,
+  "e2e_rtf": 0.007176537799001425,
+  "artifact_bytes": 2373507712,
+  "load_info": {
+    "kind": "fp32",
+    "checkpoint": null,
+    "artifact": null
+  },
+  "transcripts": [
+    {
+      "id": "1988-24833-0026",
+      "reference": "ive decided to enlist in the army",
+      "hypothesis": "ive decided to enlist in the army"
+    },
+    {
+      "id": "2428-83699-0039",
+      "reference": "i tolled the bell again",
+      "hypothesis": "i told the bell again"
+    },
+    {
+      "id": "6345-93302-0010",
+      "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+      "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "n": 2000,
+  "n_short": 500,
+  "n_long": 1500,
+  "build_seconds": 14.895065546035767,
+  "sampling": {
+    "plan_path": "results/short_oversample_plan.json",
+    "checkpoint_sha256": "fc9fb3dd3521809fe2d90b7150167f6a403dd72f3f69429142bea80e74b64358",
+    "short_definition": "normalized reference word count <= 9",
+    "target_short_fraction": 0.25,
+    "n_short": 500,
+    "n_long": 1500,
+    "unique_short_rows": 365,
+    "short_repeat_count": 135,
+    "short_repeat_factor": 1.36986301369863,
+    "natural_short_fraction": 0.0365,
+    "natural_short_word_share": 0.007485771561556718,
+    "target_short_word_share": 0.06135779306511014,
+    "effective_sampling_weights": {
+      "short": 6.849315068493151,
+      "long": 0.7784120394395433,
+      "short_to_long_ratio": 8.79908675799087
+    },
+    "sampling_frequency": {
+      "short": 0.25,
+      "long": 0.75
+    },
+    "leakage_check": {
+      "dev_256_overlap": [],
+      "test_used": false,
+      "split": "train.100"
+    }
+  }
+}

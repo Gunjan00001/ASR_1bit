@@ -1,10 +1,29 @@
 # One-Bit Wav2Vec2-Conformer ASR
 
+## Final research status (2026-11-01)
+
+The project is frozen at three selected points:
+
+| Role | Model | Full test-clean WER | Historical artifact | Standalone v2 artifact |
+|---|---|---:|---:|---:|
+| Reference | FP32 | 1.93% | 2,373,507,712 B | 2,373,507,712 B |
+| Accuracy winner | 2-bit FFN | **2.58%** | 1,131,062,436 B | 1,131,269,460 B |
+| Compression winner | Strategy A | **2.74%** | 989,509,572 B | 989,716,588 B |
+
+Strategy A is below 1 GB. The v2 artifacts include the BatchNorm/positional
+buffers missing from the historical packed files; historical artifacts are
+preserved and match their recorded sizes. Packed runtime expands codes to FP32
+before `F.linear`; **no inference acceleration is claimed** (measured ~20× slower
+than FP32). Short-utterance oversampling, Strategy C, per-channel scaling, and
+beam-search decoding were rejected. See
+[`RESEARCH_REPORT.md`](RESEARCH_REPORT.md) and
+[`FINAL_MODEL_CARD.md`](FINAL_MODEL_CARD.md).
+
 Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
 
-**Current best compressed model:** genuine 2-bit FFN full run — **2.58% full test-clean WER**, **1,131,062,436 B**, 79 2-bit + 17 FP32 exclusions. It supersedes the mixed 1-bit FFN (5.46%, 1.0896 GB) and is within +0.65 pp of FP32 at 47.6% smaller size. The `v1.6.0` tag still marks the historical mixed-FFN release. On
+**Current accuracy winner:** 2-bit FFN full — **2.58% full test-clean**, **1,131,062,436 B**. **Smallest valid point:** Strategy A full (36 attention 2-bit + 79 FFN 2-bit) — **2.74%**, **989,509,572 B**, a 12.52% size reduction for +0.16 pp. The `v1.6.0` tag still marks the historical mixed-FFN release. On
 **full LibriSpeech test-clean (2620 utterances)**: FP32 **0.0193** at 2.374 GB;
 attention-only 1-bit QAT **0.0449** at 1.983 GB; **mixed-precision FFN
 (79 one-bit + 17 fixed FP32 layers) 0.0546 at 1.090 GB**; full FFN-only control
@@ -35,6 +54,8 @@ results remain below and in [`RESULTS.md`](RESULTS.md).
 | Document | Purpose | Start here if… |
 |---|---|---|
 | **README.md** (this file) | status, results, design, limitations, reproduction | you want the engineer's reference |
+| [`RESEARCH_REPORT.md`](RESEARCH_REPORT.md) | final 12-section research report with selected models, benchmark, rejected experiments, and limitations | you want the publication-style account |
+| [`FINAL_MODEL_CARD.md`](FINAL_MODEL_CARD.md) | frozen selected models, hashes, policies, artifacts, and benchmark | you need the model/artifact handoff |
 | [`deepdive.md`](deepdive.md) | a from-scratch, easy teaching guide to ASR, CTC, 1-bit math, QAT, KD, packing, benchmarks, streaming, and debugging | you are new to the project or to low-bit ML |
 | [`EXPERIMENT_LOG.md`](EXPERIMENT_LOG.md) | what we did, why, did it work, why not, what we changed, and what worked | you want the reasoning behind every number |
 | [`RESULTS.md`](RESULTS.md) | generated measured tables (no hand-entered numbers) | you want the final numbers and artifact sizes |
@@ -194,7 +215,7 @@ See `one_bit_asr_implementation_plan.md` for the full plan.
 | R3 | Research: mixed-precision FFN | ✅ **full measured**: mixed 0.0527 dev / 0.0546 full test at 1.090 GB; control 0.1163 / 0.1132 at 0.813 GB |
 | R4 | Research: attention mixed precision | ✅ both pilots measured: A 10.79% / 0.992 GB, B 17.92% / 0.797 GB; neither promoted over mixed FFN 9.00% / 1.090 GB |
 | R5 | Research: genuine 2-bit FFN | ✅ **promoted**: 2.45% test-256, 2.58% full test-clean, 1.131 GB; 2.0000 effective bits/quantized weight |
-| R6 | Research: 2-bit attention on 2-bit FFN | ✅ A: 2.99% dev-128 at 0.990 GB (+0.56 pp); B: 4.48% at 0.848 GB; A is the only viable candidate; no full run yet |
+| R6 | Research: 2-bit attention on 2-bit FFN | ✅ A full: 2.69% test-256 / 2.74% full test-clean, **989,509,572 B**; 2-bit FFN remains the accuracy winner at 2.58% |
 
 > **v1.5.0 work ran on the local 8×A100 PBS cluster** (see
 > [`cluster/README.md`](cluster/README.md)). The status column distinguishes

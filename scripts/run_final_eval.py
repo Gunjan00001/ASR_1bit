@@ -127,6 +127,31 @@ ARM_DEFS = {
         "config": "configs/cluster_effective_qat_ffn_mixed_2bit_full.yaml",
         "checkpoint": "checkpoints/qat_ffn_mixed_2bit_full",
     },
+    "attn_2bit_on_2bitffn_A_full": {
+        "kind": "qat",
+        "config": "configs/cluster_effective_attn_2bit_on_2bitffn_A_full.yaml",
+        "checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_full",
+    },
+    "attn_2bit_on_2bitffn_A_pilot": {
+        "kind": "qat",
+        "config": "configs/cluster_effective_attn_2bit_on_2bitffn_A_pilot.yaml",
+        "checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_pilot",
+    },
+    "attn_2bit_A_per_channel_pilot": {
+        "kind": "qat",
+        "config": "configs/cluster_effective_attn_2bit_A_per_channel_pilot.yaml",
+        "checkpoint": "checkpoints/attn_2bit_A_per_channel_pilot",
+    },
+    "attn_2bit_A_short_oversample_pilot": {
+        "kind": "qat",
+        "config": "configs/cluster_effective_attn_2bit_A_short_oversample_pilot.yaml",
+        "checkpoint": "checkpoints/attn_2bit_A_short_oversample_pilot",
+    },
+    "attn_2bit_on_2bitffn_A_final1875": {
+        "kind": "qat",
+        "config": "configs/cluster_effective_attn_2bit_on_2bitffn_A_full.yaml",
+        "checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_full/checkpoint-1875",
+    },
     "qat_attn_ffn": {
         "kind": "qat",
         "config": "configs/qat_attn_ffn.yaml",

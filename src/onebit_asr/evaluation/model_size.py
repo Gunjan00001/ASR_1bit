@@ -212,13 +212,29 @@ def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_ab
         non_quantized_params += param.numel()
         non_quantized_bytes += param.numel() * param.element_size()
 
+    # Buffers are part of the deploy state: BatchNorm running statistics are
+    # required for correct inference, and positional inv_freq is part of the
+    # architecture. Omitting them makes an artifact dependent on the QAT
+    # checkpoint and not standalone.
+    non_quantized_buffers = 0
+    non_quantized_buffer_bytes = 0
+    for bname, buffer in model.named_buffers():
+        if bname in tensors:
+            continue
+        tensors[bname] = buffer.detach().contiguous()
+        non_quantized_buffers += buffer.numel()
+        non_quantized_buffer_bytes += buffer.numel() * buffer.element_size()
+
     total_params = sum(p.numel() for p in model.parameters())
-    component_bytes = int(packed_payload_bytes + scale_bytes + non_quantized_bytes)
+    component_bytes = int(
+        packed_payload_bytes + scale_bytes + non_quantized_bytes + non_quantized_buffer_bytes
+    )
     stats = {
         "scale_mode": scale_mode,
         "n_bitlinear_layers": len(bitlinear_weights),
         "quantized_weight_count": int(quantized_weight_count),
         "non_quantized_param_count": int(non_quantized_params),
+        "non_quantized_buffer_count": int(non_quantized_buffers),
         "total_params": int(total_params),
         "bits": (next(iter(bits_by_layer.values())) if len(set(bits_by_layer.values())) == 1
                  else sorted(set(bits_by_layer.values()))),
@@ -229,6 +245,7 @@ def build_packed_tensors(model: nn.Module, scale_mode: str = "per_tensor_mean_ab
         "fp_scale_bytes": int(scale_bytes),
         "fp_scale_element_count": int(scale_element_count),
         "non_quantized_fp_param_bytes": int(non_quantized_bytes),
+        "non_quantized_buffer_bytes": int(non_quantized_buffer_bytes),
         # Assumes FP32 masters (the packing path loads/saves FP32). If you pack
         # an fp16 model, this figure overstates the excluded bytes.
         "fp_master_bytes_excluded_from_artifact": int(quantized_weight_count * 4),

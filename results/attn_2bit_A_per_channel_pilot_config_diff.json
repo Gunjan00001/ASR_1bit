@@ -1,0 +1,31 @@
+{
+  "A_effective": "configs/cluster_effective_attn_2bit_on_2bitffn_A_pilot.yaml",
+  "per_channel_effective": "configs/cluster_effective_attn_2bit_A_per_channel_pilot.yaml",
+  "scale_A": "per_tensor_mean_abs",
+  "scale_per_channel": "per_output_channel_mean_abs",
+  "non_scale_differences": [],
+  "pilot_overrides": {
+    "subset_size": 2000,
+    "batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "max_steps": 500,
+    "eval_every_steps": 250,
+    "eval_utterances": 128,
+    "logging_steps": 10,
+    "save_strategy": "no"
+  },
+  "resolved_training_from_result": {
+    "subset_size": 2000,
+    "max_steps": 500,
+    "eval_every_steps": 250,
+    "eval_utterances": 128,
+    "seed": 42,
+    "batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 2e-05,
+    "fp16": true
+  },
+  "init_checkpoint": "checkpoints/qat_ffn_mixed_2bit_full",
+  "n_excluded_layers": 77,
+  "bits": 2
+}

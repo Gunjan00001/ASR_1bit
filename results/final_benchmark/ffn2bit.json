@@ -1,0 +1,70 @@
+{
+  "phase": "final controlled deployment benchmark",
+  "timestamp_utc": "2026-11-01T11:35:22.704631+00:00",
+  "platform": "Linux-4.18.0-477.27.1.el8_8.x86_64-x86_64-with-glibc2.28",
+  "arm": "ffn2bit",
+  "kind": "packed",
+  "device": "cuda",
+  "device_name": "NVIDIA A100-SXM4-80GB",
+  "n_utterances": 256,
+  "warmup_utterances": 3,
+  "seed": 42,
+  "decoding": "greedy",
+  "text_normalization": "lowercase + strip punctuation",
+  "model_load_s": 7.86937316134572,
+  "load_peak_gpu_allocated_bytes": 1131195392,
+  "load_peak_gpu_reserved_bytes": 1151336448,
+  "loaded_host_rss_mb": 1130.500096,
+  "peak_host_rss_mb": 1658.65472,
+  "inference_peak_gpu_allocated_bytes": 1893438976,
+  "inference_peak_gpu_reserved_bytes": 3202351104,
+  "wer": 0.024605920799692427,
+  "cer": 0.0067701393640390364,
+  "expected_wer": 0.024413687043444827,
+  "expected_wer_delta": 0.00019223375624759925,
+  "total_audio_s": 1882.4098125,
+  "forward_latency_s": {
+    "mean": 1.0051194870757172,
+    "p50": 0.9977968335151672,
+    "p95": 1.0620759697631001,
+    "max": 1.145453568547964
+  },
+  "e2e_latency_s": {
+    "mean": 1.0066805308306357,
+    "p50": 0.9994476195424795,
+    "p95": 1.0646610404364765,
+    "max": 1.1498767640441656
+  },
+  "acoustic_rtf": 0.13669212037821524,
+  "e2e_rtf": 0.13690441591482233,
+  "artifact_bytes": 1131269460,
+  "load_info": {
+    "artifact_manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors.manifest.json",
+    "n_packed_layers": 79,
+    "bits": 2,
+    "scale_mode": "per_tensor_mean_abs",
+    "kind": "packed",
+    "checkpoint": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full",
+    "checkpoint_sha256": "87005f36bca859fe80bdb48f7a02a18841fed0a5e3495b2d877d2fd1a42befdb",
+    "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors",
+    "artifact_sha256": "e8e138050f2252a3b9aa327aec87cbe3340f244509ab2b6953d491bd8881c856",
+    "artifact_bytes": 1131269460
+  },
+  "transcripts": [
+    {
+      "id": "1988-24833-0026",
+      "reference": "ive decided to enlist in the army",
+      "hypothesis": "ive decided to enlist in the army"
+    },
+    {
+      "id": "2428-83699-0039",
+      "reference": "i tolled the bell again",
+      "hypothesis": "i told the bell again"
+    },
+    {
+      "id": "6345-93302-0010",
+      "reference": "the keen wind thrust itself even inside the high collar of her jacket",
+      "hypothesis": "the keen wind thrust itself even inside the high collar of her jacket"
+    }
+  ]
+}

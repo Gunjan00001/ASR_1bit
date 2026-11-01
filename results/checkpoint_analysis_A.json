@@ -1,0 +1,69 @@
+{
+  "purpose": "Read-only checkpoint audit for Strategy A; no checkpoint was retrained.",
+  "protocol": {
+    "dataset": "LibriSpeech dev-clean fixed subset",
+    "decoding": "greedy CTC",
+    "text_normalization": "lowercase + strip punctuation",
+    "seed": 42,
+    "note": "Subset sizes differ by run: the pilot used dev-128, the full run used dev-256. All use the same preprocessing/decoding path."
+  },
+  "checkpoints": [
+    {
+      "name": "A pilot",
+      "checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_pilot",
+      "step": 500,
+      "selected": true,
+      "selection_basis": "best dev-128 WER at final step 500",
+      "dev_subset": 128,
+      "dev_wer": 0.029861888764464353,
+      "dev_cer": 0.008769468219447173,
+      "artifact_bytes": 989509572,
+      "packed_reload_passed": true,
+      "packed_reload_max_abs_logit_diff": 0.0,
+      "packed_reload_argmax_agreement": 1.0,
+      "already_evaluated": true,
+      "source": "results/attn_2bit_on_2bitffn_A_pilot.json"
+    },
+    {
+      "name": "A full selected",
+      "checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_full",
+      "step": 1000,
+      "selected": true,
+      "selection_basis": "best dev-256 WER; restored before test",
+      "dev_subset": 256,
+      "dev_wer": 0.027297193387158785,
+      "dev_cer": 0.007670423853937844,
+      "artifact_bytes": 989509572,
+      "packed_reload_passed": true,
+      "packed_reload_max_abs_logit_diff": 0.0,
+      "packed_reload_argmax_agreement": 1.0,
+      "already_evaluated": true,
+      "source": "results/attn_2bit_on_2bitffn_A_full.json"
+    },
+    {
+      "name": "A full final state",
+      "checkpoint": "checkpoints/attn_2bit_on_2bitffn_A_full/checkpoint-1875",
+      "step": 1875,
+      "selected": false,
+      "selection_basis": "final scheduled dev-256 WER, not selected",
+      "dev_subset": 256,
+      "dev_wer": 0.028066128412149175,
+      "dev_cer": 0.00759840109474594,
+      "artifact_bytes": 989509572,
+      "packed_reload_passed": true,
+      "packed_reload_max_abs_logit_diff": 0.0,
+      "packed_reload_argmax_agreement": 1.0,
+      "already_evaluated": "dev during training; first packed/verified now",
+      "source": [
+        "results/attn_2bit_on_2bitffn_A_full.json",
+        "results/attn_2bit_on_2bitffn_A_final1875_size_report.json",
+        "results/packed_verify_attn_2bit_on_2bitffn_A_final1875.json"
+      ]
+    }
+  ],
+  "reproduction": {
+    "A pilot dev-128": "re-ran through scripts/run_final_eval.py on CPU; WER/CER matched the stored result exactly before the redundant sweep was stopped.",
+    "A full/final": "not re-run end-to-end; values are the stored pinned-protocol measurements from the completed runs."
+  },
+  "artifact_note": "The final-1875 state was packed to a new path; the selected A artifact and every historical result were left untouched."
+}

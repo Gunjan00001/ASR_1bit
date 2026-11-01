@@ -14,7 +14,9 @@ Sample IDs are recorded in results JSON so any run can be reproduced exactly.
 from __future__ import annotations
 
 import io
+import json
 import os
+from pathlib import Path
 
 import numpy as np
 from datasets import Audio, Dataset, load_dataset
@@ -150,6 +152,79 @@ def build_ctc_train_dataset(split: str, subset_size: int, seed: int, processor):
 
     dataset = Dataset.from_generator(_generator)
     return dataset, provenance
+
+
+def build_ctc_train_dataset_from_plan(plan_path: str | Path, processor):
+    """Build the exact oversampled subset recorded in a plan JSON.
+
+    The plan contains full train.100 row indices (duplicates are intentional),
+    sample IDs, and the leakage/weight audit. Only ``train.100`` is accepted.
+    Returns ``(dataset, provenance, sampling_metadata)``.
+    """
+    plan_path = Path(plan_path)
+    plan = json.loads(plan_path.read_text())
+    if plan.get("dataset") != f"{DATASET_ID}/{CONFIG}/{TRAIN_SPLIT}":
+        raise ValueError(f"plan dataset is not {TRAIN_SPLIT}: {plan.get('dataset')!r}")
+    if plan.get("leakage_check", {}).get("split") != TRAIN_SPLIT:
+        raise ValueError("oversampling plan must use train.100")
+    if plan.get("leakage_check", {}).get("dev_256_overlap"):
+        raise ValueError("oversampling plan overlaps the pinned dev set")
+    samples_meta = plan["samples"]
+    indices = [int(s["index"]) for s in samples_meta]
+    if len(indices) != int(plan["subset_size"]):
+        raise ValueError("plan subset_size does not match its sample list")
+
+    ds = load_dataset(DATASET_ID, CONFIG, split=TRAIN_SPLIT)
+    use_soundfile = _audio_decoder() == "soundfile"
+    if use_soundfile:
+        ds = ds.cast_column("audio", Audio(decode=False))
+    sub = ds.select(indices)
+    actual_ids = [str(x) for x in sub["id"]]
+    expected_ids = [str(s["id"]) for s in samples_meta]
+    if actual_ids != expected_ids:
+        raise ValueError("plan row indices do not reproduce the recorded sample IDs")
+
+    def _generator():
+        for row in sub:
+            if use_soundfile:
+                audio, sr = _decode_audio_soundfile(row["audio"])
+            else:
+                audio = np.asarray(row["audio"]["array"], dtype=np.float32)
+                sr = int(row["audio"]["sampling_rate"])
+            if sr != EXPECTED_SR:
+                raise ValueError(f"Sample {row.get('id')}: {sr} Hz, expected {EXPECTED_SR} Hz")
+            labels = processor.tokenizer(row["text"]).input_ids
+            yield {"input_values": audio, "labels": list(labels)}
+
+    dataset = Dataset.from_generator(_generator)
+    sampling = {
+        "plan_path": str(plan_path),
+        "checkpoint_sha256": plan.get("checkpoint_sha256"),
+        "short_definition": plan.get("short_definition"),
+        "target_short_fraction": plan.get("target_short_fraction"),
+        "n_short": plan.get("n_short"),
+        "n_long": plan.get("n_long"),
+        "unique_short_rows": plan.get("unique_short_rows"),
+        "short_repeat_count": plan.get("short_repeat_count"),
+        "short_repeat_factor": plan.get("short_repeat_factor"),
+        "natural_short_fraction": plan.get("natural_short_fraction"),
+        "natural_short_word_share": plan.get("natural_short_word_share"),
+        "target_short_word_share": plan.get("target_short_word_share"),
+        "effective_sampling_weights": plan.get("effective_sampling_weights"),
+        "sampling_frequency": plan.get("sampling_frequency"),
+        "leakage_check": plan.get("leakage_check"),
+    }
+    provenance = [
+        {
+            "id": s["id"],
+            "text": s["text"],
+            "n_words": s.get("n_words"),
+            "duration_s": s.get("duration_s"),
+            "short": s.get("short"),
+        }
+        for s in samples_meta
+    ]
+    return dataset, provenance, sampling
 
 
 def prepare_ctc_features(samples: list[dict], processor) -> tuple["list[dict]", "list[dict]"]:

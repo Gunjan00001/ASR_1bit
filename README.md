@@ -19,6 +19,46 @@ beam-search decoding were rejected. See
 [`RESEARCH_REPORT.md`](RESEARCH_REPORT.md) and
 [`FINAL_MODEL_CARD.md`](FINAL_MODEL_CARD.md).
 
+
+## Live streaming demo
+
+![Streaming ASR frontend](docs/frontend-streaming.png)
+
+The research project now includes a browser-based live demo:
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -e .
+pip install -r requirements-demo.txt
+python scripts/run_streaming_app.py --host 127.0.0.1 --port 7860 --device auto
+```
+
+Open `http://127.0.0.1:7860`, select a selected model, click **Start recording**,
+allow microphone access, and speak. Finalized words are dark; provisional words
+are amber. The app streams microphone PCM through an AudioWorklet and WebSocket
+to the actual packed model.
+
+**Important:** this is a **chunked-overlap approximation**, not a stateful
+streaming encoder. Each window re-runs the full encoder. On stop, the UI exposes
+a full-utterance refinement separately from the chunk-merged hypothesis. Packed
+weights are expanded to FP32 for computation: the artifacts reduce storage, not
+inference latency. CPU fallback is functional but not real-time; use CUDA for a
+live demo.
+
+See [`docs/STREAMING.md`](docs/STREAMING.md) for architecture, API, privacy,
+model resolution, and limitations.
+
+### Model downloads and LFS
+
+The deployable packages are in `deploy/models/` (metadata, config, tokenizer,
+processor, manifest, checksums). The large weights are intended for Git LFS;
+this repository's account currently has no confirmed LFS data pack for the
+~2.12 GB pair. Do not use a partial upload. Local development falls back to the
+verified v2 artifacts under `checkpoints/`. See
+[`deploy/models/README.md`](deploy/models/README.md) for the exact policy.
+
+
 Research project: progressively replace FP linear layers of a pretrained
 **Wav2Vec2-Conformer CTC** model with custom 1-bit **BitLinear** layers, then
 measure — honestly — what that costs in accuracy, size, and speed.
@@ -56,6 +96,7 @@ results remain below and in [`RESULTS.md`](RESULTS.md).
 | **README.md** (this file) | status, results, design, limitations, reproduction | you want the engineer's reference |
 | [`RESEARCH_REPORT.md`](RESEARCH_REPORT.md) | final 12-section research report with selected models, benchmark, rejected experiments, and limitations | you want the publication-style account |
 | [`FINAL_MODEL_CARD.md`](FINAL_MODEL_CARD.md) | frozen selected models, hashes, policies, artifacts, and benchmark | you need the model/artifact handoff |
+| [`docs/STREAMING.md`](docs/STREAMING.md) | live streaming architecture, browser test flow, API, privacy, and limitations | you want to run or modify the live demo |
 | [`deepdive.md`](deepdive.md) | a from-scratch, easy teaching guide to ASR, CTC, 1-bit math, QAT, KD, packing, benchmarks, streaming, and debugging | you are new to the project or to low-bit ML |
 | [`EXPERIMENT_LOG.md`](EXPERIMENT_LOG.md) | what we did, why, did it work, why not, what we changed, and what worked | you want the reasoning behind every number |
 | [`RESULTS.md`](RESULTS.md) | generated measured tables (no hand-entered numbers) | you want the final numbers and artifact sizes |

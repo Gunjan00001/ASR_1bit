@@ -1525,6 +1525,53 @@ per-channel, and beam decoding remain rejected.
 
 ---
 
+## E42 — Live streaming ASR demo and CPU streaming evaluation
+
+**Question:** can the selected packed models power a live browser microphone
+interface, and what is the streaming approximation's accuracy/latency?
+
+**Architecture:** browser AudioWorklet (320 ms PCM) → FastAPI WebSocket →
+`StreamingSession` → overlapping 2.0 s windows / 0.5 s overlap → greedy CTC →
+word merge → stable-prefix events. Full encoder runs per window; this is **not**
+stateful streaming. On stop, a full-utterance refinement is returned separately
+from `streaming_text`. No training, no test data.
+
+**UI:** responsive dark/light research interface with model selector, device
+selection, live AudioWorklet level meter, provisional/finalized transcript,
+timer, reset, copy/download, optional reference WER/CER, optional local-only
+feedback, and optional offline file check. Screenshot:
+`docs/frontend-streaming.png`.
+
+**Real WebSocket validation (CPU, 2.595 s dev utterance):** both FFN and A
+returned exact final text; first partial 2.47/2.85 s, finalization 4.44/5.82 s,
+processing RTF 2.54/3.22; 9 chunks, 0 dropped. CPU is a functional fallback,
+not real-time.
+
+**CPU streaming sweep (4 dev utterances):**
+
+| Model / window | Final WER | Streaming WER | First partial | Avg update | Finalization | RTF |
+|---|---:|---:|---:|---:|---:|---:|
+| FFN 2.0 s | 3.57% | 25.00% | 2.08 s | 2.43 s | 5.22 s | 2.77 |
+| A 2.0 s | 3.57% | 21.43% | 2.67 s | 2.31 s | 5.18 s | 2.92 |
+| FFN 320 ms | 3.57% | 117.86% | 4.91 s | 2.04 s | 7.81 s | 11.11 |
+| A 320 ms | 3.57% | 150.00% | 4.05 s | 2.19 s | 3.03 s | 9.43 |
+
+The 320 ms window is rejected. Final WER is full-utterance refinement, not a
+pure streaming metric. The GPU streaming job was blocked by the account's
+four-job GPU limit; no GPU streaming result is claimed. An uppercase/lowercase
+normalization bug in the first aggregate was corrected from stored rows; no
+invalid WER is retained.
+
+**LFS/repository blocker:** the URL supplied in the latest mission
+(`ASR-1-bit-qwen-R2T2-approach`) is a separate Qwen/R2T2 repository. It was not
+overwritten. GitHub's free LFS capacity is 1 GB storage/bandwidth, while the two
+selected artifacts total ~2.12 GB; no incomplete LFS upload was attempted.
+
+**Tests:** **171 pass**, including audio validation, WebSocket/API, stable-prefix,
+model-package, LFS-pattern, and frontend-asset tests.
+
+---
+
 ## How to add a new log entry
 
 When you run a new experiment, append:

@@ -212,6 +212,47 @@ Selected checkpoint hashes:
 - Distillation or structured pruning to reduce non-quantized FP parameters,
   which dominate the sub-1 GB artifact.
 
+## 13. Streaming deployment and human testing
+
+The Wav2Vec2-Conformer encoder is not stateful in this implementation. The live
+demo therefore uses a **chunked-overlap approximation**:
+
+- browser microphone → AudioWorklet (320 ms PCM chunks) → `/ws/stream`;
+- server keeps a rolling buffer and runs overlapping 2.0 s windows (0.5 s
+  overlap) through the full encoder;
+- greedy CTC per window, word-overlap merge, and stable-prefix finalization;
+- on stop, a full-utterance pass is returned as `refined_text`, while
+  `streaming_text` remains the chunk-merged hypothesis.
+
+This is explicitly not described as true stateful streaming. The UI labels the
+mode, shows provisional words in amber and finalized words in dark, displays
+first-partial latency, finalization latency, and RTF, and offers optional
+reference WER/CER.
+
+A 4-utterance CPU streaming sweep (`results/streaming_eval_cpu.json`) gave a
+**25.0% (FFN) / 21.4% (A) chunk-merged WER** for the default 2.0 s window, while
+the full-utterance refinement was 3.57% on that tiny sample. A 320 ms window was
+unusable (117.9% / 150.0% streaming WER) and is rejected. The GPU sweep was
+blocked by the account's four-job limit; no GPU streaming WER is claimed.
+
+The real WebSocket path was exercised on CPU with a 2.595 s dev utterance
+(`results/streaming_e2e_cpu.json`):
+
+| Model | Final transcript | WER | First partial | Finalization | Processing RTF | Audio chunks |
+|---|---|---:|---:|---:|---:|---:|
+| 2-bit FFN | exact | 0.0 | 2.47 s | 4.44 s | 2.54 | 9 |
+| Strategy A | exact | 0.0 | 2.85 s | 5.82 s | 3.22 | 9 |
+
+CPU is a functional fallback, not real-time. The GPU streaming evaluation was
+submitted but blocked by the account's four-job GPU limit; no GPU streaming
+numbers are claimed. The offline A100 benchmark measured RTF 0.137 for 2-bit FFN
+and 0.153 for Strategy A; the streaming window cost is the same full-encoder
+cost, but that is not a substitute for a measured streaming evaluation.
+
+The browser UI, model selection, AudioWorklet/WebSocket protocol, reference
+metrics endpoint, and real model transcriptions were validated. The frontend
+serves no external requests and persists no audio or transcript by default.
+
 ## Reproducibility
 
 ```bash

@@ -62,6 +62,19 @@ before `F.linear`; the measured packed runtime is substantially slower than
 FP32. The benchmark is a storage-compression and latency characterization, not a
 speedup claim.
 
+## Deployment packages and streaming
+
+Small deployable packages are in `deploy/models/<id>/`:
+
+- `config.json`, tokenizer/processor files, manifest, metadata, `SHA256SUMS`.
+- `model_packed.safetensors` is the Git LFS candidate; it is absent locally
+  unless downloaded. The demo falls back to the verified local v2 artifact.
+
+The live browser interface uses the actual `ModelManager` and packed runtime.
+It is a chunked-overlap approximation, not stateful streaming. It expands codes
+to FP32 before `F.linear`; no inference acceleration is claimed. CPU fallback is
+functional but not real-time. See `docs/STREAMING.md`.
+
 ## Rejected experiments
 
 - Strategy C (24 K + 10 output projections): 3.77% dev-128, 997,373,612 B;

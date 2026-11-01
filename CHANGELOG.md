@@ -45,7 +45,14 @@ an exact, reproducible repository state.
   989,716,588 B) without altering historical artifacts or checkpoints. Added
   controlled A100 dev-256 benchmark, final audit, research report, and model
   card. Packed inference is ~20× slower; no speedup claimed.
-- **158 tests** pass.
+- Added a live browser streaming research interface (AudioWorklet → WebSocket →
+  chunked 2.0 s overlap decoder), model manager, deployable model packages,
+  LFS tracking configuration, reference WER/CER, and CPU fallback validation.
+  Real WebSocket E2E returned exact dev transcripts for both selected models.
+  320 ms window rejected; GPU streaming evaluation blocked by the four-job GPU
+  limit. No LFS upload was attempted because the account has no confirmed
+  2.12 GB data pack and the new URL is a separate Qwen repository.
+- **171 tests** pass.
 
 ## Unreleased — genuine 2-bit FFN: pilot passes gate
 

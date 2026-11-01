@@ -472,7 +472,27 @@ forward is **19.6×** slower for FFN and **22.0×** slower for Strategy A than F
 because codes are expanded to FP32 before `F.linear`. See
 `results/final_benchmark.json` and `results/final_audit.json`.
 
-## 19. Honest reading
+## 19. Live streaming demo (CPU fallback)
+
+The streaming UI uses 320 ms PCM chunks from an AudioWorklet, a WebSocket
+backend, and overlapping 2.0 s windows (0.5 s overlap). The online session is
+chunked, not stateful. A 4-utterance dev-clean CPU sweep was run because the GPU
+streaming job was blocked by the account's four-job limit.
+
+| Model / window | Final WER | Streaming WER | First partial | Avg update | Finalization | RTF | Updates |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| FFN · 2.0 s / 0.5 s | 3.57% | 25.00% | 2.08 s | 2.43 s | 5.22 s | 2.77 | 4 |
+| A · 2.0 s / 0.5 s | 3.57% | 21.43% | 2.67 s | 2.31 s | 5.18 s | 2.92 | 4 |
+| FFN · 320 ms window | 3.57% | 117.86% | 4.91 s | 2.04 s | 7.81 s | 11.11 | 43 |
+| A · 320 ms window | 3.57% | 150.00% | 4.05 s | 2.19 s | 3.03 s | 9.43 | 43 |
+
+Final WER is the full-utterance refinement, not a pure streaming metric. The
+320 ms window is unusable and rejected. A real WebSocket test of a 2.595 s dev
+utterance produced exact final text for both models on CPU; first partial
+2.47/2.85 s, finalization 4.44/5.82 s, RTF 2.54/3.22. No GPU streaming result is
+claimed.
+
+## 20. Honest reading
 
 - Accuracy numbers are greedy CTC on fixed LibriSpeech subsets; they are not
   comparable to LM-assisted leaderboard numbers.

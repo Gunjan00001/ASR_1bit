@@ -14,6 +14,7 @@ from onebit_asr.serving.audio import prepare_audio_file
 from onebit_asr.serving.manager import ModelManager, ServingError
 from onebit_asr.serving.metrics import compute_reference_metrics
 from onebit_asr.serving.streaming import StreamingSession
+from onebit_asr.serving.stateful_streaming import StatefulStreamingSession, StreamingProtocolError
 
 ROOT = Path(__file__).resolve().parents[3]
 FRONTEND = ROOT / "frontend"
@@ -87,7 +88,12 @@ def create_app(manager: ModelManager | None = None) -> FastAPI:
         chunk_ms = int(query.get("chunk_ms", "320"))
         window_s = float(query.get("window_s", "2.0"))
         overlap_s = float(query.get("overlap_s", "0.5"))
+        current_s = float(query.get("current_s", "1.0"))
+        left_s = float(query.get("left_s", "0.8"))
+        right_s = float(query.get("right_s", "0.32"))
         sample_rate = int(query.get("sample_rate", "16000"))
+        streaming_version = query.get("streaming_version", "stateful")
+        seq_header = query.get("seq_header", "1") == "1"
         reference = ""
         try:
             await websocket.send_json({
@@ -98,37 +104,72 @@ def create_app(manager: ModelManager | None = None) -> FastAPI:
             app.state.manager.set_device(device)
             load_info = await asyncio.to_thread(app.state.manager.load, model_id)
             model_meta = app.state.manager.public_metadata(model_id)
+            if streaming_version == "stateful":
+                session = StatefulStreamingSession(
+                    app.state.manager,
+                    model_id,
+                    app.state.manager.tokenizer(),
+                    sample_rate=sample_rate,
+                    chunk_ms=chunk_ms,
+                    current_s=current_s,
+                    left_s=left_s,
+                    right_s=right_s,
+                    expect_sequence=seq_header,
+                )
+                mode = "stateful-bounded-context"
+                note = (
+                    "Stateful bounded-context approximation: persistent CTC state, "
+                    "non-overlapping current segments, full Conformer over left/current/right "
+                    "context. Exact KV-cache equivalence is not claimed."
+                )
+                config = {
+                    "chunk_ms": chunk_ms, "current_s": current_s,
+                    "left_s": left_s, "right_s": right_s,
+                    "sample_rate": sample_rate, "mode": mode,
+                }
+            else:
+                session = StreamingSession(
+                    app.state.manager,
+                    model_id,
+                    sample_rate=sample_rate,
+                    chunk_ms=chunk_ms,
+                    window_s=window_s,
+                    overlap_s=overlap_s,
+                )
+                mode = "chunked-overlap"
+                note = (
+                    "Legacy chunked approximation: full encoder per overlapping window. "
+                    "Final text is a full-utterance refinement."
+                )
+                config = {
+                    "chunk_ms": chunk_ms, "window_s": window_s,
+                    "overlap_s": overlap_s, "sample_rate": sample_rate, "mode": mode,
+                }
             await websocket.send_json({
                 "type": "ready",
                 "model": model_meta,
                 "load": load_info,
-                "config": {
-                    "chunk_ms": chunk_ms,
-                    "window_s": window_s,
-                    "overlap_s": overlap_s,
-                    "sample_rate": sample_rate,
-                    "mode": "chunked-overlap",
-                },
-                "note": (
-                    "Chunked approximation: full encoder per window. "
-                    "Final text is a full-utterance refinement."
-                ),
+                "config": config,
+                "note": note,
             })
-            session = StreamingSession(
-                app.state.manager,
-                model_id,
-                sample_rate=sample_rate,
-                chunk_ms=chunk_ms,
-                window_s=window_s,
-                overlap_s=overlap_s,
-            )
             while True:
                 message = await websocket.receive()
                 if message.get("type") == "websocket.disconnect":
                     break
                 if "bytes" in message and message["bytes"] is not None:
+                    payload_bytes = message["bytes"]
+                    sequence = None
+                    if streaming_version == "stateful" and seq_header:
+                        if len(payload_bytes) < 4:
+                            raise StreamingProtocolError(
+                                "Audio frame is missing its 4-byte sequence header."
+                            )
+                        sequence = int.from_bytes(payload_bytes[:4], "little")
+                        payload_bytes = payload_bytes[4:]
                     events = await asyncio.to_thread(
-                        session.append_pcm, message["bytes"]
+                        session.append_pcm, payload_bytes, sequence
+                    ) if streaming_version == "stateful" else await asyncio.to_thread(
+                        session.append_pcm, payload_bytes
                     )
                     for event in events:
                         await websocket.send_json(event)
@@ -158,7 +199,7 @@ def create_app(manager: ModelManager | None = None) -> FastAPI:
             await websocket.close()
         except WebSocketDisconnect:
             return
-        except ServingError as exc:
+        except (ServingError, StreamingProtocolError) as exc:
             try:
                 await websocket.send_json({"type": "error", "message": str(exc)})
                 await websocket.close()

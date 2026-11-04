@@ -1,0 +1,170 @@
+{
+  "ffn2bit": {
+    "final": {
+      "type": "final",
+      "text": "ive decided to enlist in the army",
+      "final_text": "ive decided to enlist in the army",
+      "streaming_text": "ive decided to enlist in the army",
+      "refined_text": "ive decided to enlist in the army",
+      "metrics": {
+        "reference": "ive decided to enlist in the army",
+        "hypothesis": "ive decided to enlist in the army",
+        "wer": 0.0,
+        "cer": 0.0,
+        "substitutions": 0,
+        "deletions": 0,
+        "insertions": 0,
+        "hits": 7
+      },
+      "streaming_metrics": {
+        "reference": "ive decided to enlist in the army",
+        "hypothesis": "ive decided to enlist in the army",
+        "wer": 0.0,
+        "cer": 0.0,
+        "substitutions": 0,
+        "deletions": 0,
+        "insertions": 0,
+        "hits": 7
+      },
+      "mode": "stateful-bounded-context",
+      "exact_offline_equivalence": false,
+      "audio_duration_s": 2.595,
+      "chunks_received": 9,
+      "sequence_errors": 0,
+      "current_s": 1.0,
+      "left_context_s": 0.8,
+      "right_context_s": 0.32,
+      "chunk_ms": 320,
+      "partial_updates": 3,
+      "first_partial_latency_s": 3.5022131707519293,
+      "average_update_interval_s": 2.4966124333441257,
+      "p95_update_interval_s": 2.7351867436431347,
+      "word_stabilization_latency_s": 4.617978103924543,
+      "finalization_latency_s": 2.7597125619649887,
+      "processing_s": 8.487760826013982,
+      "rtf": 3.27081342042928,
+      "encoder_calls": 3,
+      "encoder_audio_s": 4.835000000000001,
+      "decoded_audio_s": 2.5949999999999998,
+      "encoder_recompute_ratio": 1.8631984585741816,
+      "committed_words": 7,
+      "provisional_chars": 0,
+      "revisions": 28,
+      "commit_events": [
+        {
+          "word": "ive",
+          "audio_s": 1.0,
+          "wall_s": 3.5022131707519293
+        },
+        {
+          "word": "the",
+          "audio_s": 2.0,
+          "wall_s": 5.733743037097156
+        }
+      ],
+      "dropped_chunks": 0,
+      "events_before_final": [],
+      "limitation": "Bounded-context stateful approximation: bidirectional Conformer attention is evaluated over left/current/right windows; no exact KV-cache equivalence is claimed. The final transcript is the incremental decoder output, not a full-utterance refinement."
+    },
+    "offline": "ive decided to enlist in the army",
+    "load": {
+      "model_id": "ffn2bit",
+      "cached": false,
+      "load_time_s": 9.025902343913913,
+      "device": "cpu",
+      "n_packed_layers": 79,
+      "bits": 2,
+      "scale_mode": "per_tensor_mean_abs",
+      "artifact_bytes": 1131269460,
+      "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors",
+      "manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors.manifest.json",
+      "kind": "packed"
+    },
+    "logit_chunks": 3,
+    "wall_s": 20.12118363380432
+  },
+  "strategy_a": {
+    "final": {
+      "type": "final",
+      "text": "ive decided to enlist in the army",
+      "final_text": "ive decided to enlist in the army",
+      "streaming_text": "ive decided to enlist in the army",
+      "refined_text": "ive decided to enlist in the army",
+      "metrics": {
+        "reference": "ive decided to enlist in the army",
+        "hypothesis": "ive decided to enlist in the army",
+        "wer": 0.0,
+        "cer": 0.0,
+        "substitutions": 0,
+        "deletions": 0,
+        "insertions": 0,
+        "hits": 7
+      },
+      "streaming_metrics": {
+        "reference": "ive decided to enlist in the army",
+        "hypothesis": "ive decided to enlist in the army",
+        "wer": 0.0,
+        "cer": 0.0,
+        "substitutions": 0,
+        "deletions": 0,
+        "insertions": 0,
+        "hits": 7
+      },
+      "mode": "stateful-bounded-context",
+      "exact_offline_equivalence": false,
+      "audio_duration_s": 2.595,
+      "chunks_received": 9,
+      "sequence_errors": 0,
+      "current_s": 1.0,
+      "left_context_s": 0.8,
+      "right_context_s": 0.32,
+      "chunk_ms": 320,
+      "partial_updates": 3,
+      "first_partial_latency_s": 4.350873354822397,
+      "average_update_interval_s": 3.7665082924067974,
+      "p95_update_interval_s": 4.122703933808952,
+      "word_stabilization_latency_s": 6.432013968471438,
+      "finalization_latency_s": 3.3708640970289707,
+      "processing_s": 11.880200300365686,
+      "rtf": 4.5781118691197245,
+      "encoder_calls": 3,
+      "encoder_audio_s": 4.835000000000001,
+      "decoded_audio_s": 2.5949999999999998,
+      "encoder_recompute_ratio": 1.8631984585741816,
+      "committed_words": 7,
+      "provisional_chars": 0,
+      "revisions": 28,
+      "commit_events": [
+        {
+          "word": "ive",
+          "audio_s": 1.0,
+          "wall_s": 4.350873354822397
+        },
+        {
+          "word": "the",
+          "audio_s": 2.0,
+          "wall_s": 8.513154582120478
+        }
+      ],
+      "dropped_chunks": 0,
+      "events_before_final": [],
+      "limitation": "Bounded-context stateful approximation: bidirectional Conformer attention is evaluated over left/current/right windows; no exact KV-cache equivalence is claimed. The final transcript is the incremental decoder output, not a full-utterance refinement."
+    },
+    "offline": "ive decided to enlist in the army",
+    "load": {
+      "model_id": "strategy_a",
+      "cached": false,
+      "load_time_s": 9.044451386667788,
+      "device": "cpu",
+      "n_packed_layers": 115,
+      "bits": 2,
+      "scale_mode": "per_tensor_mean_abs",
+      "artifact_bytes": 989716588,
+      "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors",
+      "manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/attn_2bit_on_2bitffn_A_full_packed_v2/model_packed.safetensors.manifest.json",
+      "kind": "packed"
+    },
+    "logit_chunks": 3,
+    "wall_s": 24.701578855514526
+  }
+}

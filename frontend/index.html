@@ -77,6 +77,7 @@
             <div class="transcript-actions">
               <button class="quiet" id="copyButton" type="button">Copy</button>
               <button class="quiet" id="downloadButton" type="button">Download TXT</button>
+              <button class="quiet" id="metricsDownloadButton" type="button">Download metrics</button>
             </div>
           </div>
           <div class="transcript-box" id="transcriptBox" aria-live="polite">
@@ -90,9 +91,11 @@
             <div><span>Audio duration</span><strong id="durationValue">0.0 s</strong></div>
             <div><span>Partial updates</span><strong id="updatesValue">0</strong></div>
             <div><span>First partial latency</span><strong id="firstPartialValue">—</strong></div>
+            <div><span>Avg / p95 update</span><strong id="avgUpdateValue">—</strong></div>
             <div><span>Finalization</span><strong id="finalizationValue">—</strong></div>
+            <div><span>Encoder recompute</span><strong id="recomputeValue">—</strong></div>
           </div>
-          <p class="mode-note" id="modeNote">Mode: chunked-overlap approximation; final transcript is refined over the full utterance.</p>
+          <p class="mode-note" id="modeNote">Mode: stateful bounded-context approximation; committed words are incremental CTC output, not a full offline refinement.</p>
         </article>
 
         <article class="card reference-card">
@@ -163,20 +166,22 @@
 
         <article class="card stream-card">
           <div class="eyebrow">STREAMING MODE</div>
-          <h2>Chunked overlap</h2>
-          <p class="muted" id="streamingExplanation">The encoder is not stateful in this implementation. Each window re-runs the full encoder; the final transcript is refined over the full utterance.</p>
+          <h2>Stateful bounded context</h2>
+          <p class="muted" id="streamingExplanation">Persistent CTC state and non-overlapping current segments. Because Conformer attention is bidirectional, each segment uses bounded left/current/right context; exact KV-cache equivalence is not claimed.</p>
           <dl class="model-facts">
             <div><dt>Audio chunk</dt><dd id="cfgChunk">320 ms</dd></div>
-            <div><dt>Window</dt><dd id="cfgWindow">2.0 s</dd></div>
-            <div><dt>Overlap</dt><dd id="cfgOverlap">0.5 s</dd></div>
+            <div><dt>Current segment</dt><dd id="cfgWindow">1.0 s</dd></div>
+            <div><dt>Left context</dt><dd id="cfgOverlap">0.8 s</dd></div>
+            <div><dt>Right context</dt><dd id="cfgRight">0.32 s</dd></div>
             <div><dt>EOU silence</dt><dd>0.8 s</dd></div>
           </dl>
           <details class="advanced">
             <summary>Streaming settings</summary>
             <div class="settings-grid">
               <label class="field"><span>Chunk (ms)</span><input id="chunkInput" type="number" min="160" max="1000" step="80" value="320"></label>
-              <label class="field"><span>Window (s)</span><input id="windowInput" type="number" min="0.8" max="6" step="0.1" value="2.0"></label>
-              <label class="field"><span>Overlap (s)</span><input id="overlapInput" type="number" min="0" max="2" step="0.1" value="0.5"></label>
+              <label class="field"><span>Current segment (s)</span><input id="windowInput" type="number" min="0.64" max="4" step="0.16" value="1.0"></label>
+              <label class="field"><span>Left context (s)</span><input id="overlapInput" type="number" min="0" max="3" step="0.16" value="0.8"></label>
+              <label class="field"><span>Right context (s)</span><input id="rightInput" type="number" min="0" max="2" step="0.16" value="0.32"></label>
             </div>
             <label class="check"><input id="autoStopCheck" type="checkbox" checked> Stop automatically after end-of-utterance silence hint</label>
           </details>
@@ -196,8 +201,8 @@
           <ol class="steps">
             <li>Choose a model. Start with <strong>2-bit FFN</strong> for best accuracy or <strong>Strategy A</strong> for the sub-1 GB model.</li>
             <li>Click <strong>Start recording</strong>, allow microphone access, and speak.</li>
-            <li>Finalized words are dark; provisional words are highlighted.</li>
-            <li>Stop to get the final full-utterance refinement; optionally compare with a reference transcript.</li>
+            <li>Finalized words are dark; provisional words are highlighted. Committed words never change.</li>
+            <li>Stop to flush the incremental CTC decoder; use a reference transcript for WER/CER.</li>
           </ol>
           <p class="microcopy">This is a research prototype. It is not a production service and it does not claim real-time acceleration.</p>
         </article>

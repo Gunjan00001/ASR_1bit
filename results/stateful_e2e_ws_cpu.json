@@ -1,0 +1,178 @@
+{
+  "wall_s": 20.851139307022095,
+  "events": [
+    {
+      "type": "status",
+      "status": "loading_model",
+      "model_id": "ffn2bit"
+    },
+    {
+      "type": "ready",
+      "model": {
+        "id": "ffn2bit",
+        "display_name": "2-bit FFN",
+        "description": "Accuracy winner. 2-bit FFN with the fixed 17 FP32 FFN exclusions and all attention FP32.",
+        "kind": "packed",
+        "artifact_bytes": 1131269460,
+        "historical_artifact_bytes": 1131062436,
+        "artifact_available": true,
+        "quantization": {
+          "bits": 2,
+          "scale": "per_tensor_mean_abs",
+          "attention_quantized": 0,
+          "attention_fp32": 96,
+          "ffn_quantized": 79,
+          "ffn_fp32": 17,
+          "bitlinear_layers": 79
+        },
+        "full_test_wer": 0.025829275715155205,
+        "dev_wer": 0.024605920799692427,
+        "dev_wer_note": "packed v2 dev-256; QAT reference 0.024413687043444827",
+        "limitations": [
+          "Packed inference expands weights to FP32; not accelerated.",
+          "Greedy CTC, no language model.",
+          "Clean LibriSpeech only."
+        ],
+        "runtime": "FP32 expansion before F.linear",
+        "checkpoint_sha256": "87005f36bca859fe80bdb48f7a02a18841fed0a5e3495b2d877d2fd1a42befdb",
+        "artifact_sha256": "e8e138050f2252a3b9aa327aec87cbe3340f244509ab2b6953d491bd8881c856"
+      },
+      "load": {
+        "model_id": "ffn2bit",
+        "cached": false,
+        "load_time_s": 9.057704229839146,
+        "device": "cpu",
+        "n_packed_layers": 79,
+        "bits": 2,
+        "scale_mode": "per_tensor_mean_abs",
+        "artifact_bytes": 1131269460,
+        "artifact": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors",
+        "manifest": "/home/jiit_992401210050/Desktop/ASR WaveTransformer/ASR_1bit/checkpoints/qat_ffn_mixed_2bit_full_packed_v2/model_packed.safetensors.manifest.json",
+        "kind": "packed"
+      },
+      "config": {
+        "chunk_ms": 320,
+        "current_s": 1.0,
+        "left_s": 0.8,
+        "right_s": 0.32,
+        "sample_rate": 16000,
+        "mode": "stateful-bounded-context"
+      },
+      "note": "Stateful bounded-context approximation: persistent CTC state, non-overlapping current segments, full Conformer over left/current/right context. Exact KV-cache equivalence is not claimed."
+    },
+    {
+      "type": "final_segment",
+      "text": "ive",
+      "final_text": "ive",
+      "seg_start_s": 0.0,
+      "seg_end_s": 1.0
+    },
+    {
+      "type": "partial",
+      "text": "ive decid",
+      "final_text": "ive",
+      "partial_text": "decid",
+      "chunk": 1,
+      "seg_start_s": 0.0,
+      "seg_end_s": 1.0,
+      "encoder_window_s": 1.32,
+      "latency_s": 2.3695006044581532,
+      "rtf": 2.3695006044581532,
+      "audio_duration_s": 1.6,
+      "mode": "stateful-bounded-context",
+      "committed_words": 1,
+      "provisional_chars": 5,
+      "revisions": 9
+    },
+    {
+      "type": "final_segment",
+      "text": "the",
+      "final_text": "ive decided to enlist in the",
+      "seg_start_s": 1.0,
+      "seg_end_s": 2.0
+    },
+    {
+      "type": "partial",
+      "text": "ive decided to enlist in the army",
+      "final_text": "ive decided to enlist in the",
+      "partial_text": "army",
+      "chunk": 2,
+      "seg_start_s": 1.0,
+      "seg_end_s": 2.0,
+      "encoder_window_s": 2.12,
+      "latency_s": 2.4772816179320216,
+      "rtf": 2.4233911111950874,
+      "audio_duration_s": 2.56,
+      "mode": "stateful-bounded-context",
+      "committed_words": 6,
+      "provisional_chars": 4,
+      "revisions": 28
+    },
+    {
+      "type": "final",
+      "text": "ive decided to enlist in the army",
+      "final_text": "ive decided to enlist in the army",
+      "streaming_text": "ive decided to enlist in the army",
+      "refined_text": "ive decided to enlist in the army",
+      "metrics": {
+        "reference": "ive decided to enlist in the army",
+        "hypothesis": "ive decided to enlist in the army",
+        "wer": 0.0,
+        "cer": 0.0,
+        "substitutions": 0,
+        "deletions": 0,
+        "insertions": 0,
+        "hits": 7
+      },
+      "streaming_metrics": {
+        "reference": "ive decided to enlist in the army",
+        "hypothesis": "ive decided to enlist in the army",
+        "wer": 0.0,
+        "cer": 0.0,
+        "substitutions": 0,
+        "deletions": 0,
+        "insertions": 0,
+        "hits": 7
+      },
+      "mode": "stateful-bounded-context",
+      "exact_offline_equivalence": false,
+      "audio_duration_s": 2.595,
+      "chunks_received": 9,
+      "sequence_errors": 0,
+      "current_s": 1.0,
+      "left_context_s": 0.8,
+      "right_context_s": 0.32,
+      "chunk_ms": 320,
+      "partial_updates": 3,
+      "first_partial_latency_s": 2.4204696184024215,
+      "average_update_interval_s": 4.6114973640069366,
+      "p95_update_interval_s": 6.527548802364618,
+      "word_stabilization_latency_s": 3.661745279096067,
+      "finalization_latency_s": 6.739767934195697,
+      "processing_s": 11.584410877898335,
+      "rtf": 4.464127505933847,
+      "encoder_calls": 3,
+      "encoder_audio_s": 4.835000000000001,
+      "decoded_audio_s": 2.5949999999999998,
+      "encoder_recompute_ratio": 1.8631984585741816,
+      "committed_words": 7,
+      "provisional_chars": 0,
+      "revisions": 28,
+      "commit_events": [
+        {
+          "word": "ive",
+          "audio_s": 1.0,
+          "wall_s": 2.4204696184024215
+        },
+        {
+          "word": "the",
+          "audio_s": 2.0,
+          "wall_s": 4.903020939789712
+        }
+      ],
+      "dropped_chunks": 0,
+      "events_before_final": [],
+      "limitation": "Bounded-context stateful approximation: bidirectional Conformer attention is evaluated over left/current/right windows; no exact KV-cache equivalence is claimed. The final transcript is the incremental decoder output, not a full-utterance refinement."
+    }
+  ]
+}

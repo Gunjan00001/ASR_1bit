@@ -21,6 +21,7 @@ const state = {
   lastFinalEvent: null,
   finalizing: false,
   finalWaitTimer: null,
+  sequence: 0,
 };
 
 const els = {
@@ -43,7 +44,9 @@ const els = {
   durationValue: $("durationValue"),
   updatesValue: $("updatesValue"),
   firstPartialValue: $("firstPartialValue"),
+  avgUpdateValue: $("avgUpdateValue"),
   finalizationValue: $("finalizationValue"),
+  recomputeValue: $("recomputeValue"),
   modeNote: $("modeNote"),
   referenceInput: $("referenceInput"),
   metricsButton: $("metricsButton"),
@@ -55,6 +58,7 @@ const els = {
   insValue: $("insValue"),
   copyButton: $("copyButton"),
   downloadButton: $("downloadButton"),
+  metricsDownloadButton: $("metricsDownloadButton"),
   themeToggle: $("themeToggle"),
   backendInfo: $("backendInfo"),
   modelName: $("modelName"),
@@ -68,9 +72,11 @@ const els = {
   chunkInput: $("chunkInput"),
   windowInput: $("windowInput"),
   overlapInput: $("overlapInput"),
+  rightInput: $("rightInput"),
   cfgChunk: $("cfgChunk"),
   cfgWindow: $("cfgWindow"),
   cfgOverlap: $("cfgOverlap"),
+  cfgRight: $("cfgRight"),
   autoStopCheck: $("autoStopCheck"),
   fileInput: $("fileInput"),
   fileButton: $("fileButton"),
@@ -163,6 +169,7 @@ function updateSettingsLabels() {
   els.cfgChunk.textContent = `${els.chunkInput.value} ms`;
   els.cfgWindow.textContent = `${Number(els.windowInput.value).toFixed(1)} s`;
   els.cfgOverlap.textContent = `${Number(els.overlapInput.value).toFixed(1)} s`;
+  els.cfgRight.textContent = `${Number(els.rightInput.value).toFixed(2)} s`;
 }
 
 function updateAudioClock() {
@@ -237,6 +244,8 @@ function resetTranscript() {
   els.updatesValue.textContent = "0";
   els.firstPartialValue.textContent = "—";
   els.finalizationValue.textContent = "—";
+  els.avgUpdateValue.textContent = "—";
+  els.recomputeValue.textContent = "—";
   els.durationValue.textContent = "0.0 s";
   els.metricsPanel.hidden = true;
   state.audioSeconds = 0;
@@ -341,6 +350,10 @@ function handleEvent(message) {
       els.firstPartialValue.textContent = message.first_partial_latency_s == null
         ? "—" : `${message.first_partial_latency_s.toFixed(2)} s`;
       els.finalizationValue.textContent = `${message.finalization_latency_s.toFixed(2)} s`;
+      els.avgUpdateValue.textContent = message.average_update_interval_s == null
+        ? "—" : `${message.average_update_interval_s.toFixed(2)} / ${message.p95_update_interval_s?.toFixed(2) ?? "—"} s`;
+      els.recomputeValue.textContent = message.encoder_recompute_ratio == null
+        ? "—" : `${message.encoder_recompute_ratio.toFixed(2)}×`;
       els.rtfValue.textContent = message.rtf == null ? "—" : message.rtf.toFixed(3);
       els.durationValue.textContent = `${message.audio_duration_s.toFixed(1)} s`;
       if (message.metrics) showMetrics(message.metrics);
@@ -370,6 +383,7 @@ async function startRecording() {
     return;
   }
   state.starting = true;
+  state.sequence = 0;
   setRecordingUI(false);
   setStatus("Requesting microphone…", "busy");
   try {
@@ -399,7 +413,12 @@ async function startRecording() {
       updateAudioClock();
       els.levelText.textContent = rms > 0.008 ? "SPEECH / SIGNAL" : "MIC SIGNAL";
       if (state.socketReady && state.ws?.readyState === WebSocket.OPEN) {
-        state.ws.send(pcm);
+        const header = new ArrayBuffer(4);
+        new DataView(header).setUint32(0, state.sequence++, true);
+        const packet = new Uint8Array(4 + pcm.byteLength);
+        packet.set(new Uint8Array(header), 0);
+        packet.set(new Uint8Array(pcm), 4);
+        state.ws.send(packet.buffer);
       }
     };
     connectSocket();
@@ -418,9 +437,12 @@ function connectSocket() {
     model_id: model.id,
     device: els.deviceSelect.value,
     chunk_ms: els.chunkInput.value,
-    window_s: els.windowInput.value,
-    overlap_s: els.overlapInput.value,
+    current_s: els.windowInput.value,
+    left_s: els.overlapInput.value,
+    right_s: els.rightInput.value,
     sample_rate: String(state.audioContext?.sampleRate || 16000),
+    streaming_version: "stateful",
+    seq_header: "1",
   });
   state.ws = new WebSocket(`${protocol}://${location.host}/ws/stream?${params}`);
   state.ws.binaryType = "arraybuffer";
@@ -545,6 +567,23 @@ async function copyTranscript() {
   }
 }
 
+function downloadMetrics() {
+  const payload = state.lastFinalEvent;
+  if (!payload) {
+    setStatus("No completed session metrics to download yet.", "error");
+    return;
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `onebit-asr-metrics-${new Date().toISOString().slice(0, 19).replaceAll(":", "-")}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  setStatus("Metrics downloaded.", "live");
+}
+
 function downloadTranscript() {
   const text = state.lastFinalEvent?.text || state.finalText || state.partialText;
   if (!text) {
@@ -643,10 +682,11 @@ function init() {
   els.metricsButton.addEventListener("click", fetchReferenceMetrics);
   els.fileButton.addEventListener("click", transcribeFile);
   els.buildFeedback.addEventListener("click", buildFeedback);
+  els.metricsDownloadButton.addEventListener("click", downloadMetrics);
   els.themeToggle.addEventListener("click", () => {
     applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   });
-  [els.chunkInput, els.windowInput, els.overlapInput].forEach((input) => {
+  [els.chunkInput, els.windowInput, els.overlapInput, els.rightInput].forEach((input) => {
     input.addEventListener("input", updateSettingsLabels);
   });
   window.addEventListener("beforeunload", () => {

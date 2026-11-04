@@ -136,7 +136,7 @@ def test_api_and_websocket_stream():
         assert metrics.status_code == 200
         assert metrics.json()["wer"] == 0.5
         with client.websocket_connect(
-            "/ws/stream?model_id=fake&window_s=0.2&overlap_s=0.05"
+            "/ws/stream?model_id=fake&streaming_version=chunked&window_s=0.2&overlap_s=0.05"
         ) as ws:
             assert ws.receive_json()["type"] == "status"
             assert ws.receive_json()["type"] == "ready"
@@ -159,3 +159,55 @@ def test_api_and_websocket_stream():
                     assert event["metrics"]["wer"] == 0.0
                     break
             assert final_seen
+
+
+class FakeStatefulManager(FakeManager):
+    class Tok:
+        def get_vocab(self):
+            return {"<pad>": 0, "A": 1, "|": 4}
+
+    def tokenizer(self):
+        return self.Tok()
+
+    def feat_frames(self, samples):
+        return max(1, int(round(samples / 320)))
+
+    def logits_array(self, audio, model_id, sample_rate=16000):
+        import numpy as np
+        frames = max(1, len(audio) // 320)
+        logits = np.full((frames, 5), -10.0, dtype=np.float32)
+        logits[0, 1] = 10.0
+        logits[-1, 4] = 10.0
+        return {"model_id": model_id, "logits": logits, "latency_s": 0.01,
+                "audio_duration_s": len(audio) / 16000, "device": "cpu"}
+
+
+def test_stateful_websocket_sequence_and_final():
+    app = create_app(FakeStatefulManager())
+    with TestClient(app) as client:
+        with client.websocket_connect(
+            "/ws/stream?model_id=fake&streaming_version=stateful&seq_header=1"
+            "&current_s=0.2&left_s=0&right_s=0"
+        ) as ws:
+            assert ws.receive_json()["type"] == "status"
+            ready = ws.receive_json()
+            assert ready["type"] == "ready"
+            assert ready["config"]["mode"] == "stateful-bounded-context"
+            pcm = np.zeros(int(16000 * 0.2), dtype="<f4").tobytes()
+            ws.send_bytes((0).to_bytes(4, "little") + pcm)
+            seen = False
+            for _ in range(8):
+                event = ws.receive_json()
+                if event["type"] == "partial":
+                    seen = True
+                    break
+            assert seen
+            ws.send_json({"type": "stop", "reference": "a"})
+            for _ in range(8):
+                event = ws.receive_json()
+                if event["type"] == "final":
+                    assert event["mode"] == "stateful-bounded-context"
+                    assert event["metrics"]["wer"] == 0.0
+                    break
+            else:
+                raise AssertionError("stateful stream did not finalize")

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import threading
 import time
+
+import numpy as np
 from pathlib import Path
 
 import torch
@@ -202,6 +204,61 @@ class ModelManager:
             except Exception as exc:  # noqa: BLE001
                 self.unload()
                 raise ServingError(f"Model load failed: {exc}") from exc
+
+    def tokenizer(self):
+        with self._lock:
+            if self._processor is None:
+                raise ServingError("Load a model before requesting its tokenizer.")
+            return self._processor.tokenizer
+
+    def logits_array(self, audio, model_id: str,
+                     sample_rate: int = SAMPLE_RATE) -> dict:
+        """Run the encoder and return frame logits without decoding.
+
+        This is the primitive used by the stateful bounded-context session. It
+        keeps the loaded model and processor across calls.
+        """
+        with self._lock:
+            if self._loaded_id != model_id or self._model is None:
+                self.load(model_id)
+            if sample_rate != SAMPLE_RATE:
+                audio = resample_mono(audio, sample_rate)
+            audio = np.asarray(audio, dtype="float32")
+            inputs = self._processor(
+                audio, sampling_rate=SAMPLE_RATE, return_tensors="pt", padding=True
+            )
+            if self.device.type == "cuda":
+                torch.cuda.synchronize()
+            t0 = time.perf_counter()
+            try:
+                with torch.no_grad():
+                    logits = self._model(inputs.input_values.to(self.device)).logits
+                if self.device.type == "cuda":
+                    torch.cuda.synchronize()
+            except torch.cuda.OutOfMemoryError as exc:
+                self.unload()
+                raise ServingError(
+                    "GPU memory exhausted during streaming inference. Try CPU."
+                ) from exc
+            elapsed = time.perf_counter() - t0
+            return {
+                "model_id": model_id,
+                "logits": logits[0].detach().float().cpu().numpy(),
+                "latency_s": elapsed,
+                "audio_duration_s": len(audio) / SAMPLE_RATE,
+                "device": str(self.device),
+            }
+
+    def feat_frames(self, samples: int) -> int:
+        """Number of encoder frames for a raw-sample count (current model)."""
+        with self._lock:
+            if self._model is None:
+                raise ServingError("Load a model before querying feature frames.")
+            return int(
+                self._model._get_feat_extract_output_lengths(
+                    torch.tensor([int(samples)])
+                ).item()
+            )
 
     def transcribe_array(self, audio, model_id: str,
                          sample_rate: int = SAMPLE_RATE) -> dict:

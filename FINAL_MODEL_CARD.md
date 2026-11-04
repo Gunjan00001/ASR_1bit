@@ -71,9 +71,13 @@ Small deployable packages are in `deploy/models/<id>/`:
   unless downloaded. The demo falls back to the verified local v2 artifact.
 
 The live browser interface uses the actual `ModelManager` and packed runtime.
-It is a chunked-overlap approximation, not stateful streaming. It expands codes
-to FP32 before `F.linear`; no inference acceleration is claimed. CPU fallback is
-functional but not real-time. See `docs/STREAMING.md`.
+The default path is a **stateful bounded-context approximation**: persistent
+CTC/audio state, non-overlapping current segments, 0.8 s left context, 0.32 s
+right context, and no full offline refinement. Bidirectional Conformer attention
+prevents exact KV-cache equivalence; the measured encoder recomputation ratio is
+1.85× and max logit difference versus offline is nonzero. It expands codes to
+FP32; no inference acceleration is claimed. CPU fallback is not real-time. See
+`docs/STREAMING.md`.
 
 ## Rejected experiments
 

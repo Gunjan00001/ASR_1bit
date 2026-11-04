@@ -214,44 +214,48 @@ Selected checkpoint hashes:
 
 ## 13. Streaming deployment and human testing
 
-The Wav2Vec2-Conformer encoder is not stateful in this implementation. The live
-demo therefore uses a **chunked-overlap approximation**:
+The Wav2Vec2-Conformer encoder is bidirectional; exact KV-cache streaming is
+not valid without changing the trained attention semantics. The live system
+therefore uses a **stateful bounded-context approximation**:
 
-- browser microphone → AudioWorklet (320 ms PCM chunks) → `/ws/stream`;
-- server keeps a rolling buffer and runs overlapping 2.0 s windows (0.5 s
-  overlap) through the full encoder;
-- greedy CTC per window, word-overlap merge, and stable-prefix finalization;
-- on stop, a full-utterance pass is returned as `refined_text`, while
-  `streaming_text` remains the chunk-merged hypothesis.
+- browser AudioWorklet → sequence-numbered 320 ms PCM frames → `/ws/stream`;
+- persistent buffered left/current/right audio and a persistent CTC decoder;
+- non-overlapping 1.0 s current segments, 0.8 s left context, 0.32 s right
+  context; each current segment is encoded once, not the full history;
+- incremental greedy CTC carries the previous frame token, blank/repeat state,
+  partial word, committed words, and final flush across chunks;
+- words commit at the tokenizer delimiter and never change; the last word flushes
+  at stop. There is **no separate full-utterance refinement** in the default
+  stateful path.
 
-This is explicitly not described as true stateful streaming. The UI labels the
-mode, shows provisional words in amber and finalized words in dark, displays
-first-partial latency, finalization latency, and RTF, and offers optional
-reference WER/CER.
+The measured encoder recomputation ratio is **1.85×** current audio, rather than
+full-history recomputation. This is still not exact stateful attention: max
+absolute logit difference versus offline reaches 10.73/8.68, with frame argmax
+agreement 95.5%/96.1%. Exact equivalence is not claimed.
 
-A 4-utterance CPU streaming sweep (`results/streaming_eval_cpu.json`) gave a
-**25.0% (FFN) / 21.4% (A) chunk-merged WER** for the default 2.0 s window, while
-the full-utterance refinement was 3.57% on that tiny sample. A 320 ms window was
-unusable (117.9% / 150.0% streaming WER) and is rejected. The GPU sweep was
-blocked by the account's four-job limit; no GPU streaming WER is claimed.
+Four dev-clean CPU utterances (`results/stateful_eval_cpu.json`; GPU streaming
+blocked by the four-job limit):
 
-The real WebSocket path was exercised on CPU with a 2.595 s dev utterance
-(`results/streaming_e2e_cpu.json`):
+| Model | Final WER | Partial WER | Stable-prefix WER | Offline WER | First partial | Avg/p95 update | Finalization | RTF |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2-bit FFN | 3.57% | 28.57% | 32.14% | 3.57% | 2.65 s | 2.27/2.73 s | 2.58 s | 2.81 |
+| Strategy A | 3.57% | 28.57% | 32.14% | 3.57% | 2.70 s | 2.23/2.45 s | 2.73 s | 2.76 |
 
-| Model | Final transcript | WER | First partial | Finalization | Processing RTF | Audio chunks |
-|---|---|---:|---:|---:|---:|---:|
-| 2-bit FFN | exact | 0.0 | 2.47 s | 4.44 s | 2.54 | 9 |
-| Strategy A | exact | 0.0 | 2.85 s | 5.82 s | 3.22 | 9 |
+Final word-level WER matches offline on this tiny sample, but partial/stable
+WER remains poor; the UI exposes both and does not relabel final as streaming.
+CPU is not real-time. The direct 2.595 s WebSocket stream produced exact final
+text for both models; CPU first partial was 3.50/4.35 s and finalization
+2.76/3.37 s. The browser AudioWorklet/WebSocket path was exercised with Chrome's
+fake microphone; the fake source loops and is not an accuracy result.
 
-CPU is a functional fallback, not real-time. The GPU streaming evaluation was
-submitted but blocked by the account's four-job GPU limit; no GPU streaming
-numbers are claimed. The offline A100 benchmark measured RTF 0.137 for 2-bit FFN
-and 0.153 for Strategy A; the streaming window cost is the same full-encoder
-cost, but that is not a substitute for a measured streaming evaluation.
+The GPU streaming benchmark was not executed because the account's four-job GPU
+limit was full. The offline A100 benchmark (RTF 0.137 FFN / 0.153 A) is not a
+streaming measurement and is not used to claim streaming real-time performance.
 
-The browser UI, model selection, AudioWorklet/WebSocket protocol, reference
-metrics endpoint, and real model transcriptions were validated. The frontend
-serves no external requests and persists no audio or transcript by default.
+The browser UI, model selection, sequence validation, incremental decoder,
+reference metrics endpoint, and actual model transcriptions were validated. The
+frontend serves no external requests and persists no audio or transcript by
+default.
 
 ## Reproducibility
 

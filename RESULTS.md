@@ -472,26 +472,34 @@ forward is **19.6×** slower for FFN and **22.0×** slower for Strategy A than F
 because codes are expanded to FP32 before `F.linear`. See
 `results/final_benchmark.json` and `results/final_audit.json`.
 
-## 19. Live streaming demo (CPU fallback)
+## 19. Stateful bounded-context streaming (CPU fallback)
 
-The streaming UI uses 320 ms PCM chunks from an AudioWorklet, a WebSocket
-backend, and overlapping 2.0 s windows (0.5 s overlap). The online session is
-chunked, not stateful. A 4-utterance dev-clean CPU sweep was run because the GPU
-streaming job was blocked by the account's four-job limit.
+The default browser path uses persistent audio/CTC state and non-overlapping
+1.0 s current segments with 0.8 s left and 0.32 s right context. It runs the
+encoder once per current segment, not over the full history. The CTC decoder
+persists blank/repeat/word state and flushes at stop; there is no separate full
+offline refinement. This is not exact KV-cache streaming because Conformer
+attention is bidirectional.
 
-| Model / window | Final WER | Streaming WER | First partial | Avg update | Finalization | RTF | Updates |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| FFN · 2.0 s / 0.5 s | 3.57% | 25.00% | 2.08 s | 2.43 s | 5.22 s | 2.77 | 4 |
-| A · 2.0 s / 0.5 s | 3.57% | 21.43% | 2.67 s | 2.31 s | 5.18 s | 2.92 | 4 |
-| FFN · 320 ms window | 3.57% | 117.86% | 4.91 s | 2.04 s | 7.81 s | 11.11 | 43 |
-| A · 320 ms window | 3.57% | 150.00% | 4.05 s | 2.19 s | 3.03 s | 9.43 | 43 |
+Four dev-clean CPU utterances (`results/stateful_eval_cpu.json`; GPU streaming
+blocked by the four-job limit):
 
-Final WER is the full-utterance refinement, not a pure streaming metric. The
-320 ms window is unusable and rejected. A real WebSocket test of a 2.595 s dev
-utterance produced exact final text for both models on CPU; first partial
-2.47/2.85 s, finalization 4.44/5.82 s, RTF 2.54/3.22. No GPU streaming result is
-claimed.
+| Model | Final WER | Partial WER | Stable-prefix WER | Offline WER | First partial | Avg/p95 update | Finalization | RTF | Encoder ratio | Frame agreement |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2-bit FFN | 3.57% | 28.57% | 32.14% | 3.57% | 2.65 s | 2.27/2.73 s | 2.58 s | 2.81 | 1.85× | 95.5% |
+| Strategy A | 3.57% | 28.57% | 32.14% | 3.57% | 2.70 s | 2.23/2.45 s | 2.73 s | 2.76 | 1.85× | 96.1% |
 
+Max absolute logit differences versus offline were 10.73/8.68; exact equivalence
+is not claimed. Final WER matches offline on this tiny sample, but partial and
+stable-prefix WER remain high and are reported separately. A direct 2.595 s
+WebSocket stream produced exact final text for both models; CPU first partial
+3.50/4.35 s, finalization 2.76/3.37 s, RTF 3.27/4.58.
+
+The legacy overlapping-window path (`results/streaming_eval_cpu.json`) remains
+historical: 2.0 s windows had 25.0% FFN / 21.4% A chunk-merged WER and 320 ms
+windows were unusable (117.9%/150.0%). No GPU streaming result is claimed.
+
+## 20. Honest reading
 ## 20. Honest reading
 
 - Accuracy numbers are greedy CTC on fixed LibriSpeech subsets; they are not

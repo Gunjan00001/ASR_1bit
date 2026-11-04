@@ -52,7 +52,14 @@ an exact, reproducible repository state.
   320 ms window rejected; GPU streaming evaluation blocked by the four-job GPU
   limit. No LFS upload was attempted because the account has no confirmed
   2.12 GB data pack and the new URL is a separate Qwen repository.
-- **171 tests** pass.
+- Added a stateful bounded-context streaming backend: persistent incremental
+  CTC state, non-overlapping 1.0 s current segments, 0.8 s left/0.32 s right
+  context, sequence-numbered PCM, and final flush without a separate offline
+  refinement. Measured CPU final WER 3.57% (matching offline on 4 dev utts),
+  partial/stable WER 28.57%/32.14%, RTF 2.76–2.81, encoder recompute 1.85×.
+  Exact KV-cache equivalence is not claimed (bidirectional Conformer). GPU
+  streaming benchmark blocked by the four-job limit.
+- **179 tests** pass.
 
 ## Unreleased — genuine 2-bit FFN: pilot passes gate
 

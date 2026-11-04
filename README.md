@@ -37,14 +37,17 @@ python scripts/run_streaming_app.py --host 127.0.0.1 --port 7860 --device auto
 Open `http://127.0.0.1:7860`, select a selected model, click **Start recording**,
 allow microphone access, and speak. Finalized words are dark; provisional words
 are amber. The app streams microphone PCM through an AudioWorklet and WebSocket
-to the actual packed model.
+to the actual packed model, using a persistent incremental CTC decoder and a
+bounded-context stateful session.
 
-**Important:** this is a **chunked-overlap approximation**, not a stateful
-streaming encoder. Each window re-runs the full encoder. On stop, the UI exposes
-a full-utterance refinement separately from the chunk-merged hypothesis. Packed
-weights are expanded to FP32 for computation: the artifacts reduce storage, not
-inference latency. CPU fallback is functional but not real-time; use CUDA for a
-live demo.
+**Important:** Wav2Vec2-Conformer uses bidirectional attention, so this is a
+**bounded-context stateful approximation**, not exact KV-cache streaming. Each
+non-overlapping current segment is encoded once with left/right context; the
+incremental CTC decoder persists across chunks. The encoder recomputation ratio
+is ~1.85×, not full-history recomputation. The final transcript is the
+incremental decoder output, not a separate offline pass. Packed weights still
+expand to FP32; no inference acceleration is claimed. CPU is functional but not
+real-time; use CUDA for a live demo.
 
 See [`docs/STREAMING.md`](docs/STREAMING.md) for architecture, API, privacy,
 model resolution, and limitations.

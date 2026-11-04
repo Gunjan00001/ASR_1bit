@@ -1567,8 +1567,44 @@ invalid WER is retained.
 overwritten. GitHub's free LFS capacity is 1 GB storage/bandwidth, while the two
 selected artifacts total ~2.12 GB; no incomplete LFS upload was attempted.
 
-**Tests:** **171 pass**, including audio validation, WebSocket/API, stable-prefix,
+**Tests:** **179 pass**, including audio validation, WebSocket/API, stable-prefix,
 model-package, LFS-pattern, and frontend-asset tests.
+
+---
+
+## E43 — Stateful bounded-context streaming (not exact KV-cache)
+
+**Audit:** Wav2Vec2-Conformer self-attention is bidirectional and relative-
+positioned; its convolution modules use temporal context. Exact KV-cache
+streaming would change trained semantics. The old app re-ran the encoder on
+overlapping 2.0 s windows and merged word text heuristically.
+
+**Implemented:** `StatefulStreamingSession` with persistent raw/context buffer,
+non-overlapping 1.0 s current segments, 0.8 s left and 0.32 s right context,
+one encoder call per current segment, and `IncrementalCTCDecoder` carrying the
+previous frame token, blank/repeat state, current word, committed words, and
+final flush. Sequence-numbered float32 PCM frames are validated; missing/out-of-
+order chunks raise explicit errors. The legacy chunked path remains available.
+
+**Measured (CPU, four dev utterances; GPU streaming blocked by the four-job
+limit):**
+
+| Model | Final WER | Partial WER | Stable-prefix WER | Offline WER | First partial | Avg/p95 update | Finalization | RTF | Encoder ratio |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| FFN | 3.57% | 28.57% | 32.14% | 3.57% | 2.65 s | 2.27/2.73 s | 2.58 s | 2.81 | 1.85× |
+| A | 3.57% | 28.57% | 32.14% | 3.57% | 2.70 s | 2.23/2.45 s | 2.73 s | 2.76 | 1.85× |
+
+Max abs logit difference vs offline: 10.73/8.68; frame argmax agreement
+95.5%/96.1%. Exact equivalence is not claimed. Final WER matching offline on
+four utterances is not a statistical claim; partial/stable WER is poor. The
+direct 2.595 s WebSocket stream returned exact final text on both models; CPU
+first partial 3.50/4.35 s, finalization 2.76/3.37 s.
+
+**GPU:** no streaming benchmark was executed because the account's four-job GPU
+limit was full. Offline A100 benchmark RTF 0.137/0.153 is not a streaming result.
+
+**Tests:** incremental CTC repeated/blank/delimiter/flush, sequence validation,
+state isolation/reset, stateful WebSocket protocol, and existing suite.
 
 ---
 
